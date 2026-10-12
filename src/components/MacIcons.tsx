@@ -114,8 +114,9 @@ export function getFileCategory(extension?: string): MacFileCategory {
 }
 
 /**
- * Renders an authentic macOS-style blue folder icon with tab on top left,
- * soft cyan-blue gradient (#4aa3f0 to #1f75d5), subtle highlight and bottom shadow.
+ * Renders an authentic macOS Big Sur/Sonoma-style blue folder icon.
+ * Features the signature top-left rounded tab, radiant Apple sky-to-royal-blue
+ * gradient (#5ac8fa to #1370d6), specular rim highlight, and soft natural elevation.
  *
  * @param props - Folder icon configuration options.
  * @returns Rendered SVG folder element.
@@ -141,91 +142,82 @@ export const MacFolderIcon: React.FC<MacFolderIconProps> = ({
       aria-hidden="true"
     >
       <defs>
-        {/* Soft cyan/blue gradient for the front flap (#4aa3f0 to #1f75d5) */}
-        <linearGradient id={`${id}-front`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#4aa3f0" />
-          <stop offset="100%" stopColor="#1f75d5" />
+        {/* Apple radiant blue front flap gradient */}
+        <linearGradient id={`${id}-front`} x1="32" y1="21.5" x2="32" y2="55.5" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#5ac8fa" />
+          <stop offset="28%" stopColor="#3ca2f5" />
+          <stop offset="100%" stopColor="#136ed4" />
         </linearGradient>
 
-        {/* Darker blue gradient for the back cavity and top-left tab */}
-        <linearGradient id={`${id}-back`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#257cd4" />
-          <stop offset="100%" stopColor="#175ca8" />
+        {/* Deep blue back cavity and tab gradient */}
+        <linearGradient id={`${id}-back`} x1="32" y1="12" x2="32" y2="54" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#2582e8" />
+          <stop offset="100%" stopColor="#1155a6" />
         </linearGradient>
 
-        {/* Soft top-edge gloss shine */}
-        <linearGradient id={`${id}-highlight`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.38" />
+        {/* Soft specular sheen overlay for the top of the flap */}
+        <linearGradient id={`${id}-sheen`} x1="32" y1="21.5" x2="32" y2="35" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.32" />
           <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
         </linearGradient>
 
-        {/* Drop shadow for folder depth */}
-        <filter id={`${id}-shadow`} x="-10%" y="0%" width="120%" height="130%">
-          <feDropShadow dx="0" dy="2" stdDeviation="1.5" floodColor="#0e3f73" floodOpacity="0.32" />
+        {/* Tactile elevation drop shadow */}
+        <filter id={`${id}-shadow`} x="-12%" y="-5%" width="124%" height="135%">
+          <feDropShadow dx="0" dy="2" stdDeviation="1.8" floodColor="#073262" floodOpacity="0.38" />
         </filter>
       </defs>
 
-      {/* Back tab on the left and rear plate */}
+      {/* ── 1. Back Tab & Rear Folder Plate ── */}
       <path
-        d="M 6 15 C 6 11.7 8.7 9 12 9 L 26 C 28.5 9 30.7 10.3 32 12.3 L 34.5 15.5 C 35.5 16.8 37 17.5 38.6 17.5 L 56 17.5 C 59.3 17.5 62 20.2 62 23.5 L 62 50 C 62 53.3 59.3 56 56 56 L 6 56 C 2.7 56 0 53.3 0 50 L 0 21 C 0 17.7 2.7 15 6 15 Z"
+        d="M 6.5 18 C 6.5 14.5 8.5 12.5 12 12.5 L 24 12.5 C 26.8 12.5 28.6 13.8 30.5 16 C 32 17.7 33.8 18.5 36 18.5 L 54.5 18.5 C 57.5 18.5 59.5 20.5 59.5 23.5 L 59.5 49 C 59.5 52 57.5 54 54.5 54 L 9.5 54 C 6.5 54 4.5 52 4.5 49 L 4.5 23 C 4.5 20.2 5.5 18 6.5 18 Z"
         fill={`url(#${id}-back)`}
       />
 
-      {/* Dark interior cavity groove behind the front flap */}
+      {/* ── 2. Subtle Interior Cavity Shade ── */}
       <path
-        d="M 4 21.5 L 60 21.5"
-        stroke="#124f91"
-        strokeWidth="1.8"
-        strokeOpacity="0.7"
+        d="M 6 22 L 58 22"
+        stroke="#0d4684"
+        strokeWidth="1.6"
+        strokeOpacity="0.4"
       />
 
-      {/* Front folder flap with rounded corners */}
+      {/* ── 3. Front Folder Flap (Smooth Rounded Rectangle) ── */}
       <rect
-        x="1"
-        y="21"
-        width="62"
-        height="35"
+        x="4.5"
+        y="21.5"
+        width="55"
+        height="34"
         rx="5.5"
         fill={`url(#${id}-front)`}
         filter={`url(#${id}-shadow)`}
       />
 
-      {/* Soft highlight overlay on upper half */}
+      {/* ── 4. Upper Half Subtle Gloss Sheen ── */}
       <rect
-        x="1"
-        y="21"
-        width="62"
-        height="13"
+        x="4.5"
+        y="21.5"
+        width="55"
+        height="14"
         rx="5.5"
-        fill={`url(#${id}-highlight)`}
+        fill={`url(#${id}-sheen)`}
       />
 
-      {/* Crisp cyan top-edge highlight stroke */}
+      {/* ── 5. Crisp Specular Top-Edge Rim Highlight ── */}
       <path
-        d="M 3.5 22.5 Q 3.5 22 6 22 L 58 22 Q 60.5 22 60.5 22.5"
-        stroke="#8bd0fd"
-        strokeWidth="1.2"
+        d="M 7.5 22.5 L 56.5 22.5"
+        stroke="#ffffff"
+        strokeWidth="1"
+        strokeOpacity="0.55"
         strokeLinecap="round"
       />
 
-      {/* Embossed horizontal groove (macOS folder signature) */}
-      <line
-        x1="6"
-        y1="37"
-        x2="58"
-        y2="37"
-        stroke="#175da7"
-        strokeWidth="1"
-        strokeOpacity="0.35"
-      />
-      <line
-        x1="6"
-        y1="38"
-        x2="58"
-        y2="38"
-        stroke="#7cc3fb"
-        strokeWidth="1"
-        strokeOpacity="0.3"
+      {/* ── 6. Bottom Edge Ambient Reflected Rim ── */}
+      <path
+        d="M 8 55 L 56 55"
+        stroke="#0c4c94"
+        strokeWidth="0.8"
+        strokeOpacity="0.4"
+        strokeLinecap="round"
       />
     </svg>
   );

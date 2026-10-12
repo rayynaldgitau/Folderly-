@@ -75,3 +75,17 @@ export interface SystemUserInfo {
   username: string;
   display_name: string;
 }
+
+/** Represents an active browser/explorer tab within Folderly. */
+export interface TabItem {
+  /** Unique ID for the tab instance. */
+  id: string;
+  /** Display title of the tab (e.g. folder name or "Home"). */
+  title: string;
+  /** Filesystem path currently loaded in this tab, or null / "recents". */
+  path: string | null;
+  /** Navigation history stack for this tab. */
+  history: string[];
+  /** Current index in the navigation history stack. */
+  historyIndex: number;
+}

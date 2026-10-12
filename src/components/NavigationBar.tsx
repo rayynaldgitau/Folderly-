@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import type { ViewMode, DrawerPosition, SortField } from "../types";
+import type { ViewMode, DrawerPosition, SortField, TabItem } from "../types";
+import { MacFolderIcon } from "./MacIcons";
 
 /**
  * Properties for the NavigationBar component.
@@ -69,8 +70,16 @@ export interface NavigationBarProps {
   onSortChange?: (field: SortField) => void;
   /** Callback to open preferences and settings modal. */
   onOpenSettings?: () => void;
-  /** Callback to spawn a new Folderly window. */
-  onNewWindow?: () => void;
+  /** All currently open tabs. */
+  tabs: TabItem[];
+  /** ID of the active tab. */
+  activeTabId: string;
+  /** Callback invoked when switching active tabs. */
+  onSelectTab: (tabId: string) => void;
+  /** Callback invoked to open a new tab. */
+  onNewTab: () => void;
+  /** Callback invoked to close a tab by id. */
+  onCloseTab: (tabId: string) => void;
 }
 
 /** Represents a single clickable breadcrumb segment. */
@@ -160,7 +169,11 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
   sortField = "name",
   onSortChange,
   onOpenSettings,
-  onNewWindow,
+  tabs = [],
+  activeTabId,
+  onSelectTab,
+  onNewTab,
+  onCloseTab,
 }) => {
   const [isEditingPath, setIsEditingPath] = useState(false);
   const [editPathValue, setEditPathValue] = useState("");
@@ -235,28 +248,73 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
 
   return (
     <header className="flex flex-col select-none shrink-0 border-b border-neutral-800/40">
-      {/* ── Top Window Titlebar Row: Name + [+ New Window (Ctrl+N)] ── */}
-      <div className="flex items-center justify-between px-4 py-2 text-xs border-b border-neutral-800/30">
-        <div className="flex items-center gap-2">
-          <span className="text-[#ff2d87]">📁</span>
-          <span className="font-semibold text-primary-color">Folderly</span>
-          <span className="text-muted-color">/</span>
-          <span className="text-muted-color">{currentFolderName}</span>
+      {/* ── Top Browser / Explorer Tab Bar Strip ── */}
+      <div className="flex items-center justify-between px-3 py-1.5 text-xs border-b border-neutral-800/30 bg-sidebar/50 backdrop-blur-sm gap-2">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar py-0.5">
+          {/* Brand Pill */}
+          <div className="flex items-center gap-1.5 px-2 py-1 shrink-0 font-bold text-xs text-primary-color select-none">
+            <span className="text-[#ff2d87]">📁</span>
+            <span className="hidden sm:inline">Folderly</span>
+          </div>
+
+          {/* Active & Inactive Tabs */}
+          {tabs.map((tab) => {
+            const isActive = tab.id === activeTabId;
+            return (
+              <div
+                key={tab.id}
+                onClick={() => onSelectTab(tab.id)}
+                className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs max-w-[200px] min-w-[110px] shrink-0 cursor-pointer transition-all select-none border ${
+                  isActive
+                    ? "bg-card border-neutral-700/60 text-primary-color font-semibold shadow-sm ring-1 ring-[#ff2d87]/40"
+                    : "bg-transparent border-transparent text-muted-color hover:text-primary-color hover:bg-card/40"
+                }`}
+                title={tab.path || tab.title}
+              >
+                <span className="shrink-0 flex items-center">
+                  {tab.path === "recents" ? (
+                    <span>🕒</span>
+                  ) : !tab.path ? (
+                    <span>🏠</span>
+                  ) : (
+                    <MacFolderIcon size={14} />
+                  )}
+                </span>
+                <span className="truncate flex-1 text-[11px] font-medium">
+                  {tab.title}
+                </span>
+                {tabs.length > 1 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onCloseTab(tab.id);
+                    }}
+                    className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] text-muted-color hover:text-white hover:bg-[#ff2d87] transition-all opacity-0 group-hover:opacity-100"
+                    title="Close Tab (Ctrl+W)"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            );
+          })}
+
+          {/* + New Tab Button */}
+          <button
+            onClick={onNewTab}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-card/60 hover:bg-card border border-neutral-800/40 hover:border-[#ff2d87]/40 text-muted-color hover:text-[#ff2d87] text-xs font-semibold shrink-0 transition-all shadow-sm group"
+            title="Open a new tab (Ctrl+T)"
+          >
+            <span className="font-bold text-sm leading-none group-hover:scale-110 transition-transform">+</span>
+          </button>
         </div>
 
-        {/* Multi-Window Spawn Control (replaces duplicate minimize/maximize/close icons) */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onNewWindow}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-card border border-neutral-800/30 hover:border-[#ff2d87]/50 hover:text-[#ff2d87] text-primary-color text-xs font-semibold transition-all shadow-sm group"
-            title="Open a new Folderly window (Ctrl+N)"
-          >
-            <span className="text-[#ff2d87] font-bold group-hover:scale-110 transition-transform">+</span>
-            <span>New Window</span>
-            <kbd className="text-[10px] bg-neutral-800/50 px-1.5 py-0.5 rounded text-muted-color">
-              Ctrl+N
-            </kbd>
-          </button>
+        {/* Right side helper shortcut indicator */}
+        <div className="hidden md:flex items-center gap-2 text-muted-color text-[11px] shrink-0 pr-1">
+          <kbd className="bg-neutral-800/40 border border-neutral-800/60 px-1.5 py-0.5 rounded text-[10px] text-neutral-400">
+            Ctrl+T
+          </kbd>
+          <span className="text-[10px]">New Tab</span>
         </div>
       </div>
 

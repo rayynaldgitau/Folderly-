@@ -8,7 +8,8 @@
 
 | Category | Features |
 |---|---|
-| **Multi-Window Support** | Spawn multiple independent Folderly windows just like File Explorer using `Ctrl+N` or the `+ New Window` button |
+| **Tabbed Browsing** | Modern tab strip supporting multiple tabs (`Ctrl+T` or `+` button), tab switching, and closing (`Ctrl+W` or `✕` button) |
+| **OneDrive Redirection Support** | Automatic resolution for Windows OneDrive folder redirection (`Desktop`, `Documents`, `Pictures`) preventing missing path errors |
 | **Recents Page** | Dedicated Quick Access `🕒 Recents` page listing recent downloads and recently opened files with automatic history tracking |
 | **Sort by File Type** | Interactive sort dropdown supporting `🏷️ File Type` (grouping extensions alphabetically), `🔤 Name`, `📅 Date Modified`, and `⚖️ File Size` |
 | **macOS Vector Icons** | Authentic macOS-inspired vector SVG icons: signature sky-blue rounded folder with tab bevel and document cards with dog-eared folds and extension badges |

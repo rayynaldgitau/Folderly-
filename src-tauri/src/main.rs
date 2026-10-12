@@ -202,6 +202,55 @@ fn compute_new_path(original: &Path, rules: &RenameRules) -> Result<PathBuf, Str
     Ok(parent.join(new_name))
 }
 
+/// Resolves a directory path, handling Windows OneDrive folder redirection.
+///
+/// On Windows, folders like Desktop, Documents, or Pictures may be relocated
+/// into a OneDrive directory (e.g. C:\Users\<user>\OneDrive\Desktop). If the
+/// initially requested path does not exist, this function attempts to map between
+/// the local user profile and the OneDrive directory.
+///
+/// * `raw_path`: Raw directory path requested by client or UI.
+/// * Returns: The resolved existing `PathBuf` or the original `PathBuf`.
+fn resolve_system_path(raw_path: &str) -> PathBuf {
+    let path = PathBuf::from(raw_path);
+    if path.exists() {
+        return path;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(profile) = std::env::var("USERPROFILE") {
+            let user_dir = Path::new(&profile);
+
+            // Case 1: Client asked for C:\Users\<user>\<subfolder>, but it's redirected to OneDrive
+            if let Ok(rel) = path.strip_prefix(user_dir) {
+                let od_cand = user_dir.join("OneDrive").join(rel);
+                if od_cand.exists() {
+                    return od_cand;
+                }
+                if let Ok(od_env) = std::env::var("OneDrive") {
+                    let od_env_cand = Path::new(&od_env).join(rel);
+                    if od_env_cand.exists() {
+                        return od_env_cand;
+                    }
+                }
+            }
+
+            // Case 2: Client asked for OneDrive\<subfolder>, but it's located locally
+            if let Ok(od_env) = std::env::var("OneDrive") {
+                if let Ok(rel) = path.strip_prefix(Path::new(&od_env)) {
+                    let local_cand = user_dir.join(rel);
+                    if local_cand.exists() {
+                        return local_cand;
+                    }
+                }
+            }
+        }
+    }
+
+    path
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Tauri commands — isolated in their own module to avoid macro collisions
 // ─────────────────────────────────────────────────────────────────────────────
@@ -209,13 +258,14 @@ fn compute_new_path(original: &Path, rules: &RenameRules) -> Result<PathBuf, Str
 mod commands {
     use super::*;
 
-    /// Reads immediate contents of a directory (folders and files) without recursing.
+    /// Reads immediate contents of a directory (folders and files) without recursing,
+    /// resolving any OneDrive folder redirection.
     ///
     /// * `dir_path`: Absolute path of the folder to inspect.
     /// * Returns: `DirContents` containing current path, parent path, folders, and files.
     #[tauri::command]
     pub fn read_folder_contents(dir_path: String) -> Result<DirContents, String> {
-        let path = PathBuf::from(&dir_path);
+        let path = resolve_system_path(&dir_path);
         if !path.exists() {
             return Err(format!("Path does not exist: {dir_path}"));
         }
@@ -228,7 +278,7 @@ mod commands {
         let mut files: Vec<FileEntry> = Vec::new();
 
         let entries = fs::read_dir(&path)
-            .map_err(|e| format!("Cannot read directory '{dir_path}': {e}"))?;
+            .map_err(|e| format!("Cannot read directory '{}': {e}", path.display()))?;
 
         for entry_res in entries {
             let entry = match entry_res {
@@ -280,7 +330,7 @@ mod commands {
         })
     }
 
-    /// Discovers system drives and standard Windows user folders.
+    /// Discovers system drives and standard Windows user folders, resolving OneDrive redirection.
     ///
     /// * Returns: List of QuickAccessItem entries for the sidebar.
     #[tauri::command]
@@ -304,9 +354,9 @@ mod commands {
             }
         }
 
-        // 2. Discover standard user folders via USERPROFILE
+        // 2. Discover standard user folders via USERPROFILE and OneDrive
         if let Ok(profile) = std::env::var("USERPROFILE") {
-            let user_dir = PathBuf::from(profile);
+            let user_dir = PathBuf::from(&profile);
             let shortcuts = [
                 ("Desktop", "Desktop", "🖥️"),
                 ("Downloads", "Downloads", "📥"),
@@ -317,15 +367,31 @@ mod commands {
             ];
 
             for (label, sub, icon) in shortcuts {
-                let full = user_dir.join(sub);
-                if full.is_dir() {
-                    items.push(QuickAccessItem {
-                        name: label.to_string(),
-                        path: full.to_string_lossy().to_string(),
-                        icon: icon.to_string(),
-                        is_drive: false,
-                    });
-                }
+                let direct = user_dir.join(sub);
+                let od_direct = user_dir.join("OneDrive").join(sub);
+                let od_env = std::env::var("OneDrive").ok().map(|o| PathBuf::from(o).join(sub));
+
+                let resolved_path = if direct.is_dir() {
+                    Some(direct.clone())
+                } else if od_direct.is_dir() {
+                    Some(od_direct)
+                } else if let Some(ref p) = od_env {
+                    if p.is_dir() {
+                        Some(p.clone())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                let final_path = resolved_path.unwrap_or(direct);
+                items.push(QuickAccessItem {
+                    name: label.to_string(),
+                    path: final_path.to_string_lossy().to_string(),
+                    icon: icon.to_string(),
+                    is_drive: false,
+                });
             }
 
             // User Home folder
@@ -884,4 +950,17 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Tests that resolve_system_path correctly resolves paths.
+    #[test]
+    fn test_resolve_system_path() {
+        let current_dir = std::env::current_dir().unwrap();
+        let resolved = resolve_system_path(&current_dir.to_string_lossy());
+        assert!(resolved.exists());
+    }
 }

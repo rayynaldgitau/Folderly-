@@ -47,12 +47,20 @@ const Sidebar: React.FC<Props> = ({
   onOpenSettings,
 }) => {
   const drives = quickAccess.filter((item) => item.is_drive);
+  const desktopItem = quickAccess.find((q) => q.name.toLowerCase() === "desktop");
+  const resolvedDesktopPath = desktopItem?.path || "C:\\Users\\rayna\\OneDrive\\Desktop";
+
+  const effectivePinnedFolders = pinnedFolders || [
+    { name: "folderly", path: "C:\\Users\\rayna\\Downloads\\folderly" },
+    { name: "PDF documents", path: "C:\\Users\\rayna\\Documents" },
+    { name: "Work Study", path: resolvedDesktopPath },
+  ];
 
   // Default Quick Access standard locations
   const standardQuickAccess = [
     { name: "Recents", icon: "🕒", path: "recents" },
     { name: "Home", icon: "🏠", path: "" },
-    { name: "Desktop", icon: "🖥️", path: "" },
+    { name: "Desktop", icon: "🖥️", path: resolvedDesktopPath },
     { name: "Downloads", icon: "📥", path: "" },
     { name: "Documents", icon: "📁", path: "" },
     { name: "Pictures", icon: "🖼️", path: "" },
@@ -66,7 +74,7 @@ const Sidebar: React.FC<Props> = ({
     return {
       name: sq.name,
       icon: sq.icon,
-      path: found ? found.path : sq.path,
+      path: found && found.path ? found.path : sq.path,
     };
   });
 
@@ -163,7 +171,7 @@ const Sidebar: React.FC<Props> = ({
             </button>
           </div>
           <div className="space-y-0.5">
-            {pinnedFolders.map((p) => (
+            {effectivePinnedFolders.map((p) => (
               <button
                 key={p.name}
                 onClick={() => onNavigate(p.path)}

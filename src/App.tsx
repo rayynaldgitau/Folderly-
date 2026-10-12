@@ -26,6 +26,7 @@ import type {
   DrawerPosition,
   SortField,
   SystemUserInfo,
+  TabItem,
 } from "./types";
 
 /** Default initial rule configuration. */
@@ -42,6 +43,47 @@ const DEFAULT_RULES: RenameRules = {
   append_text: "",
   prepend_text: "",
 };
+
+/**
+ * Catches unexpected React render errors and displays a recovery card instead of crashing.
+ */
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: string | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: error.message };
+  }
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("ErrorBoundary caught error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-card rounded-2xl m-4 border border-neutral-800">
+          <span className="text-4xl mb-3">⚠️</span>
+          <h2 className="text-base font-bold text-primary-color mb-1">
+            Display Error Recovered
+          </h2>
+          <p className="text-xs text-muted-color mb-4 max-w-md">
+            {this.state.error || "An unexpected error occurred while rendering items."}
+          </p>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="px-4 py-2 rounded-xl bg-[#ff2d87] hover:bg-[#e61b74] text-white text-xs font-bold transition-all shadow-md shadow-[#ff2d87]/20"
+          >
+            Retry View
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 /**
  * Root Application Component for Folderly.
@@ -83,7 +125,17 @@ const App: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // ── Navigation & Explorer State ──────────────────────────────────────────
+  // ── Navigation, Tabs & Explorer State ────────────────────────────────────
+  const [tabs, setTabs]                   = useState<TabItem[]>([
+    {
+      id: "tab-default",
+      title: "Downloads",
+      path: null,
+      history: [],
+      historyIndex: -1,
+    },
+  ]);
+  const [activeTabId, setActiveTabId]     = useState<string>("tab-default");
   const [currentPath, setCurrentPath]     = useState<string | null>(null);
   const [history, setHistory]             = useState<string[]>([]);
   const [historyIndex, setHistoryIndex]   = useState<number>(-1);
@@ -230,6 +282,22 @@ const App: React.FC = () => {
             });
             setHistoryIndex((prev) => prev + 1);
           }
+
+          setTabs((prev) =>
+            prev.map((t) =>
+              t.id === activeTabId
+                ? {
+                    ...t,
+                    title: "Recent Files",
+                    path: "recents",
+                    history: pushHistory
+                      ? [...t.history.slice(0, historyIndex + 1), "recents"]
+                      : t.history,
+                    historyIndex: pushHistory ? historyIndex + 1 : t.historyIndex,
+                  }
+                : t
+            )
+          );
         } catch (err) {
           setStatus({ msg: `Error loading recents: ${err}`, type: "error" });
         } finally {
@@ -268,13 +336,33 @@ const App: React.FC = () => {
           });
           setHistoryIndex((prev) => prev + 1);
         }
+
+        const tabTitle =
+          path === "recents"
+            ? "Recent Files"
+            : path.split(/[\\/]/).filter(Boolean).pop() || "Folder";
+        setTabs((prev) =>
+          prev.map((t) =>
+            t.id === activeTabId
+              ? {
+                  ...t,
+                  title: tabTitle,
+                  path,
+                  history: pushHistory
+                    ? [...t.history.slice(0, historyIndex + 1), path]
+                    : t.history,
+                  historyIndex: pushHistory ? historyIndex + 1 : t.historyIndex,
+                }
+              : t
+          )
+        );
       } catch (err) {
         setStatus({ msg: `Navigation error: ${err}`, type: "error" });
       } finally {
         setLoading(false);
       }
     },
-    [isRecursive, historyIndex]
+    [isRecursive, historyIndex, activeTabId]
   );
 
   const handleGoBack = useCallback(() => {
@@ -375,6 +463,18 @@ const App: React.FC = () => {
           qa.find((q) => q.name === "Desktop")?.path ||
           qa[0]?.path;
         if (defaultTarget) {
+          const title =
+            defaultTarget.split(/[\\/]/).filter(Boolean).pop() || "Downloads";
+          setTabs([
+            {
+              id: "tab-default",
+              title,
+              path: defaultTarget,
+              history: [defaultTarget],
+              historyIndex: 0,
+            },
+          ]);
+          setActiveTabId("tab-default");
           navigateTo(defaultTarget);
         }
       } catch (e) {
@@ -444,28 +544,95 @@ const App: React.FC = () => {
   );
 
   /**
-   * Spawns a new independent Folderly window like File Explorer (Ctrl+N).
+   * Switches the active view to a specific tab.
+   *
+   * @param tabId - Unique ID of the tab to activate.
    */
-  const handleOpenNewWindow = useCallback(async () => {
-    try {
-      await invoke("open_new_window");
-      setStatus({ msg: "Opened new Folderly window.", type: "success" });
-    } catch (err) {
-      setStatus({ msg: `Failed to open new window: ${err}`, type: "error" });
-    }
-  }, []);
+  const handleSelectTab = useCallback(
+    (tabId: string) => {
+      const target = tabs.find((t) => t.id === tabId);
+      if (!target) return;
+      setActiveTabId(tabId);
+      setHistory(target.history);
+      setHistoryIndex(target.historyIndex);
+      if (target.path) {
+        navigateTo(target.path, false);
+      }
+    },
+    [tabs, navigateTo]
+  );
 
-  // Global keyboard shortcuts (Ctrl+N for new window)
+  /**
+   * Opens a new tab, loading either a given folder or the Downloads / default folder.
+   *
+   * @param initialPath - Optional folder path to seed the new tab with.
+   */
+  const handleNewTab = useCallback(
+    (initialPath?: string) => {
+      const targetPath =
+        initialPath ||
+        quickAccess.find((q) => q.name === "Downloads")?.path ||
+        quickAccess.find((q) => q.name === "Desktop")?.path ||
+        "recents";
+      const title =
+        targetPath === "recents"
+          ? "Recent Files"
+          : targetPath.split(/[\\/]/).filter(Boolean).pop() || "New Tab";
+      const newTab: TabItem = {
+        id: `tab-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        title,
+        path: targetPath,
+        history: [targetPath],
+        historyIndex: 0,
+      };
+      setTabs((prev) => [...prev, newTab]);
+      setActiveTabId(newTab.id);
+      navigateTo(targetPath, false);
+      setStatus({ msg: `Opened new tab: ${title}`, type: "info" });
+    },
+    [quickAccess, navigateTo]
+  );
+
+  /**
+   * Closes a tab and selects an adjacent remaining tab.
+   *
+   * @param tabId - ID of the tab to close.
+   */
+  const handleCloseTab = useCallback(
+    (tabId: string) => {
+      if (tabs.length <= 1) return;
+      const closeIndex = tabs.findIndex((t) => t.id === tabId);
+      const remaining = tabs.filter((t) => t.id !== tabId);
+      setTabs(remaining);
+      if (activeTabId === tabId) {
+        const nextActive = remaining[Math.max(0, closeIndex - 1)];
+        if (nextActive) {
+          setActiveTabId(nextActive.id);
+          setHistory(nextActive.history);
+          setHistoryIndex(nextActive.historyIndex);
+          if (nextActive.path) {
+            navigateTo(nextActive.path, false);
+          }
+        }
+      }
+    },
+    [tabs, activeTabId, navigateTo]
+  );
+
+  // Global keyboard shortcuts (Ctrl+T for new tab, Ctrl+W to close active tab)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "t") {
         e.preventDefault();
-        handleOpenNewWindow();
+        handleNewTab();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "w") {
+        e.preventDefault();
+        handleCloseTab(activeTabId);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleOpenNewWindow]);
+  }, [handleNewTab, handleCloseTab, activeTabId]);
 
   const handleShowInFileManager = useCallback(async (path: string) => {
     try {
@@ -793,49 +960,55 @@ const App: React.FC = () => {
           sortField={sortField}
           onSortChange={setSortField}
           onOpenSettings={() => setIsSettingsOpen(true)}
-          onNewWindow={handleOpenNewWindow}
+          tabs={tabs}
+          activeTabId={activeTabId}
+          onSelectTab={handleSelectTab}
+          onNewTab={handleNewTab}
+          onCloseTab={handleCloseTab}
         />
 
         {/* Workspace Central Area */}
         <div className="flex flex-1 min-h-0 overflow-hidden relative">
           <div className="flex-1 overflow-y-auto">
-            {viewMode === "details" ? (
-              <FileTableView
-                folders={filteredFolders}
-                files={filteredFiles}
-                selectedPaths={selectedPaths}
-                foldersFirst={foldersFirst}
-                onToggleSelect={toggleSelect}
-                onToggleSelectAll={toggleSelectAll}
-                onNavigateFolder={(path) => navigateTo(path)}
-                onOpenFile={handleOpenFile}
-                onContextMenu={handleContextMenu}
-                emptyMessage={
-                  currentPath === "recents"
-                    ? "No recent files yet. Files you download or open in Folderly will appear here."
-                    : undefined
-                }
-              />
-            ) : (
-              <FileGrid
-                folders={filteredFolders}
-                files={filteredFiles}
-                selectedPaths={selectedPaths}
-                viewMode={viewMode}
-                foldersFirst={foldersFirst}
-                onToggle={toggleSelect}
-                onToggleAll={toggleSelectAll}
-                onNavigateFolder={(path) => navigateTo(path)}
-                onOpenFile={handleOpenFile}
-                onContextMenu={handleContextMenu}
-                sortField={sortField}
-                emptyMessage={
-                  currentPath === "recents"
-                    ? "No recent files yet. Files you download or open in Folderly will appear here."
-                    : undefined
-                }
-              />
-            )}
+            <ErrorBoundary>
+              {viewMode === "details" ? (
+                <FileTableView
+                  folders={filteredFolders}
+                  files={filteredFiles}
+                  selectedPaths={selectedPaths}
+                  foldersFirst={foldersFirst}
+                  onToggleSelect={toggleSelect}
+                  onToggleSelectAll={toggleSelectAll}
+                  onNavigateFolder={(path) => navigateTo(path)}
+                  onOpenFile={handleOpenFile}
+                  onContextMenu={handleContextMenu}
+                  emptyMessage={
+                    currentPath === "recents"
+                      ? "No recent files yet. Files you download or open in Folderly will appear here."
+                      : undefined
+                  }
+                />
+              ) : (
+                <FileGrid
+                  folders={filteredFolders}
+                  files={filteredFiles}
+                  selectedPaths={selectedPaths}
+                  viewMode={viewMode}
+                  foldersFirst={foldersFirst}
+                  onToggle={toggleSelect}
+                  onToggleAll={toggleSelectAll}
+                  onNavigateFolder={(path) => navigateTo(path)}
+                  onOpenFile={handleOpenFile}
+                  onContextMenu={handleContextMenu}
+                  sortField={sortField}
+                  emptyMessage={
+                    currentPath === "recents"
+                      ? "No recent files yet. Files you download or open in Folderly will appear here."
+                      : undefined
+                  }
+                />
+              )}
+            </ErrorBoundary>
           </div>
 
           {/* ── Right Renamer Drawer (when position is 'right') ── */}
