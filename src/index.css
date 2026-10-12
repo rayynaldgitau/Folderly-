@@ -1,0 +1,204 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Custom component classes ── */
+@layer components {
+  /* Primary button */
+  .btn {
+    @apply inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5
+           text-xs font-semibold transition-all duration-150
+           focus:outline-none focus:ring-2 focus:ring-offset-1
+           disabled:opacity-40 disabled:cursor-not-allowed select-none;
+  }
+
+  .btn-primary {
+    @apply bg-[#ff2d87] text-white hover:bg-[#e61b74]
+           focus:ring-[#ff2d87] focus:ring-offset-neutral-900;
+  }
+
+  .btn-secondary {
+    @apply bg-neutral-800 text-neutral-200 border border-neutral-700
+           hover:bg-neutral-700 focus:ring-neutral-500 focus:ring-offset-neutral-900;
+  }
+
+  .btn-danger {
+    @apply bg-neutral-800 text-red-400 border border-neutral-700
+           hover:bg-red-950 hover:border-red-800
+           focus:ring-red-600 focus:ring-offset-neutral-900;
+  }
+
+  /* Status badges */
+  .badge {
+    @apply text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full border;
+  }
+  .badge-green  { @apply bg-emerald-950/70 text-emerald-300 border-emerald-800/60; }
+  .badge-yellow { @apply bg-yellow-950/70  text-yellow-300  border-yellow-800/60;  }
+  .badge-red    { @apply bg-red-950/70     text-red-300     border-red-800/60;     }
+}
+
+/* ── THEME 1: OLED PINK (DARK) — Matches Dark Reference Mockup ── */
+.theme-pink {
+  --scrollbar-thumb: #ff2d87;
+  background-color: #120e12 !important;
+  color: #ffffff !important;
+}
+
+.theme-pink .bg-main {
+  background-color: #120e12 !important;
+}
+
+.theme-pink .bg-sidebar {
+  background-color: #151015 !important;
+  border-color: #241b23 !important;
+}
+
+.theme-pink .bg-card {
+  background-color: #1e181d !important;
+  border-color: #2b222a !important;
+}
+
+.theme-pink .bg-card:hover {
+  background-color: #282027 !important;
+}
+
+.theme-pink .bg-input {
+  background-color: #191318 !important;
+  border-color: #2b222a !important;
+  color: #ffffff !important;
+}
+
+.theme-pink .text-primary-color {
+  color: #ffffff !important;
+}
+
+.theme-pink .text-muted-color {
+  color: #8e828d !important;
+}
+
+.theme-pink .accent-pink {
+  color: #ff2d87 !important;
+}
+
+.theme-pink .bg-accent-pink {
+  background-color: #ff2d87 !important;
+  color: #ffffff !important;
+}
+
+.theme-pink .badge-count {
+  background-color: #251b23 !important;
+  color: #ff85b8 !important;
+  border-color: #3b2837 !important;
+}
+
+/* ── THEME 2: LIGHT PINK — Matches Light Reference Mockup ── */
+.theme-pink-light {
+  --scrollbar-thumb: #ff2d87;
+  background-color: #fceef2 !important;
+  color: #241820 !important;
+}
+
+.theme-pink-light .bg-main {
+  background-color: #fceef2 !important;
+}
+
+.theme-pink-light .bg-sidebar {
+  background-color: #fbe6ed !important;
+  border-color: #f2cbd7 !important;
+}
+
+.theme-pink-light .bg-card {
+  background-color: #fce4ec !important;
+  border-color: #f5cfdb !important;
+}
+
+.theme-pink-light .bg-card:hover {
+  background-color: #f8d7e2 !important;
+}
+
+.theme-pink-light .bg-input {
+  background-color: #fdeef3 !important;
+  border-color: #f2cbd7 !important;
+  color: #241820 !important;
+}
+
+.theme-pink-light .text-primary-color {
+  color: #241820 !important;
+}
+
+.theme-pink-light .text-muted-color {
+  color: #806371 !important;
+}
+
+.theme-pink-light .accent-pink {
+  color: #ff2d87 !important;
+}
+
+.theme-pink-light .bg-accent-pink {
+  background-color: #ff2d87 !important;
+  color: #ffffff !important;
+}
+
+.theme-pink-light .badge-count {
+  background-color: #fadee7 !important;
+  color: #c91866 !important;
+  border-color: #f5c2d3 !important;
+}
+
+/* ── THEME 3: Material Design 3 ── */
+.theme-material {
+  --scrollbar-thumb: #4f378b;
+  background-color: #141218 !important;
+  color: #e6e0e9 !important;
+}
+.theme-material .bg-main { background-color: #141218 !important; }
+.theme-material .bg-sidebar { background-color: #1d1b20 !important; border-color: rgba(73, 69, 79, 0.45) !important; }
+.theme-material .bg-card { background-color: #211f26 !important; border-color: rgba(73, 69, 79, 0.45) !important; }
+.theme-material .bg-card:hover { background-color: #2b2930 !important; }
+.theme-material .bg-input { background-color: #1d1b20 !important; border-color: rgba(73, 69, 79, 0.45) !important; color: #e6e0e9 !important; }
+.theme-material .text-primary-color { color: #e6e0e9 !important; }
+.theme-material .text-muted-color { color: #cac4d0 !important; }
+.theme-material .accent-pink { color: #d0bcff !important; }
+.theme-material .bg-accent-pink { background-color: #d0bcff !important; color: #381e72 !important; }
+.theme-material .badge-count { background-color: #2b2930 !important; color: #d0bcff !important; border-color: rgba(73, 69, 79, 0.5) !important; }
+
+/* ── THEME 4: Apple Design ── */
+.theme-apple {
+  --scrollbar-thumb: #444446;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+  background-color: #1a1a1c !important;
+  color: #f5f5f7 !important;
+}
+.theme-apple .bg-main { background-color: #1a1a1c !important; }
+.theme-apple .bg-sidebar { background-color: rgba(36, 36, 38, 0.95) !important; border-color: rgba(255, 255, 255, 0.12) !important; }
+.theme-apple .bg-card { background-color: rgba(50, 50, 53, 0.75) !important; border-color: rgba(255, 255, 255, 0.12) !important; }
+.theme-apple .bg-card:hover { background-color: rgba(65, 65, 69, 0.9) !important; }
+.theme-apple .bg-input { background-color: rgba(30, 30, 32, 0.8) !important; border-color: rgba(255, 255, 255, 0.15) !important; color: #f5f5f7 !important; }
+.theme-apple .text-primary-color { color: #f5f5f7 !important; }
+.theme-apple .text-muted-color { color: #98989d !important; }
+.theme-apple .accent-pink { color: #2997ff !important; }
+.theme-apple .bg-accent-pink { background-color: #007aff !important; color: #ffffff !important; }
+.theme-apple .badge-count { background-color: rgba(255, 255, 255, 0.1) !important; color: #2997ff !important; border-color: rgba(255, 255, 255, 0.15) !important; }
+
+/* ── THEME 5: Dark Velvet ── */
+.theme-dark {
+  --scrollbar-thumb: #7c3aed;
+  background-color: #0a0a0c !important;
+  color: #f1f1f4 !important;
+}
+.theme-dark .bg-main { background-color: #0a0a0c !important; }
+.theme-dark .bg-sidebar { background-color: #121215 !important; border-color: #23232a !important; }
+.theme-dark .bg-card { background-color: #18181f !important; border-color: #282834 !important; }
+.theme-dark .bg-card:hover { background-color: #22222c !important; }
+.theme-dark .bg-input { background-color: #121215 !important; border-color: #282834 !important; color: #f1f1f4 !important; }
+.theme-dark .text-primary-color { color: #f1f1f4 !important; }
+.theme-dark .text-muted-color { color: #888899 !important; }
+.theme-dark .accent-pink { color: #a78bfa !important; }
+.theme-dark .bg-accent-pink { background-color: #7c3aed !important; color: #ffffff !important; }
+.theme-dark .badge-count { background-color: #1e1b2e !important; color: #c4b5fd !important; border-color: #3b355a !important; }
+
+/* Smooth transitions */
+aside, header, footer, div, section, button {
+  transition-property: background-color, border-color, color;
+  transition-duration: 150ms;
+}

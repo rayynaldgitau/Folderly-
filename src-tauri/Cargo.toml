@@ -1,0 +1,33 @@
+[package]
+name = "folderly"
+version = "0.1.0"
+description = "Folderly – visual file organiser and bulk-renamer"
+authors = ["you"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri             = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-shell  = "2"
+
+serde             = { version = "1", features = ["derive"] }
+serde_json        = "1"
+
+walkdir           = "2"
+regex             = "1"
+chrono            = { version = "0.4", features = ["serde"] }
+
+[profile.release]
+# Smaller binary, suitable for desktop distribution.
+opt-level   = "s"
+strip       = true
+lto         = true
+codegen-units = 1
+panic       = "abort"
