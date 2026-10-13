@@ -29,12 +29,25 @@ fi
 echo "📦 Installing npm dependencies..."
 npm install
 
-echo "🔨 Compiling frontend and bundling macOS app (.dmg & .app)..."
-npm run tauri build
+echo "🔧 Adding Apple Silicon & Intel Darwin compilation targets..."
+rustup target add aarch64-apple-darwin x86_64-apple-darwin 2>/dev/null || true
+
+echo "🔨 Compiling Universal macOS DMG and App Bundle (supports both Intel & Apple Silicon)..."
+if npx tauri build --target universal-apple-darwin; then
+    echo "✅ Successfully built Universal macOS binary and DMG!"
+else
+    echo "⚠️ Universal target build encountered an issue, building native host architecture..."
+    npm run tauri build
+fi
+
+echo "🔏 Ad-hoc code signing generated .app bundles..."
+find src-tauri/target -name "Folderly.app" -type d -exec codesign --force --deep --sign - {} \; 2>/dev/null || true
 
 echo ""
 echo "✅ Build complete!"
 echo "📁 Your macOS installer (.dmg) is located at:"
-ls -lh src-tauri/target/release/bundle/dmg/*.dmg 2>/dev/null || echo "Check src-tauri/target/release/bundle/"
+find src-tauri/target -name "*.dmg" -type f 2>/dev/null
 echo ""
-echo "You can double-click the .dmg file to mount and drag Folderly to /Applications."
+echo "💡 Note: If macOS Gatekeeper shows 'Folderly is damaged and can't be opened' after installing,"
+echo "simply run: xattr -cr /Applications/Folderly.app"
+echo ""

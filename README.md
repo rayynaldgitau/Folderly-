@@ -14,11 +14,25 @@ Download the latest version of Folderly directly for your operating system:
 
 | Platform | Installer Type | Direct Download Link |
 |---|---|---|
-| **macOS** (Apple Silicon & Intel) | `.dmg` Disk Image | [**Download Folderly.dmg**](https://github.com/rayynaldgitau/Folderly-/releases/latest) |
+| **macOS** (Apple Silicon & Intel) | `.dmg` Disk Image (Universal) | [**Download Folderly.dmg**](https://github.com/rayynaldgitau/Folderly-/releases/latest) |
+| **macOS** (1-Click Fixer) | `.command` Helper Script | [**Download fix-macos-gatekeeper.command**](https://github.com/rayynaldgitau/Folderly-/releases/latest) |
 | **Windows** (10 / 11) | `.msi` Windows Installer | [**Download Folderly.msi**](https://github.com/rayynaldgitau/Folderly-/releases/latest) |
 | **Windows** (10 / 11) | `.exe` Setup Executable | [**Download Folderly Setup.exe**](https://github.com/rayynaldgitau/Folderly-/releases/latest) |
 
 *All releases and automated builds are hosted on the [GitHub Releases Page](https://github.com/rayynaldgitau/Folderly-/releases).*
+
+> [!IMPORTANT]
+> **macOS Notice ("Folderly is damaged and can't be opened"):**
+> Because Folderly is an open-source app and not signed with a paid Apple Developer Team ID (\$99/yr), macOS Gatekeeper blocks web downloads by default with an error saying the app is damaged.
+> 
+> **To open Folderly in 5 seconds:**
+> 1. Drag **Folderly.app** from the `.dmg` into your `/Applications` folder.
+> 2. Run this command in **Terminal**:
+>    ```bash
+>    xattr -cr /Applications/Folderly.app
+>    ```
+>    *(Or double-click `fix-macos-gatekeeper.command`)*.
+> 3. Open Folderly normally!
 
 ## Key Features
 

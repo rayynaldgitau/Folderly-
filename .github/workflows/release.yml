@@ -33,16 +33,21 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build macOS DMG and App Bundle
-        run: npm run tauri build
+      - name: Build Universal macOS DMG and App Bundle
+        run: |
+          npx tauri build --target universal-apple-darwin || npx tauri build
+
+      - name: Ad-hoc code sign app bundle
+        run: |
+          find src-tauri/target -name "Folderly.app" -type d -exec codesign --force --deep --sign - {} \; 2>/dev/null || true
 
       - name: Upload macOS Installer (.dmg)
         uses: actions/upload-artifact@v4
         with:
           name: Folderly-macOS-Installer
           path: |
-            src-tauri/target/release/bundle/dmg/*.dmg
-            src-tauri/target/release/bundle/macos/*.app
+            src-tauri/target/**/bundle/dmg/*.dmg
+            scripts/fix-macos-gatekeeper.command
 
   build-windows:
     name: Build Windows Installer (.msi)
@@ -103,8 +108,32 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
+          body: |
+            # Folderly v0.1.0
+
+            ### 📦 Download Installers
+            - **macOS Installer (.dmg)**: Universal disk image supporting both Apple Silicon (M1/M2/M3/M4) & Intel Macs.
+            - **macOS Helper (.command)**: Double-click helper to remove Gatekeeper quarantine with one click.
+            - **Windows Setup (.exe)**: NSIS standalone graphical installer.
+            - **Windows Package (.msi)**: Native MSI Windows installer.
+
+            ---
+
+            ### 🍎 Important Note for macOS Users ("Damaged and can't be opened"):
+            Because Folderly is an open-source project and not signed with a paid Apple Developer Team ID ($99/year), macOS Gatekeeper blocks downloaded apps with:
+            > *"Folderly is damaged and can't be opened. You should move it to the Trash."* OR *"Apple cannot check it for malicious software"*.
+
+            **How to open on macOS:**
+            1. Drag **Folderly.app** from the `.dmg` into your **/Applications** folder.
+            2. Run this command in **Terminal**:
+               ```bash
+               xattr -cr /Applications/Folderly.app
+               ```
+               *(Or double-click the included `fix-macos-gatekeeper.command` helper script)*.
+            3. Open Folderly normally!
           files: |
             mac-artifacts/**/*.dmg
+            mac-artifacts/**/*.command
             win-artifacts/**/*.msi
             win-artifacts/**/*.exe
         env:
