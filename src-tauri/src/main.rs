@@ -1261,7 +1261,7 @@ mod commands {
         })
     }
 
-    /// Opens a new Folderly application window.
+    /// Opens a new Foldy application window.
     ///
     /// * `app`: The Tauri application handle.
     /// * Returns: `Ok(())` if the window is successfully spawned, or `Err(String)` on failure.
@@ -1273,7 +1273,7 @@ mod commands {
             .as_millis();
         let label = format!("window-{}", ts);
         tauri::WebviewWindowBuilder::new(&app, &label, tauri::WebviewUrl::App("index.html".into()))
-            .title("Folderly")
+            .title("Foldy")
             .inner_size(1280.0, 800.0)
             .min_inner_size(420.0, 360.0)
             .build()

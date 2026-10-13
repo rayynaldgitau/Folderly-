@@ -1,0 +1,45 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="foldy-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#ff2d87" floodOpacity="0.3" />
+    </filter>
+    <linearGradient id="foldy-back-grad" x1="8" y1="12" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stopColor="#ff4b98" />
+      <stop offset="1" stopColor="#d81b6c" />
+    </linearGradient>
+    <linearGradient id="foldy-body-grad" x1="6" y1="20" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stopColor="#ff65a3" />
+      <stop offset="0.45" stopColor="#ff2d87" />
+      <stop offset="1" stopColor="#e00067" />
+    </linearGradient>
+    <linearGradient id="foldy-sheen" x1="32" y1="22" x2="32" y2="34" gradientUnits="userSpaceOnUse">
+      <stop stopColor="#ffffff" stopOpacity="0.45" />
+      <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+    </linearGradient>
+    <linearGradient id="foldy-eye" x1="0" y1="0" x2="0" y2="1">
+      <stop stopColor="#25091a" />
+      <stop offset="1" stopColor="#431230" />
+    </linearGradient>
+  </defs>
+  <g filter="url(#foldy-glow)">
+    <path d="M8 20C8 16.6863 10.6863 14 14 14H24C26.2091 14 28.2435 15.2217 29.2847 17.174L30.7153 19.826C31.2359 20.8022 32.2531 21.413 33.3577 21.413H50C53.3137 21.413 56 24.0993 56 27.413V48C56 52.4183 52.4183 56 48 56H16C11.5817 56 8 52.4183 8 48V20Z" fill="url(#foldy-back-grad)" />
+    <path d="M6 24C6 20.6863 8.68629 18 12 18H25.2C27.1352 18 28.9372 18.9328 30.0489 20.5126L31.9511 23.2147C32.5069 24.0047 33.4079 24.471 34.3755 24.471H52C55.3137 24.471 58 27.1573 58 30.471V48C58 52.4183 54.4183 56 50 56H14C9.58172 56 6 52.4183 6 48V24Z" fill="url(#foldy-body-grad)" />
+    <path d="M12 19.5H25.2C26.7 19.5 28.1 20.2 29 21.4L30.9 24.1C31.8 25.3 33.2 26 34.7 26H52C54.5 26 56.5 28 56.5 30.5V33C56.5 33 46 29 32 29C18 29 7.5 33 7.5 33V24C7.5 21.5 9.5 19.5 12 19.5Z" fill="url(#foldy-sheen)" />
+  </g>
+  <ellipse cx="19" cy="42" rx="4.2" ry="2.6" fill="#ff7fae" fill-opacity="0.85" />
+  <ellipse cx="45" cy="42" rx="4.2" ry="2.6" fill="#ff7fae" fill-opacity="0.85" />
+  <g>
+    <ellipse cx="23.5" cy="36" rx="3.6" ry="4.4" fill="url(#foldy-eye)" />
+    <circle cx="22.2" cy="34" r="1.6" fill="#ffffff" />
+    <circle cx="25" cy="38" r="0.85" fill="#ffffff" />
+  </g>
+  <g>
+    <ellipse cx="40.5" cy="36" rx="3.6" ry="4.4" fill="url(#foldy-eye)" />
+    <circle cx="39.2" cy="34" r="1.6" fill="#ffffff" />
+    <circle cx="42" cy="38" r="0.85" fill="#ffffff" />
+  </g>
+  <path d="M29 39.5C29.8 42.2 34.2 42.2 35 39.5" stroke="#2c0c20" stroke-width="1.8" stroke-linecap="round" />
+  <path d="M30.5 40.8C31.5 42 32.5 42 33.5 40.8" stroke="#ff4081" stroke-width="1.2" stroke-linecap="round" />
+  <path d="M50 12C50.3 14 51.5 15.2 53.5 15.5C51.5 15.8 50.3 17 50 19C49.7 17 48.5 15.8 46.5 15.5C48.5 15.2 49.7 14 50 12Z" fill="#ffe58f" />
+  <circle cx="50" cy="15.5" r="0.8" fill="#ffffff" />
+</svg>

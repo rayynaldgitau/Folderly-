@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Folderly – macOS Build & Installer Generation Script
+# Foldy – macOS Build & Installer Generation Script
 # ==============================================================================
 # This script compiles the frontend, builds the Rust binary, and packages
 # a native macOS `.dmg` (Disk Image) installer and `.app` bundle.
@@ -12,7 +12,7 @@
 
 set -e
 
-echo "🍎 [Folderly] Preparing macOS Installer Build..."
+echo "🍎 [Foldy] Preparing macOS Installer Build..."
 
 # 1. Verify Rust installation
 if ! command -v cargo &> /dev/null; then
@@ -41,13 +41,13 @@ else
 fi
 
 echo "🔏 Ad-hoc code signing generated .app bundles..."
-find src-tauri/target -name "Folderly.app" -type d -exec codesign --force --deep --sign - {} \; 2>/dev/null || true
+find src-tauri/target -name "Foldy.app" -type d -exec codesign --force --deep --sign - {} \; 2>/dev/null || true
 
 echo ""
 echo "✅ Build complete!"
 echo "📁 Your macOS installer (.dmg) is located at:"
 find src-tauri/target -name "*.dmg" -type f 2>/dev/null
 echo ""
-echo "💡 Note: If macOS Gatekeeper shows 'Folderly is damaged and can't be opened' after installing,"
-echo "simply run: xattr -cr /Applications/Folderly.app"
+echo "💡 Note: If macOS Gatekeeper shows 'Foldy is damaged and can't be opened' after installing,"
+echo "simply run: xattr -cr /Applications/Foldy.app"
 echo ""

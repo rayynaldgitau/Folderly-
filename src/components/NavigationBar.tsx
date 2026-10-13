@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import type { ViewMode, DrawerPosition, SortField, TabItem } from "../types";
 import { MacFolderIcon } from "./MacIcons";
+import { FoldyLogo } from "./FoldyLogo";
 
 /**
  * Properties for the NavigationBar component.
@@ -135,7 +136,7 @@ function parsePathSegments(path: string | null): PathSegment[] {
 
 /**
  * NavigationBar matching the user's reference layout:
- * - Top bar with Folderly / Folder name and New Window button (Ctrl+N)
+ * - Top bar with Foldy brand logo and tabs
  * - Row 1: Sidebar button, history buttons, breadcrumbs address bar, Search Laptop pill
  * - Row 2: Large Folder Title, View mode pills (Cards, Table, Grid), Folders First, Subfolders, + New folder
  * - Row 3: Theme pills (OLED Pink, Light Pink, Material, macOS, Dark), Filter input, Type/Name/Date/Size sort, More options
@@ -256,10 +257,15 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
       {/* ── Top Browser / Explorer Tab Bar Strip ── */}
       <div className="flex items-center justify-between px-3 py-1.5 text-xs border-b border-neutral-800/30 bg-sidebar/50 backdrop-blur-sm gap-2">
         <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar py-0.5">
-          {/* Brand Pill */}
-          <div className="flex items-center gap-1.5 px-2 py-1 shrink-0 font-bold text-xs text-primary-color select-none">
-            <span className="text-[#ff2d87]">📁</span>
-            <span className="hidden sm:inline">Folderly</span>
+          {/* Cute Foldy Brand Pill */}
+          <div
+            className="flex items-center gap-2 px-2.5 py-1 shrink-0 font-bold text-xs select-none group rounded-xl hover:bg-card/40 transition-colors"
+            title="Foldy – Visual File Organizer"
+          >
+            <FoldyLogo size={22} interactive={true} className="group-hover:rotate-6 transition-transform" />
+            <span className="hidden sm:inline font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#ff2d87] via-[#ff4d94] to-[#ff75a0] text-[13px]">
+              Foldy
+            </span>
           </div>
 
           {/* Active & Inactive Tabs */}
@@ -305,6 +311,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                     tabHoverTimerRef.current = null;
                   }
                   const src =
+                    e.dataTransfer.getData("application/foldy-path") ||
                     e.dataTransfer.getData("application/folderly-path") ||
                     e.dataTransfer.getData("text/plain");
                   if (src && tab.path && tab.path !== "recents" && onMoveItem) {
@@ -362,6 +369,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
             onDrop={(e) => {
               e.preventDefault();
               const src =
+                e.dataTransfer.getData("application/foldy-path") ||
                 e.dataTransfer.getData("application/folderly-path") ||
                 e.dataTransfer.getData("text/plain");
               if (src) {

@@ -180,6 +180,7 @@ const Sidebar: React.FC<Props> = ({
                       e.preventDefault();
                       setDragOverPath(null);
                       const src =
+                        e.dataTransfer.getData("application/foldy-path") ||
                         e.dataTransfer.getData("application/folderly-path") ||
                         e.dataTransfer.getData("text/plain");
                       if (src && src.toLowerCase() !== item.path.toLowerCase() && onMoveItem) {
@@ -243,6 +244,7 @@ const Sidebar: React.FC<Props> = ({
                     e.preventDefault();
                     setDragOverPath(null);
                     const src =
+                      e.dataTransfer.getData("application/foldy-path") ||
                       e.dataTransfer.getData("application/folderly-path") ||
                       e.dataTransfer.getData("text/plain");
                     if (src && src.toLowerCase() !== p.path.toLowerCase() && onMoveItem) {

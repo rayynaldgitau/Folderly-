@@ -87,7 +87,7 @@ class ErrorBoundary extends React.Component<
 }
 
 /**
- * Root Application Component for Folderly.
+ * Root Application Component for Foldy.
  *
  * Implements a full visual File Explorer with multiple themes (Pink, Material, Apple, Dark),
  * customizable sidebars, flexible drawer positioning, and folder ordering controls.
@@ -95,7 +95,11 @@ class ErrorBoundary extends React.Component<
 const App: React.FC = () => {
   // ── Appearance & Layout State ────────────────────────────────────────────
   const [currentTheme, setCurrentTheme] = useState<ThemeMode>(() => {
-    return (localStorage.getItem("folderly_theme") as ThemeMode) || "pink";
+    return (
+      (localStorage.getItem("foldy_theme") as ThemeMode) ||
+      (localStorage.getItem("folderly_theme") as ThemeMode) ||
+      "pink"
+    );
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isRenamerOpen, setIsRenamerOpen] = useState<boolean>(false);
@@ -108,10 +112,18 @@ const App: React.FC = () => {
   // ── User Profile & Microsoft Account State ────────────────────────────────
   const [detectedUser, setDetectedUser] = useState<SystemUserInfo | null>(null);
   const [displayName, setDisplayName] = useState<string>(() => {
-    return localStorage.getItem("folderly_username") || "Raynald Gitau";
+    return (
+      localStorage.getItem("foldy_username") ||
+      localStorage.getItem("folderly_username") ||
+      "Raynald Gitau"
+    );
   });
   const [workspaceName, setWorkspaceName] = useState<string>(() => {
-    return localStorage.getItem("folderly_workspace") || "Personal workspace";
+    return (
+      localStorage.getItem("foldy_workspace") ||
+      localStorage.getItem("folderly_workspace") ||
+      "Personal workspace"
+    );
   });
 
   // Global Ctrl+K / Cmd+K listener for Universal Search
@@ -141,7 +153,9 @@ const App: React.FC = () => {
   const tabsRef                           = useRef<TabItem[]>(tabs);
   const [pinnedFolders, setPinnedFolders] = useState<Array<{ name: string; path: string }>>(() => {
     try {
-      const saved = localStorage.getItem("folderly_pinned_folders");
+      const saved =
+        localStorage.getItem("foldy_pinned_folders") ||
+        localStorage.getItem("folderly_pinned_folders");
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -188,7 +202,7 @@ const App: React.FC = () => {
     msg: string;
     type: "info" | "success" | "error";
   }>({
-    msg: "Welcome to Folderly. Select a drive or folder to start exploring.",
+    msg: "Welcome to Foldy. Select a drive or folder to start exploring.",
     type: "info",
   });
   const [loading, setLoading]             = useState<boolean>(false);
@@ -197,17 +211,17 @@ const App: React.FC = () => {
 
   const handleThemeChange = useCallback((theme: ThemeMode) => {
     setCurrentTheme(theme);
-    localStorage.setItem("folderly_theme", theme);
+    localStorage.setItem("foldy_theme", theme);
   }, []);
 
   const handleUpdateDisplayName = useCallback((name: string) => {
     setDisplayName(name);
-    localStorage.setItem("folderly_username", name);
+    localStorage.setItem("foldy_username", name);
   }, []);
 
   const handleUpdateWorkspaceName = useCallback((ws: string) => {
     setWorkspaceName(ws);
-    localStorage.setItem("folderly_workspace", ws);
+    localStorage.setItem("foldy_workspace", ws);
   }, []);
 
   // ── Undo Batch Helper ────────────────────────────────────────────────────
@@ -471,7 +485,7 @@ const App: React.FC = () => {
       try {
         const sysUser = await invoke<SystemUserInfo>("get_system_user");
         setDetectedUser(sysUser);
-        if (!localStorage.getItem("folderly_username") && sysUser.display_name) {
+        if (!localStorage.getItem("foldy_username") && !localStorage.getItem("folderly_username") && sysUser.display_name) {
           setDisplayName(sysUser.display_name);
         }
       } catch (e) {
@@ -494,7 +508,7 @@ const App: React.FC = () => {
             desk ? { name: "Desktop", path: desk } : null,
           ].filter((p): p is { name: string; path: string } => Boolean(p));
           if (initialPinned.length > 0) {
-            localStorage.setItem("folderly_pinned_folders", JSON.stringify(initialPinned));
+            localStorage.setItem("foldy_pinned_folders", JSON.stringify(initialPinned));
             return initialPinned;
           }
           return prev;
@@ -547,7 +561,9 @@ const App: React.FC = () => {
         const size = existing ? existing.size : 0;
         const opened_at = new Date().toISOString();
 
-        const raw = localStorage.getItem("folderly_recent_opened");
+        const raw =
+          localStorage.getItem("foldy_recent_opened") ||
+          localStorage.getItem("folderly_recent_opened");
         let list: Array<{
           path: string;
           name: string;
@@ -560,7 +576,7 @@ const App: React.FC = () => {
         list.unshift({ path: filePath, name, extension: ext, size, opened_at });
         if (list.length > 80) list = list.slice(0, 80);
 
-        localStorage.setItem("folderly_recent_opened", JSON.stringify(list));
+        localStorage.setItem("foldy_recent_opened", JSON.stringify(list));
       } catch {
         // non-critical
       }
@@ -713,7 +729,7 @@ const App: React.FC = () => {
         setPinnedFolders((prev) => {
           if (prev.some((p) => p.path.toLowerCase() === selected.toLowerCase())) return prev;
           const next = [...prev, { name, path: selected }];
-          localStorage.setItem("folderly_pinned_folders", JSON.stringify(next));
+          localStorage.setItem("foldy_pinned_folders", JSON.stringify(next));
           return next;
         });
         setStatus({ msg: `Pinned folder "${name}".`, type: "success" });
@@ -731,7 +747,7 @@ const App: React.FC = () => {
     setPinnedFolders((prev) => {
       if (prev.some((p) => p.path.toLowerCase() === path.toLowerCase())) return prev;
       const next = [...prev, { name, path }];
-      localStorage.setItem("folderly_pinned_folders", JSON.stringify(next));
+      localStorage.setItem("foldy_pinned_folders", JSON.stringify(next));
       return next;
     });
     setStatus({ msg: `Pinned "${name}" to sidebar.`, type: "success" });
@@ -743,7 +759,7 @@ const App: React.FC = () => {
   const handleUnpinFolder = useCallback((path: string) => {
     setPinnedFolders((prev) => {
       const next = prev.filter((p) => p.path.toLowerCase() !== path.toLowerCase());
-      localStorage.setItem("folderly_pinned_folders", JSON.stringify(next));
+      localStorage.setItem("foldy_pinned_folders", JSON.stringify(next));
       return next;
     });
     setStatus({ msg: "Folder unpinned.", type: "info" });
@@ -777,7 +793,7 @@ const App: React.FC = () => {
     [currentPath, navigateTo]
   );
 
-  // Tauri webview external drag & drop listener (e.g. dragging from Windows Explorer into Folderly)
+  // Tauri webview external drag & drop listener (e.g. dragging from Windows Explorer into Foldy)
   useEffect(() => {
     let unlisten: (() => void) | undefined;
     async function setupDropListener() {
@@ -1181,6 +1197,7 @@ const App: React.FC = () => {
             if (currentPath && currentPath !== "recents") {
               e.preventDefault();
               const src =
+                e.dataTransfer.getData("application/foldy-path") ||
                 e.dataTransfer.getData("application/folderly-path") ||
                 e.dataTransfer.getData("text/plain");
               if (src) {
@@ -1206,7 +1223,7 @@ const App: React.FC = () => {
                   onMoveItem={handleMoveItem}
                   emptyMessage={
                     currentPath === "recents"
-                      ? "No recent files yet. Files you download or open in Folderly will appear here."
+                      ? "No recent files yet. Files you download or open in Foldy will appear here."
                       : undefined
                   }
                 />
@@ -1226,7 +1243,7 @@ const App: React.FC = () => {
                   sortField={sortField}
                   emptyMessage={
                     currentPath === "recents"
-                      ? "No recent files yet. Files you download or open in Folderly will appear here."
+                      ? "No recent files yet. Files you download or open in Foldy will appear here."
                       : undefined
                   }
                 />

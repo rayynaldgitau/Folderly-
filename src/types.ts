@@ -76,7 +76,7 @@ export interface SystemUserInfo {
   display_name: string;
 }
 
-/** Represents an active browser/explorer tab within Folderly. */
+/** Represents an active browser/explorer tab within Foldy. */
 export interface TabItem {
   /** Unique ID for the tab instance. */
   id: string;

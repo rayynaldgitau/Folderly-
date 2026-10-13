@@ -109,6 +109,7 @@ const FileGrid: React.FC<FileGridProps> = ({
                 key={folder.path}
                 draggable={true}
                 onDragStart={(e) => {
+                  e.dataTransfer.setData("application/foldy-path", folder.path);
                   e.dataTransfer.setData("application/folderly-path", folder.path);
                   e.dataTransfer.setData("text/plain", folder.path);
                   e.dataTransfer.effectAllowed = "move";
@@ -129,6 +130,7 @@ const FileGrid: React.FC<FileGridProps> = ({
                   e.preventDefault();
                   setDragOverFolder(null);
                   const src =
+                    e.dataTransfer.getData("application/foldy-path") ||
                     e.dataTransfer.getData("application/folderly-path") ||
                     e.dataTransfer.getData("text/plain");
                   if (src && src.toLowerCase() !== folder.path.toLowerCase() && onMoveItem) {
@@ -190,6 +192,7 @@ const FileGrid: React.FC<FileGridProps> = ({
                   key={file.path}
                   draggable={true}
                   onDragStart={(e) => {
+                    e.dataTransfer.setData("application/foldy-path", file.path);
                     e.dataTransfer.setData("application/folderly-path", file.path);
                     e.dataTransfer.setData("text/plain", file.path);
                     e.dataTransfer.effectAllowed = "move";
@@ -252,6 +255,7 @@ const FileGrid: React.FC<FileGridProps> = ({
                       key={file.path}
                       draggable={true}
                       onDragStart={(e) => {
+                        e.dataTransfer.setData("application/foldy-path", file.path);
                         e.dataTransfer.setData("application/folderly-path", file.path);
                         e.dataTransfer.setData("text/plain", file.path);
                         e.dataTransfer.effectAllowed = "move";

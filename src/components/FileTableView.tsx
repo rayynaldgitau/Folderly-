@@ -432,6 +432,7 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
                     key={item.path}
                     draggable={true}
                     onDragStart={(e) => {
+                      e.dataTransfer.setData("application/foldy-path", item.path);
                       e.dataTransfer.setData("application/folderly-path", item.path);
                       e.dataTransfer.setData("text/plain", item.path);
                       e.dataTransfer.effectAllowed = "move";
@@ -451,6 +452,7 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
                         e.preventDefault();
                         setDragOverFolder(null);
                         const src =
+                          e.dataTransfer.getData("application/foldy-path") ||
                           e.dataTransfer.getData("application/folderly-path") ||
                           e.dataTransfer.getData("text/plain");
                         if (src && src.toLowerCase() !== item.path.toLowerCase() && onMoveItem) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { ThemeMode, SystemUserInfo } from "../types";
+import { FoldyLogo } from "./FoldyLogo";
 
 export interface SettingsModalProps {
   /** Whether the settings modal is currently visible. */
@@ -157,10 +158,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       >
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800/40 bg-sidebar/50">
-          <div className="flex items-center gap-2.5">
-            <span className="text-xl">⚙️</span>
+          <div className="flex items-center gap-3">
+            <FoldyLogo size={32} interactive={true} />
             <div>
-              <h2 className="text-sm font-bold text-primary-color">Preferences & Settings</h2>
+              <h2 className="text-sm font-bold text-primary-color flex items-center gap-1.5">
+                Foldy Preferences
+              </h2>
               <p className="text-[11px] text-muted-color">Configure theme, account, and workspace</p>
             </div>
           </div>
@@ -285,7 +288,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   User Workspace Profile
                 </h3>
                 <p className="text-xs text-muted-color mb-3">
-                  Folderly automatically reads your signed-in Windows / Microsoft account. You can also customize your display name.
+                  Foldy automatically reads your signed-in Windows / Microsoft account. You can also customize your display name.
                 </p>
               </div>
 
