@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { getVersion } from "@tauri-apps/api/app";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import type { ThemeMode, SystemUserInfo } from "../types";
@@ -114,6 +115,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [isDownloading, setIsDownloading] = useState(false);
   const [isUpdateInstalled, setIsUpdateInstalled] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+  const [currentAppVersion, setCurrentAppVersion] = useState("0.1.0");
+
+  // Query actual installed app version dynamically from Tauri
+  useEffect(() => {
+    getVersion().then(setCurrentAppVersion).catch(() => {});
+  }, []);
 
   // Sync internal state when parent props change or modal opens
   useEffect(() => {
@@ -154,7 +161,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         setUpdateStatus(`Version v${update.version} is available!`);
       } else {
         setUpdateInfo(null);
-        setUpdateStatus("Foldy is up to date (v0.1.0).");
+        setUpdateStatus(`Foldy is up to date (v${currentAppVersion}).`);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -527,7 +534,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="text-sm font-bold text-primary-color flex items-center gap-2">
                       Foldy
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-red-500/10 text-red-500 border border-red-500/20">
-                        v0.1.0
+                        v{currentAppVersion}
                       </span>
                     </div>
                     <p className="text-[11px] text-muted-color">

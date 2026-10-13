@@ -1,6 +1,6 @@
 [package]
 name = "foldy"
-version = "0.1.0"
+version = "0.1.1"
 description = "Foldy – visual file organiser and bulk-renamer"
 authors = ["you"]
 edition = "2021"
