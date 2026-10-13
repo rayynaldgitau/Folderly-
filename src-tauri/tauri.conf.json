@@ -28,6 +28,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -38,6 +39,14 @@
     "macOS": {
       "frameworks": [],
       "minimumSystemVersion": "10.15"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDc4NTBBNzA5RDJDMkMxNDQKUldSRXdjTFNDYWRRZVBoUldNNUN1OHdkd2I1OEVsdlJvUktwdFExTHczU0NjdCt3VXAxb20yWUYK",
+      "endpoints": [
+        "https://github.com/rayynaldgitau/Folderly-/releases/latest/download/latest.json"
+      ]
     }
   }
 }

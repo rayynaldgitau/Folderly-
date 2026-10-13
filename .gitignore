@@ -30,3 +30,7 @@ Thumbs.db
 
 # Local undo log
 undo_log.json
+
+# Signing keys
+*.key
+src-tauri/*.key

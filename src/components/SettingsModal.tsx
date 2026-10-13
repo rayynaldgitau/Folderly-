@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { check, type Update } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 import type { ThemeMode, SystemUserInfo } from "../types";
 import { FoldyLogo } from "./FoldyLogo";
 
@@ -101,8 +103,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const [localName, setLocalName] = useState(displayName);
   const [localWorkspace, setLocalWorkspace] = useState(workspaceName);
-  const [activeTab, setActiveTab] = useState<"appearance" | "profile" | "shortcuts">("appearance");
+  const [activeTab, setActiveTab] = useState<"appearance" | "profile" | "shortcuts" | "updates">("appearance");
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Auto-updater state
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<Update | null>(null);
+  const [updateStatus, setUpdateStatus] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isUpdateInstalled, setIsUpdateInstalled] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
 
   // Sync internal state when parent props change or modal opens
   useEffect(() => {
@@ -126,6 +137,94 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
+
+  /**
+   * Checks GitHub Releases via Tauri's Updater for a new version.
+   *
+   * @returns Promise resolving when update check completes.
+   */
+  const handleCheckForUpdates = async () => {
+    setIsCheckingUpdate(true);
+    setUpdateStatus("Connecting to update server...");
+    setUpdateError(null);
+    try {
+      const update = await check();
+      if (update) {
+        setUpdateInfo(update);
+        setUpdateStatus(`Version v${update.version} is available!`);
+      } else {
+        setUpdateInfo(null);
+        setUpdateStatus("Foldy is up to date (v0.1.0).");
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn("Failed to check for updates:", message);
+      setUpdateError(
+        message || "Could not check for updates. Make sure you are connected to the internet."
+      );
+      setUpdateStatus(null);
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
+
+  /**
+   * Downloads and installs the pending update.
+   *
+   * @returns Promise resolving when installation completes.
+   */
+  const handleInstallUpdate = async () => {
+    if (!updateInfo) return;
+    setIsDownloading(true);
+    setUpdateError(null);
+    setUpdateStatus("Downloading update package...");
+
+    try {
+      let downloaded = 0;
+      let totalLength = 0;
+
+      await updateInfo.downloadAndInstall((event) => {
+        if (event.event === "Started") {
+          totalLength = event.data.contentLength || 0;
+          setUpdateStatus("Download started...");
+        } else if (event.event === "Progress") {
+          downloaded += event.data.chunkLength;
+          if (totalLength > 0) {
+            const pct = Math.round((downloaded / totalLength) * 100);
+            setDownloadProgress(pct);
+            setUpdateStatus(`Downloading update (${pct}%)...`);
+          } else {
+            setUpdateStatus(`Downloading: ${(downloaded / (1024 * 1024)).toFixed(1)} MB`);
+          }
+        } else if (event.event === "Finished") {
+          setUpdateStatus("Update installed! Restart to apply.");
+          setIsUpdateInstalled(true);
+        }
+      });
+
+      setIsUpdateInstalled(true);
+      setUpdateStatus("Update installed successfully. Restart Foldy to apply.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("Install update failed:", message);
+      setUpdateError(message || "Failed to download and install update.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  /**
+   * Restarts Foldy to launch the newly installed version.
+   *
+   * @returns Promise resolving when relaunch command is sent.
+   */
+  const handleRestartApp = async () => {
+    try {
+      await relaunch();
+    } catch (err: unknown) {
+      console.error("Relaunch failed:", err);
+    }
+  };
 
   /** Saves updated profile information to local state and persistence. */
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -181,7 +280,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             onClick={() => setActiveTab("appearance")}
             className={`px-3 py-2 rounded-t-xl font-semibold border-b-2 transition-all ${
               activeTab === "appearance"
-                ? "border-[#ff2d87] text-primary-color"
+                ? "border-red-500 text-primary-color"
                 : "border-transparent text-muted-color hover:text-primary-color"
             }`}
           >
@@ -191,7 +290,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             onClick={() => setActiveTab("profile")}
             className={`px-3 py-2 rounded-t-xl font-semibold border-b-2 transition-all ${
               activeTab === "profile"
-                ? "border-[#ff2d87] text-primary-color"
+                ? "border-red-500 text-primary-color"
                 : "border-transparent text-muted-color hover:text-primary-color"
             }`}
           >
@@ -201,11 +300,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             onClick={() => setActiveTab("shortcuts")}
             className={`px-3 py-2 rounded-t-xl font-semibold border-b-2 transition-all ${
               activeTab === "shortcuts"
-                ? "border-[#ff2d87] text-primary-color"
+                ? "border-red-500 text-primary-color"
                 : "border-transparent text-muted-color hover:text-primary-color"
             }`}
           >
             ⌨️ Shortcuts
+          </button>
+          <button
+            onClick={() => setActiveTab("updates")}
+            className={`px-3 py-2 rounded-t-xl font-semibold border-b-2 transition-all ${
+              activeTab === "updates"
+                ? "border-red-500 text-primary-color"
+                : "border-transparent text-muted-color hover:text-primary-color"
+            }`}
+          >
+            🔄 Updates
           </button>
         </div>
 
@@ -394,6 +503,140 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     Esc
                   </kbd>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: UPDATES */}
+          {activeTab === "updates" && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-color mb-1">
+                  Software Updates
+                </h3>
+                <p className="text-xs text-muted-color">
+                  Foldy checks GitHub Releases for verified new versions and delivers live automatic updates.
+                </p>
+              </div>
+
+              {/* Version Info Card */}
+              <div className="p-4 rounded-2xl bg-sidebar/50 border border-neutral-800/40 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FoldyLogo size={36} interactive={false} />
+                  <div>
+                    <div className="text-sm font-bold text-primary-color flex items-center gap-2">
+                      Foldy
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-red-500/10 text-red-500 border border-red-500/20">
+                        v0.1.0
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-color">
+                      Current installed desktop version
+                    </p>
+                  </div>
+                </div>
+
+                {!isUpdateInstalled && !updateInfo && (
+                  <button
+                    onClick={handleCheckForUpdates}
+                    disabled={isCheckingUpdate}
+                    className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all shadow-md shadow-red-600/20 active:scale-[0.98] disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {isCheckingUpdate ? (
+                      <>
+                        <span className="animate-spin text-xs">⏳</span>
+                        Checking...
+                      </>
+                    ) : (
+                      <>
+                        <span>🔄</span>
+                        Check for Updates
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {/* Status Message or Error */}
+              {updateStatus && (
+                <div className="p-3 rounded-xl bg-neutral-800/40 border border-neutral-700/40 text-xs text-primary-color flex items-center gap-2">
+                  <span>ℹ️</span>
+                  <span>{updateStatus}</span>
+                </div>
+              )}
+
+              {updateError && (
+                <div className="p-3 rounded-xl bg-red-950/40 border border-red-800/40 text-xs text-red-300 flex items-start gap-2">
+                  <span className="shrink-0">⚠️</span>
+                  <div>
+                    <p className="font-semibold">Update check notice</p>
+                    <p className="text-[11px] text-red-400 mt-0.5">{updateError}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Update Available Action Card */}
+              {updateInfo && !isUpdateInstalled && (
+                <div className="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-800/40 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                        <span>🚀</span> New Update Available: v{updateInfo.version}
+                      </h4>
+                      {updateInfo.date && (
+                        <p className="text-[10px] text-muted-color mt-0.5">
+                          Released {new Date(updateInfo.date).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleInstallUpdate}
+                      disabled={isDownloading}
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {isDownloading ? "Downloading..." : "Download & Install Now"}
+                    </button>
+                  </div>
+
+                  {downloadProgress !== null && (
+                    <div className="w-full bg-neutral-800 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-emerald-500 h-full transition-all duration-300"
+                        style={{ width: `${downloadProgress}%` }}
+                      />
+                    </div>
+                  )}
+
+                  {updateInfo.body && (
+                    <div className="p-3 rounded-xl bg-black/40 border border-neutral-800 text-[11px] text-muted-color whitespace-pre-wrap max-h-32 overflow-y-auto">
+                      {updateInfo.body}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Ready to Restart Card */}
+              {isUpdateInstalled && (
+                <div className="p-4 rounded-2xl bg-emerald-950/30 border border-emerald-600/50 flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-emerald-400">
+                      🎉 Update Installed Successfully!
+                    </h4>
+                    <p className="text-[11px] text-muted-color">
+                      Restart Foldy now to launch the new version.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleRestartApp}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 active:scale-[0.98]"
+                  >
+                    Restart Foldy
+                  </button>
+                </div>
+              )}
+
+              <div className="p-3 rounded-xl bg-neutral-900/40 border border-neutral-800/40 text-[11px] text-muted-color leading-relaxed">
+                💡 <strong>How live updates work:</strong> When you push an update to GitHub, GitHub Actions packages and signs the release. Foldy automatically downloads the signed update without needing to manually run installers again.
               </div>
             </div>
           )}
