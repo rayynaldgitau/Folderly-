@@ -2,7 +2,23 @@
 
 > A visual File Explorer and bulk-renamer desktop app built with Tauri 2, Rust, React, TypeScript, and Tailwind CSS.
 
+[![Download for macOS](https://img.shields.io/badge/Download_for_macOS-.dmg-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/rayynaldgitau/Folderly-/releases/latest)
+[![Download for Windows](https://img.shields.io/badge/Download_for_Windows-.exe%20%2F%20.msi-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/rayynaldgitau/Folderly-/releases/latest)
+[![Latest Release](https://img.shields.io/github/v/release/rayynaldgitau/Folderly-?style=for-the-badge&color=ff2d87)](https://github.com/rayynaldgitau/Folderly-/releases/latest)
+
 ---
+
+## 📥 Downloads
+
+Download the latest version of Folderly directly for your operating system:
+
+| Platform | Installer Type | Direct Download Link |
+|---|---|---|
+| **macOS** (Apple Silicon & Intel) | `.dmg` Disk Image | [**Download Folderly.dmg**](https://github.com/rayynaldgitau/Folderly-/releases/latest) |
+| **Windows** (10 / 11) | `.msi` Windows Installer | [**Download Folderly.msi**](https://github.com/rayynaldgitau/Folderly-/releases/latest) |
+| **Windows** (10 / 11) | `.exe` Setup Executable | [**Download Folderly Setup.exe**](https://github.com/rayynaldgitau/Folderly-/releases/latest) |
+
+*All releases and automated builds are hosted on the [GitHub Releases Page](https://github.com/rayynaldgitau/Folderly-/releases).*
 
 ## Key Features
 

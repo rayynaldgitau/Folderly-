@@ -77,7 +77,7 @@ jobs:
   create-release:
     name: Create GitHub Release
     needs: [build-macos, build-windows]
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -98,6 +98,11 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: "v0.1.0"
+          name: "Folderly v0.1.0"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
           files: |
             mac-artifacts/**/*.dmg
             win-artifacts/**/*.msi
