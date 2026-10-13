@@ -248,6 +248,19 @@ fn resolve_system_path(raw_path: &str) -> PathBuf {
         }
     }
 
+    #[cfg(not(target_os = "windows"))]
+    {
+        if raw_path.starts_with("~/") || raw_path == "~" {
+            if let Ok(home) = std::env::var("HOME") {
+                let tail = if raw_path == "~" { "" } else { &raw_path[2..] };
+                let cand = Path::new(&home).join(tail);
+                if cand.exists() {
+                    return cand;
+                }
+            }
+        }
+    }
+
     path
 }
 
@@ -330,7 +343,7 @@ mod commands {
         })
     }
 
-    /// Discovers system drives and standard Windows user folders, resolving OneDrive redirection.
+    /// Discovers system drives and standard Windows/macOS user folders, resolving OneDrive redirection.
     ///
     /// * Returns: List of QuickAccessItem entries for the sidebar.
     #[tauri::command]
@@ -354,8 +367,41 @@ mod commands {
             }
         }
 
-        // 2. Discover standard user folders via USERPROFILE and OneDrive
-        if let Ok(profile) = std::env::var("USERPROFILE") {
+        // 1b. Enumerate root drive and mounted volumes on macOS / Unix
+        #[cfg(not(target_os = "windows"))]
+        {
+            items.push(QuickAccessItem {
+                name: "Macintosh HD".to_string(),
+                path: "/".to_string(),
+                icon: "💾".to_string(),
+                is_drive: true,
+            });
+
+            let volumes = Path::new("/Volumes");
+            if volumes.is_dir() {
+                if let Ok(entries) = std::fs::read_dir(volumes) {
+                    for entry in entries.flatten() {
+                        let p = entry.path();
+                        if p.is_dir() {
+                            let name = entry.file_name().to_string_lossy().to_string();
+                            items.push(QuickAccessItem {
+                                name,
+                                path: p.to_string_lossy().to_string(),
+                                icon: "💽".to_string(),
+                                is_drive: true,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Discover standard user folders via USERPROFILE (Windows) or HOME (macOS/Unix)
+        let home_opt = std::env::var("USERPROFILE")
+            .or_else(|_| std::env::var("HOME"))
+            .ok();
+
+        if let Some(profile) = home_opt {
             let user_dir = PathBuf::from(&profile);
             let shortcuts = [
                 ("Desktop", "Desktop", "🖥️"),
@@ -363,6 +409,9 @@ mod commands {
                 ("Documents", "Documents", "📁"),
                 ("Pictures", "Pictures", "🖼️"),
                 ("Music", "Music", "🎵"),
+                #[cfg(target_os = "macos")]
+                ("Movies", "Movies", "🎬"),
+                #[cfg(not(target_os = "macos"))]
                 ("Videos", "Videos", "🎬"),
             ];
 
@@ -440,7 +489,7 @@ mod commands {
         Ok(())
     }
 
-    /// Opens the native Windows File Explorer and selects/highlights the item.
+    /// Opens the native file manager (Windows File Explorer or macOS Finder) and reveals the item.
     ///
     /// * `path`: Target file or directory to reveal.
     /// * Returns: Ok(()) or error message.
@@ -454,7 +503,15 @@ mod commands {
                 .map_err(|e| format!("Failed to reveal '{path}': {e}"))?;
         }
 
-        #[cfg(not(target_os = "windows"))]
+        #[cfg(target_os = "macos")]
+        {
+            Command::new("open")
+                .args(["-R", &path])
+                .spawn()
+                .map_err(|e| format!("Failed to reveal '{path}': {e}"))?;
+        }
+
+        #[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
         {
             let p = Path::new(&path);
             let dir = if p.is_dir() { p } else { p.parent().unwrap_or(p) };
@@ -763,9 +820,15 @@ mod commands {
         // Collect search root locations (common user directories and drives)
         let mut search_roots: Vec<PathBuf> = Vec::new();
 
-        if let Ok(profile) = std::env::var("USERPROFILE") {
+        let home_opt = std::env::var("USERPROFILE")
+            .or_else(|_| std::env::var("HOME"))
+            .ok();
+
+        if let Some(profile) = home_opt {
             let user_dir = PathBuf::from(profile);
-            let subdirs = ["Desktop", "Downloads", "Documents", "Pictures", "Music", "Videos"];
+            let subdirs = [
+                "Desktop", "Downloads", "Documents", "Pictures", "Music", "Videos", "Movies",
+            ];
             for sub in subdirs {
                 let p = user_dir.join(sub);
                 if p.is_dir() {
@@ -783,6 +846,14 @@ mod commands {
                 if p.is_dir() && !search_roots.contains(&p) {
                     search_roots.push(p);
                 }
+            }
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            let vol = PathBuf::from("/Volumes");
+            if vol.is_dir() && !search_roots.contains(&vol) {
+                search_roots.push(vol);
             }
         }
 
@@ -867,12 +938,14 @@ mod commands {
         Ok(batches.len())
     }
 
-    /// Returns the signed-in Windows user account username and Microsoft/Local display name.
+    /// Returns the signed-in user account username and display name across Windows and macOS.
     ///
     /// * Returns: `SystemUserInfo` with username and display_name.
     #[tauri::command]
     pub fn get_system_user() -> Result<SystemUserInfo, String> {
-        let username = std::env::var("USERNAME").unwrap_or_else(|_| "User".to_string());
+        let username = std::env::var("USERNAME")
+            .or_else(|_| std::env::var("USER"))
+            .unwrap_or_else(|_| "User".to_string());
         let mut display_name = username.clone();
 
         #[cfg(target_os = "windows")]
@@ -889,6 +962,18 @@ mod commands {
                 ])
                 .output();
 
+            if let Ok(out) = output {
+                let full = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                if !full.is_empty() {
+                    display_name = full;
+                }
+            }
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            // 'id -F' outputs the full display name of the current user on macOS
+            let output = Command::new("id").arg("-F").output();
             if let Ok(out) = output {
                 let full = String::from_utf8_lossy(&out.stdout).trim().to_string();
                 if !full.is_empty() {

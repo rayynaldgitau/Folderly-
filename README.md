@@ -37,14 +37,25 @@ npm install
 # 2. Run in development mode (hot-reloads React + native window)
 npm run tauri dev
 
-# 3. Build standalone native executable (.exe & .msi)
+# 3. Build standalone native executable & installers
 npm run tauri build
+
+# 4. On macOS: use the helper script to build a native .dmg disk image installer
+chmod +x build-mac.sh
+./build-mac.sh
 ```
 
-Binary outputs land in:
-- Executable: `src-tauri/target/release/folderly.exe`
-- Setup installer: `src-tauri/target/release/bundle/nsis/Folderly_0.1.0_x64-setup.exe`
-- MSI package: `src-tauri/target/release/bundle/msi/Folderly_0.1.0_x64_en-US.msi`
+### Binary & Installer Outputs
+
+- **Windows**:
+  - Executable: `src-tauri/target/release/folderly.exe`
+  - Setup installer: `src-tauri/target/release/bundle/nsis/Folderly_0.1.0_x64-setup.exe`
+  - MSI package: `src-tauri/target/release/bundle/msi/Folderly_0.1.0_x64_en-US.msi`
+- **macOS**:
+  - Disk Image installer: `src-tauri/target/release/bundle/dmg/Folderly_0.1.0_x64.dmg` (or `aarch64`)
+  - App bundle: `src-tauri/target/release/bundle/macos/Folderly.app`
+- **Automated CI/CD**:
+  - GitHub Actions automatically compiles both the macOS `.dmg` installer and Windows `.msi` on every push to `main` or release tag. Download from GitHub Actions artifacts or Releases!
 
 ---
 

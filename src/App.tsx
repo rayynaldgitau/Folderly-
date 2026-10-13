@@ -291,8 +291,8 @@ const App: React.FC = () => {
                     title: "Recent Files",
                     path: "recents",
                     history: pushHistory
-                      ? [...t.history.slice(0, historyIndex + 1), "recents"]
-                      : t.history,
+                      ? [...(t.history || []).slice(0, historyIndex + 1), "recents"]
+                      : t.history || ["recents"],
                     historyIndex: pushHistory ? historyIndex + 1 : t.historyIndex,
                   }
                 : t
@@ -349,8 +349,8 @@ const App: React.FC = () => {
                   title: tabTitle,
                   path,
                   history: pushHistory
-                    ? [...t.history.slice(0, historyIndex + 1), path]
-                    : t.history,
+                    ? [...(t.history || []).slice(0, historyIndex + 1), path]
+                    : t.history || [path],
                   historyIndex: pushHistory ? historyIndex + 1 : t.historyIndex,
                 }
               : t
@@ -568,11 +568,16 @@ const App: React.FC = () => {
    * @param initialPath - Optional folder path to seed the new tab with.
    */
   const handleNewTab = useCallback(
-    (initialPath?: string) => {
+    (initialPath?: string | unknown) => {
+      const safePath =
+        typeof initialPath === "string" && initialPath.trim().length > 0
+          ? initialPath
+          : undefined;
       const targetPath =
-        initialPath ||
+        safePath ||
         quickAccess.find((q) => q.name === "Downloads")?.path ||
         quickAccess.find((q) => q.name === "Desktop")?.path ||
+        quickAccess[0]?.path ||
         "recents";
       const title =
         targetPath === "recents"

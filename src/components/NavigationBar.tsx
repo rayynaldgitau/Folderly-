@@ -301,7 +301,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
 
           {/* + New Tab Button */}
           <button
-            onClick={onNewTab}
+            onClick={() => onNewTab()}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-card/60 hover:bg-card border border-neutral-800/40 hover:border-[#ff2d87]/40 text-muted-color hover:text-[#ff2d87] text-xs font-semibold shrink-0 transition-all shadow-sm group"
             title="Open a new tab (Ctrl+T)"
           >
