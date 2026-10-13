@@ -263,7 +263,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
             title="Foldy – Visual File Organizer"
           >
             <FoldyLogo size={22} interactive={true} className="group-hover:rotate-6 transition-transform" />
-            <span className="hidden sm:inline font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#ff2d87] via-[#ff4d94] to-[#ff75a0] text-[13px]">
+            <span className="hidden sm:inline font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-500 to-red-600 text-[13px]">
               Foldy
             </span>
           </div>
