@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import type { QuickAccessItem, FolderEntry } from "../types";
 import { MacFolderIcon } from "./MacIcons";
 
@@ -16,6 +16,8 @@ interface Props {
   displayName?: string;
   workspaceName?: string;
   onOpenSettings?: () => void;
+  /** Callback fired when an item is dropped onto a destination folder. */
+  onMoveItem?: (sourcePath: string, destDir: string) => void;
 }
 
 /**
@@ -45,7 +47,9 @@ const Sidebar: React.FC<Props> = ({
   displayName = "Raynald Gitau",
   workspaceName = "Personal workspace",
   onOpenSettings,
+  onMoveItem,
 }) => {
+  const [dragOverPath, setDragOverPath] = useState<string | null>(null);
   const drives = quickAccess.filter((item) => item.is_drive);
   const desktopItem = quickAccess.find((q) => q.name.toLowerCase() === "desktop");
   const picturesItem = quickAccess.find(
@@ -152,13 +156,38 @@ const Sidebar: React.FC<Props> = ({
                 (selectedDir === item.path ||
                   (item.path !== "recents" &&
                     selectedDir.toLowerCase().endsWith(item.name.toLowerCase())));
+              const isOver = dragOverPath === item.path;
 
               return (
                 <button
                   key={item.name}
                   onClick={() => item.path && onNavigate(item.path)}
+                  onDragOver={(e) => {
+                    if (item.path && item.path !== "recents") {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      if (dragOverPath !== item.path) setDragOverPath(item.path);
+                    }
+                  }}
+                  onDragLeave={() => {
+                    if (dragOverPath === item.path) setDragOverPath(null);
+                  }}
+                  onDrop={(e) => {
+                    if (item.path && item.path !== "recents") {
+                      e.preventDefault();
+                      setDragOverPath(null);
+                      const src =
+                        e.dataTransfer.getData("application/folderly-path") ||
+                        e.dataTransfer.getData("text/plain");
+                      if (src && src.toLowerCase() !== item.path.toLowerCase() && onMoveItem) {
+                        onMoveItem(src, item.path);
+                      }
+                    }
+                  }}
                   className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium transition-all ${
-                    isActive
+                    isOver
+                      ? "ring-2 ring-[#ff2d87] bg-[#ff2d87]/20 text-[#ff2d87] font-bold"
+                      : isActive
                       ? "bg-[#ff2d87] text-white font-bold shadow-sm shadow-[#ff2d87]/30"
                       : "text-primary-color hover:bg-card hover:text-[#ff2d87]"
                   }`}
@@ -193,17 +222,40 @@ const Sidebar: React.FC<Props> = ({
             </button>
           </div>
           <div className="space-y-0.5">
-            {effectivePinnedFolders.map((p) => (
-              <button
-                key={p.name}
-                onClick={() => onNavigate(p.path)}
-                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs text-primary-color hover:bg-card hover:text-[#ff2d87] transition-all truncate"
-                title={p.path}
-              >
-                <MacFolderIcon size={16} />
-                <span className="truncate">{p.name}</span>
-              </button>
-            ))}
+            {effectivePinnedFolders.map((p) => {
+              const isOver = dragOverPath === p.path;
+              return (
+                <button
+                  key={p.name}
+                  onClick={() => onNavigate(p.path)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    if (dragOverPath !== p.path) setDragOverPath(p.path);
+                  }}
+                  onDragLeave={() => {
+                    if (dragOverPath === p.path) setDragOverPath(null);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOverPath(null);
+                    const src =
+                      e.dataTransfer.getData("application/folderly-path") ||
+                      e.dataTransfer.getData("text/plain");
+                    if (src && src.toLowerCase() !== p.path.toLowerCase() && onMoveItem) {
+                      onMoveItem(src, p.path);
+                    }
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs text-primary-color hover:bg-card hover:text-[#ff2d87] transition-all truncate ${
+                    isOver ? "ring-2 ring-[#ff2d87] bg-[#ff2d87]/20 font-bold" : ""
+                  }`}
+                  title={p.path}
+                >
+                  <MacFolderIcon size={16} />
+                  <span className="truncate">{p.name}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 

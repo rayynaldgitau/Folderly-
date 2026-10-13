@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { open } from "@tauri-apps/plugin-dialog";
 
 import NavigationBar from "./components/NavigationBar";
@@ -136,6 +137,7 @@ const App: React.FC = () => {
     },
   ]);
   const [activeTabId, setActiveTabId]     = useState<string>("tab-default");
+  const activeTabIdRef                    = useRef<string>("tab-default");
   const [currentPath, setCurrentPath]     = useState<string | null>(null);
   const [history, setHistory]             = useState<string[]>([]);
   const [historyIndex, setHistoryIndex]   = useState<number>(-1);
@@ -207,15 +209,16 @@ const App: React.FC = () => {
   // ── Directory Navigation ─────────────────────────────────────────────────
 
   const navigateTo = useCallback(
-    async (path: string, pushHistory = true) => {
+    async (path: string, pushHistory = true, targetTabId?: string) => {
       if (!path) return;
+      const effectiveTabId = targetTabId || activeTabIdRef.current;
       setLoading(true);
       setSelectedPaths(new Set());
       setPreviews([]);
 
       // Special handling for the Recents view (recently downloaded & opened items)
       if (path === "recents") {
-        setStatus({ msg: "Loading recent downloads and opened files…", type: "info" });
+        setStatus({ msg: "Loading recent files across your system…", type: "info" });
         setFolders([]);
 
         try {
@@ -229,19 +232,12 @@ const App: React.FC = () => {
             opened_at: string;
           }> = rawOpened ? JSON.parse(rawOpened) : [];
 
-          // 2. Query recent files from the Downloads folder
-          let downloadsFiles: FileEntry[] = [];
+          // 2. Query system-wide recent files from backend (Downloads, Desktop, Documents, Pictures)
+          let recentFiles: FileEntry[] = [];
           try {
-            const qa = await invoke<QuickAccessItem[]>("get_quick_access");
-            const dlItem = qa.find((q) => q.name.toLowerCase() === "downloads");
-            if (dlItem?.path) {
-              const dlContents = await invoke<DirContents>("read_folder_contents", {
-                dirPath: dlItem.path,
-              });
-              downloadsFiles = dlContents.files;
-            }
+            recentFiles = await invoke<FileEntry[]>("get_recent_files");
           } catch (e) {
-            console.error("Failed to read downloads folder for recents:", e);
+            console.error("Failed to read get_recent_files:", e);
           }
 
           // Convert opened files to FileEntry format
@@ -256,7 +252,7 @@ const App: React.FC = () => {
 
           // Merge and deduplicate by lowercased path
           const fileMap = new Map<string, FileEntry>();
-          for (const f of downloadsFiles) {
+          for (const f of recentFiles) {
             fileMap.set(f.path.toLowerCase(), f);
           }
           for (const f of openedAsFiles) {
@@ -270,7 +266,7 @@ const App: React.FC = () => {
           setFiles(combined);
           setCurrentPath("recents");
           setStatus({
-            msg: `Recents: showing ${combined.length} recent download(s) and opened file(s).`,
+            msg: `Recents: showing ${combined.length} recent files across Downloads, Desktop, Documents, and Pictures.`,
             type: "info",
           });
 
@@ -284,19 +280,23 @@ const App: React.FC = () => {
           }
 
           setTabs((prev) =>
-            prev.map((t) =>
-              t.id === activeTabId
-                ? {
-                    ...t,
-                    title: "Recent Files",
-                    path: "recents",
-                    history: pushHistory
-                      ? [...(t.history || []).slice(0, historyIndex + 1), "recents"]
-                      : t.history || ["recents"],
-                    historyIndex: pushHistory ? historyIndex + 1 : t.historyIndex,
-                  }
-                : t
-            )
+            prev.map((t) => {
+              if (t.id !== effectiveTabId) return t;
+              const curHist = t.history || [];
+              const curIdx = t.historyIndex ?? (curHist.length - 1);
+              const nextHist = pushHistory
+                ? [...curHist.slice(0, curIdx + 1), "recents"]
+                : curHist.length > 0
+                ? curHist
+                : ["recents"];
+              return {
+                ...t,
+                title: "Recent Files",
+                path: "recents",
+                history: nextHist,
+                historyIndex: pushHistory ? curIdx + 1 : curIdx,
+              };
+            })
           );
         } catch (err) {
           setStatus({ msg: `Error loading recents: ${err}`, type: "error" });
@@ -342,19 +342,23 @@ const App: React.FC = () => {
             ? "Recent Files"
             : path.split(/[\\/]/).filter(Boolean).pop() || "Folder";
         setTabs((prev) =>
-          prev.map((t) =>
-            t.id === activeTabId
-              ? {
-                  ...t,
-                  title: tabTitle,
-                  path,
-                  history: pushHistory
-                    ? [...(t.history || []).slice(0, historyIndex + 1), path]
-                    : t.history || [path],
-                  historyIndex: pushHistory ? historyIndex + 1 : t.historyIndex,
-                }
-              : t
-          )
+          prev.map((t) => {
+            if (t.id !== effectiveTabId) return t;
+            const curHist = t.history || [];
+            const curIdx = t.historyIndex ?? (curHist.length - 1);
+            const nextHist = pushHistory
+              ? [...curHist.slice(0, curIdx + 1), path]
+              : curHist.length > 0
+              ? curHist
+              : [path];
+            return {
+              ...t,
+              title: tabTitle,
+              path,
+              history: nextHist,
+              historyIndex: pushHistory ? curIdx + 1 : curIdx,
+            };
+          })
         );
       } catch (err) {
         setStatus({ msg: `Navigation error: ${err}`, type: "error" });
@@ -362,7 +366,7 @@ const App: React.FC = () => {
         setLoading(false);
       }
     },
-    [isRecursive, historyIndex, activeTabId]
+    [isRecursive, historyIndex]
   );
 
   const handleGoBack = useCallback(() => {
@@ -474,8 +478,9 @@ const App: React.FC = () => {
               historyIndex: 0,
             },
           ]);
+          activeTabIdRef.current = "tab-default";
           setActiveTabId("tab-default");
-          navigateTo(defaultTarget);
+          navigateTo(defaultTarget, false, "tab-default");
         }
       } catch (e) {
         console.error("Init error:", e);
@@ -547,16 +552,18 @@ const App: React.FC = () => {
    * Switches the active view to a specific tab.
    *
    * @param tabId - Unique ID of the tab to activate.
+   * @returns void
    */
   const handleSelectTab = useCallback(
     (tabId: string) => {
       const target = tabs.find((t) => t.id === tabId);
       if (!target) return;
+      activeTabIdRef.current = tabId;
       setActiveTabId(tabId);
-      setHistory(target.history);
-      setHistoryIndex(target.historyIndex);
+      setHistory(target.history || (target.path ? [target.path] : []));
+      setHistoryIndex(target.historyIndex ?? 0);
       if (target.path) {
-        navigateTo(target.path, false);
+        navigateTo(target.path, false, tabId);
       }
     },
     [tabs, navigateTo]
@@ -566,6 +573,7 @@ const App: React.FC = () => {
    * Opens a new tab, loading either a given folder or the Downloads / default folder.
    *
    * @param initialPath - Optional folder path to seed the new tab with.
+   * @returns void
    */
   const handleNewTab = useCallback(
     (initialPath?: string | unknown) => {
@@ -583,16 +591,21 @@ const App: React.FC = () => {
         targetPath === "recents"
           ? "Recent Files"
           : targetPath.split(/[\\/]/).filter(Boolean).pop() || "New Tab";
+      const newTabId = `tab-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const newTab: TabItem = {
-        id: `tab-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        id: newTabId,
         title,
         path: targetPath,
         history: [targetPath],
         historyIndex: 0,
       };
+      // Synchronously set ref before state update to prevent previous tab overwrite
+      activeTabIdRef.current = newTabId;
       setTabs((prev) => [...prev, newTab]);
-      setActiveTabId(newTab.id);
-      navigateTo(targetPath, false);
+      setActiveTabId(newTabId);
+      setHistory([targetPath]);
+      setHistoryIndex(0);
+      navigateTo(targetPath, false, newTabId);
       setStatus({ msg: `Opened new tab: ${title}`, type: "info" });
     },
     [quickAccess, navigateTo]
@@ -602,6 +615,7 @@ const App: React.FC = () => {
    * Closes a tab and selects an adjacent remaining tab.
    *
    * @param tabId - ID of the tab to close.
+   * @returns void
    */
   const handleCloseTab = useCallback(
     (tabId: string) => {
@@ -609,20 +623,88 @@ const App: React.FC = () => {
       const closeIndex = tabs.findIndex((t) => t.id === tabId);
       const remaining = tabs.filter((t) => t.id !== tabId);
       setTabs(remaining);
-      if (activeTabId === tabId) {
+      if (activeTabIdRef.current === tabId) {
         const nextActive = remaining[Math.max(0, closeIndex - 1)];
         if (nextActive) {
+          activeTabIdRef.current = nextActive.id;
           setActiveTabId(nextActive.id);
-          setHistory(nextActive.history);
-          setHistoryIndex(nextActive.historyIndex);
+          setHistory(nextActive.history || (nextActive.path ? [nextActive.path] : []));
+          setHistoryIndex(nextActive.historyIndex ?? 0);
           if (nextActive.path) {
-            navigateTo(nextActive.path, false);
+            navigateTo(nextActive.path, false, nextActive.id);
           }
         }
       }
     },
-    [tabs, activeTabId, navigateTo]
+    [tabs, navigateTo]
   );
+
+  /**
+   * Moves a file or folder into a destination directory using the backend move_item command.
+   *
+   * @param sourcePath - Absolute path to the source file or folder.
+   * @param destDir - Absolute path to the destination directory.
+   * @returns Promise resolving when move is executed.
+   */
+  const handleMoveItem = useCallback(
+    async (sourcePath: string, destDir: string): Promise<void> => {
+      if (!sourcePath || !destDir) return;
+      if (sourcePath.toLowerCase() === destDir.toLowerCase()) return;
+      try {
+        const msg = await invoke<string>("move_item", {
+          sourcePath,
+          destDir,
+        });
+        setStatus({ msg, type: "success" });
+        // Refresh current directory so item move is reflected immediately
+        if (currentPath) {
+          navigateTo(currentPath, false);
+        }
+      } catch (err) {
+        setStatus({ msg: `Failed to move item: ${err}`, type: "error" });
+      }
+    },
+    [currentPath, navigateTo]
+  );
+
+  // Tauri webview external drag & drop listener (e.g. dragging from Windows Explorer into Folderly)
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    async function setupDropListener() {
+      try {
+        const webview = getCurrentWebview();
+        unlisten = await webview.onDragDropEvent(async (event) => {
+          if (event.payload.type === "drop") {
+            const droppedPaths = event.payload.paths;
+            if (droppedPaths && droppedPaths.length > 0 && currentPath && currentPath !== "recents") {
+              setStatus({
+                msg: `Moving ${droppedPaths.length} dropped item(s)...`,
+                type: "info",
+              });
+              for (const p of droppedPaths) {
+                try {
+                  await invoke("move_item", { sourcePath: p, destDir: currentPath });
+                } catch (e) {
+                  console.error("Drop move failed:", e);
+                }
+              }
+              navigateTo(currentPath, false);
+              setStatus({
+                msg: `Moved ${droppedPaths.length} item(s) to ${currentPath}`,
+                type: "success",
+              });
+            }
+          }
+        });
+      } catch {
+        // Ignored in non-Tauri browser context
+      }
+    }
+    setupDropListener();
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, [currentPath, navigateTo]);
 
   // Global keyboard shortcuts (Ctrl+T for new tab, Ctrl+W to close active tab)
   useEffect(() => {
@@ -915,6 +997,7 @@ const App: React.FC = () => {
               displayName={displayName}
               workspaceName={workspaceName}
               onOpenSettings={() => setIsSettingsOpen(true)}
+              onMoveItem={handleMoveItem}
             />
           </div>
         </>
@@ -987,6 +1070,7 @@ const App: React.FC = () => {
                   onNavigateFolder={(path) => navigateTo(path)}
                   onOpenFile={handleOpenFile}
                   onContextMenu={handleContextMenu}
+                  onMoveItem={handleMoveItem}
                   emptyMessage={
                     currentPath === "recents"
                       ? "No recent files yet. Files you download or open in Folderly will appear here."
@@ -1005,6 +1089,7 @@ const App: React.FC = () => {
                   onNavigateFolder={(path) => navigateTo(path)}
                   onOpenFile={handleOpenFile}
                   onContextMenu={handleContextMenu}
+                  onMoveItem={handleMoveItem}
                   sortField={sortField}
                   emptyMessage={
                     currentPath === "recents"

@@ -30,6 +30,8 @@ export interface FileTableViewProps {
   onContextMenu: (e: React.MouseEvent, path: string, isFolder: boolean) => void;
   /** Optional custom message when no items exist. */
   emptyMessage?: string;
+  /** Callback fired when an item is dropped onto a folder row. */
+  onMoveItem?: (sourcePath: string, destDir: string) => void;
 }
 
 /** Available column keys for table sorting. */
@@ -165,9 +167,11 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
   onOpenFile,
   onContextMenu,
   emptyMessage,
+  onMoveItem,
 }) => {
   const [sortColumn, setSortColumn] = useState<SortColumn>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   const masterCheckboxRef = useRef<HTMLInputElement>(null);
 
   const totalCount = folders.length + files.length;
@@ -421,17 +425,48 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
             ) : (
               sortedItems.map((item) => {
                 const isSelected = selectedPaths.has(item.path);
+                const isOver = dragOverFolder === item.path;
 
                 return (
                   <tr
                     key={item.path}
+                    draggable={true}
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData("application/folderly-path", item.path);
+                      e.dataTransfer.setData("text/plain", item.path);
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    onDragOver={(e) => {
+                      if (item.isFolder) {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        if (dragOverFolder !== item.path) setDragOverFolder(item.path);
+                      }
+                    }}
+                    onDragLeave={() => {
+                      if (dragOverFolder === item.path) setDragOverFolder(null);
+                    }}
+                    onDrop={(e) => {
+                      if (item.isFolder) {
+                        e.preventDefault();
+                        setDragOverFolder(null);
+                        const src =
+                          e.dataTransfer.getData("application/folderly-path") ||
+                          e.dataTransfer.getData("text/plain");
+                        if (src && src.toLowerCase() !== item.path.toLowerCase() && onMoveItem) {
+                          onMoveItem(src, item.path);
+                        }
+                      }
+                    }}
                     onClick={() => handleRowClick(item.path)}
                     onDoubleClick={() => handleRowDoubleClick(item)}
                     onContextMenu={(e) => handleRowContextMenu(e, item)}
                     className={`
-                      cursor-pointer transition-colors border-y
+                      cursor-grab active:cursor-grabbing transition-colors border-y
                       ${
-                        isSelected
+                        isOver
+                          ? "bg-[#ff2d87]/20 border-y-[#ff2d87] text-white font-bold"
+                          : isSelected
                           ? "bg-violet-950/40 border-violet-500/60 text-white font-medium shadow-sm"
                           : "border-transparent hover:bg-neutral-800 text-neutral-300"
                       }

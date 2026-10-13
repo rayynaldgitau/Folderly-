@@ -327,6 +327,23 @@ fn resolve_system_path(raw_path: &str) -> PathBuf {
     path
 }
 
+/// Copies a directory tree recursively from `src` to `dst`.
+fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
+    fs::create_dir_all(dst)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        let from = entry.path();
+        let to = dst.join(entry.file_name());
+        if ty.is_dir() {
+            copy_dir_recursive(&from, &to)?;
+        } else {
+            fs::copy(&from, &to)?;
+        }
+    }
+    Ok(())
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Tauri commands — isolated in their own module to avoid macro collisions
 // ─────────────────────────────────────────────────────────────────────────────
@@ -604,6 +621,109 @@ mod commands {
         }
 
         Ok(())
+    }
+
+    /// Moves a file or directory into a destination directory. Supports cross-device fallback.
+    ///
+    /// * `source_path`: Absolute path of the item to move.
+    /// * `dest_dir`: Absolute path of the destination folder.
+    /// * Returns: `Ok(new_path)` on success, or detailed error string.
+    #[tauri::command]
+    pub fn move_item(source_path: String, dest_dir: String) -> Result<String, String> {
+        let src = resolve_system_path(&source_path);
+        let dest_folder = resolve_system_path(&dest_dir);
+
+        if !src.exists() {
+            return Err(format!("Source does not exist: {source_path}"));
+        }
+        if !dest_folder.is_dir() {
+            return Err(format!("Destination is not a directory: {dest_dir}"));
+        }
+
+        let file_name = src
+            .file_name()
+            .ok_or_else(|| "Cannot get filename from source".to_string())?;
+        let target_path = dest_folder.join(file_name);
+
+        if target_path == src {
+            return Ok(target_path.to_string_lossy().to_string());
+        }
+
+        if target_path.exists() {
+            return Err(format!(
+                "An item named '{}' already exists in '{}'",
+                file_name.to_string_lossy(),
+                dest_dir
+            ));
+        }
+
+        // Try fast atomic rename first
+        if fs::rename(&src, &target_path).is_ok() {
+            return Ok(target_path.to_string_lossy().to_string());
+        }
+
+        // Cross-device fallback: copy then remove
+        if src.is_file() {
+            fs::copy(&src, &target_path)
+                .map_err(|e| format!("Failed to copy file: {e}"))?;
+            let _ = fs::remove_file(&src);
+        } else {
+            copy_dir_recursive(&src, &target_path)
+                .map_err(|e| format!("Failed to copy directory: {e}"))?;
+            let _ = fs::remove_dir_all(&src);
+        }
+
+        Ok(target_path.to_string_lossy().to_string())
+    }
+
+    /// Discovers recent files across standard user folders sorted newest first.
+    ///
+    /// * Returns: List of `FileEntry` items sorted by modified date.
+    #[tauri::command]
+    pub fn get_recent_files() -> Result<Vec<FileEntry>, String> {
+        let mut results: Vec<FileEntry> = Vec::new();
+        let mut seen_paths: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+        let home_opt = std::env::var("USERPROFILE")
+            .or_else(|_| std::env::var("HOME"))
+            .ok();
+
+        if let Some(profile) = home_opt {
+            let user_dir = PathBuf::from(profile);
+            let subdirs = ["Downloads", "Desktop", "Documents", "Pictures"];
+            for sub in subdirs {
+                let resolved = resolve_system_path(&user_dir.join(sub).to_string_lossy());
+                if resolved.is_dir() {
+                    if let Ok(entries) = fs::read_dir(&resolved) {
+                        for entry in entries.flatten() {
+                            let p = entry.path();
+                            if p.is_file() {
+                                if let Ok(meta) = p.metadata() {
+                                    let path_str = p.to_string_lossy().to_string();
+                                    if seen_paths.insert(path_str.to_lowercase()) {
+                                        let name = p.file_name().unwrap_or_default().to_string_lossy().to_string();
+                                        let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+                                        results.push(FileEntry {
+                                            path: path_str,
+                                            name,
+                                            extension: ext,
+                                            size: meta.len(),
+                                            created_at: format_time(meta.created().ok()),
+                                            modified_at: format_time(meta.modified().ok()),
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        results.sort_by(|a, b| b.modified_at.cmp(&a.modified_at));
+        results.truncate(80);
+
+        Ok(results)
     }
 
     /// Recursively reads all files under `dir_path` for recursive bulk operations.
@@ -1095,6 +1215,8 @@ fn main() {
             commands::undo_last_batch,
             commands::undo_batch_count,
             commands::universal_search,
+            commands::move_item,
+            commands::get_recent_files,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -1120,5 +1242,9 @@ mod tests {
 
         let photos = resolve_system_path("Photos");
         assert!(photos.exists(), "Photos should resolve to an existing folder: {:?}", photos);
+
+        let recents = commands::get_recent_files().unwrap();
+        println!("Recent files discovered: {}", recents.len());
+        assert!(!recents.is_empty(), "Should discover recent files across user folders");
     }
 }

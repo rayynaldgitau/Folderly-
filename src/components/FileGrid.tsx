@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import type { FileEntry, FolderEntry, ViewMode } from "../types";
 import { MacFolderIcon, MacFileIcon } from "./MacIcons";
 
@@ -27,6 +27,8 @@ export interface FileGridProps {
   sortField?: string;
   /** Optional custom message when no items exist. */
   emptyMessage?: string;
+  /** Callback fired when an item is dropped onto a folder. */
+  onMoveItem?: (sourcePath: string, destDir: string) => void;
 }
 
 /** Formats byte size into human readable string like 158 MB */
@@ -60,7 +62,10 @@ const FileGrid: React.FC<FileGridProps> = ({
   onContextMenu,
   sortField,
   emptyMessage,
+  onMoveItem,
 }) => {
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
+
   // Group files by uppercase extension (e.g. EXE, PNG, PDF, etc.)
   const fileGroups = useMemo(() => {
     const map = new Map<string, FileEntry[]>();
@@ -97,28 +102,63 @@ const FileGrid: React.FC<FileGridProps> = ({
 
         {/* 5-Column Responsive Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {folders.map((folder) => (
-            <div
-              key={folder.path}
-              onDoubleClick={() => onNavigateFolder(folder.path)}
-              onContextMenu={(e) => onContextMenu(e, folder.path, true)}
-              className="bg-card hover:bg-card/90 rounded-2xl p-3.5 border border-neutral-800/20 hover:border-[#ff2d87]/40 cursor-pointer transition-all select-none group flex items-center gap-3 shadow-sm"
-              title={`${folder.name}\nDouble-click to open`}
-            >
-              {/* macOS Style Folder Icon */}
-              <div className="shrink-0 group-hover:scale-105 transition-transform">
-                <MacFolderIcon size={36} />
+          {folders.map((folder) => {
+            const isOver = dragOverFolder === folder.path;
+            return (
+              <div
+                key={folder.path}
+                draggable={true}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("application/folderly-path", folder.path);
+                  e.dataTransfer.setData("text/plain", folder.path);
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  if (dragOverFolder !== folder.path) {
+                    setDragOverFolder(folder.path);
+                  }
+                }}
+                onDragLeave={() => {
+                  if (dragOverFolder === folder.path) {
+                    setDragOverFolder(null);
+                  }
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOverFolder(null);
+                  const src =
+                    e.dataTransfer.getData("application/folderly-path") ||
+                    e.dataTransfer.getData("text/plain");
+                  if (src && src.toLowerCase() !== folder.path.toLowerCase() && onMoveItem) {
+                    onMoveItem(src, folder.path);
+                  }
+                }}
+                onDoubleClick={() => onNavigateFolder(folder.path)}
+                onContextMenu={(e) => onContextMenu(e, folder.path, true)}
+                className={`bg-card hover:bg-card/90 rounded-2xl p-3.5 border cursor-pointer transition-all select-none group flex items-center gap-3 shadow-sm ${
+                  isOver
+                    ? "ring-2 ring-[#ff2d87] border-[#ff2d87] bg-[#ff2d87]/15 scale-[1.03]"
+                    : "border-neutral-800/20 hover:border-[#ff2d87]/40"
+                }`}
+                title={`${folder.name}\nDouble-click to open (or drop items here)`}
+              >
+                {/* macOS Style Folder Icon */}
+                <div className="shrink-0 group-hover:scale-105 transition-transform">
+                  <MacFolderIcon size={36} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-primary-color truncate leading-tight group-hover:text-[#ff2d87] transition-colors">
+                    {folder.name}
+                  </p>
+                  <p className="text-[10px] text-muted-color truncate mt-0.5">
+                    {formatDate(folder.modified_at)}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-primary-color truncate leading-tight group-hover:text-[#ff2d87] transition-colors">
-                  {folder.name}
-                </p>
-                <p className="text-[10px] text-muted-color truncate mt-0.5">
-                  {formatDate(folder.modified_at)}
-                </p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
     );
@@ -148,18 +188,24 @@ const FileGrid: React.FC<FileGridProps> = ({
               return (
                 <div
                   key={file.path}
+                  draggable={true}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("application/folderly-path", file.path);
+                    e.dataTransfer.setData("text/plain", file.path);
+                    e.dataTransfer.effectAllowed = "move";
+                  }}
                   onClick={() => onToggle(file.path)}
                   onDoubleClick={(e) => {
                     e.stopPropagation();
                     onOpenFile(file.path);
                   }}
                   onContextMenu={(e) => onContextMenu(e, file.path, false)}
-                  className={`bg-card rounded-2xl p-3.5 border cursor-pointer transition-all select-none flex flex-col justify-between shadow-sm ${
+                  className={`bg-card rounded-2xl p-3.5 border cursor-grab active:cursor-grabbing transition-all select-none flex flex-col justify-between shadow-sm ${
                     selected
                       ? "border-[#ff2d87] ring-1 ring-[#ff2d87]"
                       : "border-neutral-800/20 hover:border-[#ff2d87]/40"
                   }`}
-                  title={`${file.name}\nDouble-click to open`}
+                  title={`${file.name}\nDouble-click to open (or drag into a folder)`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0 mb-3">
                     <MacFileIcon extension={file.extension} size={30} />
@@ -204,18 +250,24 @@ const FileGrid: React.FC<FileGridProps> = ({
                   return (
                     <div
                       key={file.path}
+                      draggable={true}
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData("application/folderly-path", file.path);
+                        e.dataTransfer.setData("text/plain", file.path);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
                       onClick={() => onToggle(file.path)}
                       onDoubleClick={(e) => {
                         e.stopPropagation();
                         onOpenFile(file.path);
                       }}
                       onContextMenu={(e) => onContextMenu(e, file.path, false)}
-                      className={`bg-card rounded-2xl p-3.5 border cursor-pointer transition-all select-none flex flex-col justify-between shadow-sm min-h-[92px] ${
+                      className={`bg-card rounded-2xl p-3.5 border cursor-grab active:cursor-grabbing transition-all select-none flex flex-col justify-between shadow-sm min-h-[92px] ${
                         selected
                           ? "border-[#ff2d87] ring-1 ring-[#ff2d87]"
                           : "border-neutral-800/20 hover:border-[#ff2d87]/40"
                       }`}
-                      title={`${file.name}\nDouble-click to open`}
+                      title={`${file.name}\nDouble-click to open (or drag into a folder)`}
                     >
                       {/* Top Row: macOS File Icon + Filename */}
                       <div className="flex items-center gap-2.5 min-w-0 mb-3">
