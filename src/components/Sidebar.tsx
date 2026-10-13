@@ -48,29 +48,51 @@ const Sidebar: React.FC<Props> = ({
 }) => {
   const drives = quickAccess.filter((item) => item.is_drive);
   const desktopItem = quickAccess.find((q) => q.name.toLowerCase() === "desktop");
+  const picturesItem = quickAccess.find(
+    (q) => q.name.toLowerCase() === "pictures" || q.name.toLowerCase() === "photos"
+  );
+  const downloadsItem = quickAccess.find((q) => q.name.toLowerCase() === "downloads");
+  const documentsItem = quickAccess.find((q) => q.name.toLowerCase() === "documents");
+  const musicItem = quickAccess.find((q) => q.name.toLowerCase() === "music");
+  const videosItem = quickAccess.find(
+    (q) => q.name.toLowerCase() === "videos" || q.name.toLowerCase() === "movies"
+  );
+  const homeItem = quickAccess.find((q) => q.name.toLowerCase() === "home");
+
   const resolvedDesktopPath = desktopItem?.path || "C:\\Users\\rayna\\OneDrive\\Desktop";
+  const resolvedPicturesPath = picturesItem?.path || "C:\\Users\\rayna\\OneDrive\\Pictures";
+  const resolvedDownloadsPath = downloadsItem?.path || "C:\\Users\\rayna\\Downloads";
+  const resolvedDocumentsPath = documentsItem?.path || "C:\\Users\\rayna\\OneDrive\\Documents";
 
   const effectivePinnedFolders = pinnedFolders || [
     { name: "folderly", path: "C:\\Users\\rayna\\Downloads\\folderly" },
-    { name: "PDF documents", path: "C:\\Users\\rayna\\Documents" },
+    { name: "PDF documents", path: resolvedDocumentsPath },
     { name: "Work Study", path: resolvedDesktopPath },
   ];
 
-  // Default Quick Access standard locations
+  // Default Quick Access standard locations with reliable OneDrive fallbacks
   const standardQuickAccess = [
     { name: "Recents", icon: "🕒", path: "recents" },
-    { name: "Home", icon: "🏠", path: "" },
+    { name: "Home", icon: "🏠", path: homeItem?.path || "C:\\Users\\rayna" },
     { name: "Desktop", icon: "🖥️", path: resolvedDesktopPath },
-    { name: "Downloads", icon: "📥", path: "" },
-    { name: "Documents", icon: "📁", path: "" },
-    { name: "Pictures", icon: "🖼️", path: "" },
-    { name: "Music", icon: "🎵", path: "" },
-    { name: "Videos", icon: "🎬", path: "" },
+    { name: "Downloads", icon: "📥", path: resolvedDownloadsPath },
+    { name: "Documents", icon: "📁", path: resolvedDocumentsPath },
+    { name: "Photos & Pictures", icon: "🖼️", path: resolvedPicturesPath },
+    { name: "Music", icon: "🎵", path: musicItem?.path || "C:\\Users\\rayna\\Music" },
+    { name: "Videos", icon: "🎬", path: videosItem?.path || "C:\\Users\\rayna\\Videos" },
   ].map((sq) => {
     if (sq.path === "recents") {
       return sq;
     }
-    const found = quickAccess.find((q) => q.name.toLowerCase() === sq.name.toLowerCase());
+    const found = quickAccess.find((q) => {
+      const qLower = q.name.toLowerCase();
+      const sqLower = sq.name.toLowerCase();
+      return (
+        qLower === sqLower ||
+        (sqLower.includes("pictures") && (qLower === "pictures" || qLower === "photos")) ||
+        (sqLower.includes("videos") && (qLower === "videos" || qLower === "movies"))
+      );
+    });
     return {
       name: sq.name,
       icon: sq.icon,

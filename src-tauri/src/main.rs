@@ -212,7 +212,12 @@ fn compute_new_path(original: &Path, rules: &RenameRules) -> Result<PathBuf, Str
 /// * `raw_path`: Raw directory path requested by client or UI.
 /// * Returns: The resolved existing `PathBuf` or the original `PathBuf`.
 fn resolve_system_path(raw_path: &str) -> PathBuf {
-    let path = PathBuf::from(raw_path);
+    let trimmed = raw_path.trim();
+    if trimmed.is_empty() {
+        return PathBuf::from(raw_path);
+    }
+
+    let path = PathBuf::from(trimmed);
     if path.exists() {
         return path;
     }
@@ -222,17 +227,58 @@ fn resolve_system_path(raw_path: &str) -> PathBuf {
         if let Ok(profile) = std::env::var("USERPROFILE") {
             let user_dir = Path::new(&profile);
 
-            // Case 1: Client asked for C:\Users\<user>\<subfolder>, but it's redirected to OneDrive
-            if let Ok(rel) = path.strip_prefix(user_dir) {
-                let od_cand = user_dir.join("OneDrive").join(rel);
+            // Handle bare names like "desktop", "photos", "pictures", etc.
+            let lower = trimmed.to_lowercase();
+            let subfolder_name = match lower.as_str() {
+                "desktop" => Some("Desktop"),
+                "pictures" | "photos" => Some("Pictures"),
+                "downloads" => Some("Downloads"),
+                "documents" => Some("Documents"),
+                "music" => Some("Music"),
+                "videos" => Some("Videos"),
+                _ => None,
+            };
+
+            if let Some(sub) = subfolder_name {
+                let od_cand = user_dir.join("OneDrive").join(sub);
                 if od_cand.exists() {
                     return od_cand;
                 }
                 if let Ok(od_env) = std::env::var("OneDrive") {
-                    let od_env_cand = Path::new(&od_env).join(rel);
+                    let od_env_cand = Path::new(&od_env).join(sub);
                     if od_env_cand.exists() {
                         return od_env_cand;
                     }
+                }
+                let local_cand = user_dir.join(sub);
+                if local_cand.exists() {
+                    return local_cand;
+                }
+            }
+
+            // Case 1: Client asked for C:\Users\<user>\<subfolder>, but it's redirected to OneDrive
+            if let Ok(rel) = path.strip_prefix(user_dir) {
+                // Also handle "Photos" alias mapping to "Pictures"
+                let rel_str = rel.to_string_lossy();
+                let effective_rel = if rel_str.eq_ignore_ascii_case("Photos") {
+                    Path::new("Pictures")
+                } else {
+                    rel
+                };
+
+                let od_cand = user_dir.join("OneDrive").join(effective_rel);
+                if od_cand.exists() {
+                    return od_cand;
+                }
+                if let Ok(od_env) = std::env::var("OneDrive") {
+                    let od_env_cand = Path::new(&od_env).join(effective_rel);
+                    if od_env_cand.exists() {
+                        return od_env_cand;
+                    }
+                }
+                let local_cand = user_dir.join(effective_rel);
+                if local_cand.exists() {
+                    return local_cand;
                 }
             }
 
@@ -250,10 +296,27 @@ fn resolve_system_path(raw_path: &str) -> PathBuf {
 
     #[cfg(not(target_os = "windows"))]
     {
-        if raw_path.starts_with("~/") || raw_path == "~" {
-            if let Ok(home) = std::env::var("HOME") {
+        if let Ok(home) = std::env::var("HOME") {
+            let user_dir = Path::new(&home);
+            let lower = trimmed.to_lowercase();
+            let subfolder_name = match lower.as_str() {
+                "desktop" => Some("Desktop"),
+                "pictures" | "photos" => Some("Pictures"),
+                "downloads" => Some("Downloads"),
+                "documents" => Some("Documents"),
+                "music" => Some("Music"),
+                "videos" | "movies" => Some("Movies"),
+                _ => None,
+            };
+            if let Some(sub) = subfolder_name {
+                let cand = user_dir.join(sub);
+                if cand.exists() {
+                    return cand;
+                }
+            }
+            if raw_path.starts_with("~/") || raw_path == "~" {
                 let tail = if raw_path == "~" { "" } else { &raw_path[2..] };
-                let cand = Path::new(&home).join(tail);
+                let cand = user_dir.join(tail);
                 if cand.exists() {
                     return cand;
                 }
@@ -549,7 +612,7 @@ mod commands {
     /// * Returns: Flat list of FileEntry items.
     #[tauri::command]
     pub fn scan_directory(dir_path: String) -> Result<Vec<FileEntry>, String> {
-        let root = PathBuf::from(&dir_path);
+        let root = resolve_system_path(&dir_path);
         if !root.exists() {
             return Err(format!("Path does not exist: {dir_path}"));
         }
@@ -1047,5 +1110,15 @@ mod tests {
         let current_dir = std::env::current_dir().unwrap();
         let resolved = resolve_system_path(&current_dir.to_string_lossy());
         assert!(resolved.exists());
+
+        // Test bare name resolution for Desktop and Photos/Pictures
+        let desk = resolve_system_path("Desktop");
+        assert!(desk.exists(), "Desktop should resolve to an existing folder: {:?}", desk);
+
+        let pics = resolve_system_path("Pictures");
+        assert!(pics.exists(), "Pictures should resolve to an existing folder: {:?}", pics);
+
+        let photos = resolve_system_path("Photos");
+        assert!(photos.exists(), "Photos should resolve to an existing folder: {:?}", photos);
     }
 }
