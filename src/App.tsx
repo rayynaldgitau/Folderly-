@@ -138,6 +138,21 @@ const App: React.FC = () => {
   ]);
   const [activeTabId, setActiveTabId]     = useState<string>("tab-default");
   const activeTabIdRef                    = useRef<string>("tab-default");
+  const tabsRef                           = useRef<TabItem[]>(tabs);
+  const [pinnedFolders, setPinnedFolders] = useState<Array<{ name: string; path: string }>>(() => {
+    try {
+      const saved = localStorage.getItem("folderly_pinned_folders");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {
+      // non-critical
+    }
+    return [];
+  });
   const [currentPath, setCurrentPath]     = useState<string | null>(null);
   const [history, setHistory]             = useState<string[]>([]);
   const [historyIndex, setHistoryIndex]   = useState<number>(-1);
@@ -264,40 +279,41 @@ const App: React.FC = () => {
           );
 
           setFiles(combined);
-          setCurrentPath("recents");
+          if (effectiveTabId === activeTabIdRef.current) {
+            setCurrentPath("recents");
+            if (pushHistory) {
+              setHistory((prev) => {
+                const next = prev.slice(0, historyIndex + 1);
+                next.push("recents");
+                return next;
+              });
+              setHistoryIndex((prev) => prev + 1);
+            }
+          }
           setStatus({
             msg: `Recents: showing ${combined.length} recent files across Downloads, Desktop, Documents, and Pictures.`,
             type: "info",
           });
 
-          if (pushHistory) {
-            setHistory((prev) => {
-              const next = prev.slice(0, historyIndex + 1);
-              next.push("recents");
-              return next;
-            });
-            setHistoryIndex((prev) => prev + 1);
-          }
-
-          setTabs((prev) =>
-            prev.map((t) => {
-              if (t.id !== effectiveTabId) return t;
-              const curHist = t.history || [];
-              const curIdx = t.historyIndex ?? (curHist.length - 1);
-              const nextHist = pushHistory
-                ? [...curHist.slice(0, curIdx + 1), "recents"]
-                : curHist.length > 0
-                ? curHist
-                : ["recents"];
-              return {
-                ...t,
-                title: "Recent Files",
-                path: "recents",
-                history: nextHist,
-                historyIndex: pushHistory ? curIdx + 1 : curIdx,
-              };
-            })
-          );
+          const nextTabs = tabsRef.current.map((t) => {
+            if (t.id !== effectiveTabId) return t;
+            const curHist = t.history || [];
+            const curIdx = t.historyIndex ?? (curHist.length - 1);
+            const nextHist = pushHistory
+              ? [...curHist.slice(0, curIdx + 1), "recents"]
+              : curHist.length > 0
+              ? curHist
+              : ["recents"];
+            return {
+              ...t,
+              title: "Recent Files",
+              path: "recents",
+              history: nextHist,
+              historyIndex: pushHistory ? curIdx + 1 : curIdx,
+            };
+          });
+          tabsRef.current = nextTabs;
+          setTabs(nextTabs);
         } catch (err) {
           setStatus({ msg: `Error loading recents: ${err}`, type: "error" });
         } finally {
@@ -308,6 +324,7 @@ const App: React.FC = () => {
 
       setStatus({ msg: `Loading "${path}"…`, type: "info" });
       try {
+        let finalPath = path;
         if (isRecursive) {
           const allFiles = await invoke<FileEntry[]>("scan_directory", { dirPath: path });
           setFiles(allFiles);
@@ -320,46 +337,48 @@ const App: React.FC = () => {
           const contents = await invoke<DirContents>("read_folder_contents", { dirPath: path });
           setFolders(contents.folders);
           setFiles(contents.files);
+          finalPath = contents.current_path;
           setStatus({
             msg: `Browsing "${contents.current_path}" (${contents.folders.length} folders, ${contents.files.length} files).`,
             type: "info",
           });
         }
 
-        setCurrentPath(path);
-
-        if (pushHistory) {
-          setHistory((prev) => {
-            const next = prev.slice(0, historyIndex + 1);
-            next.push(path);
-            return next;
-          });
-          setHistoryIndex((prev) => prev + 1);
+        if (effectiveTabId === activeTabIdRef.current) {
+          setCurrentPath(finalPath);
+          if (pushHistory) {
+            setHistory((prev) => {
+              const next = prev.slice(0, historyIndex + 1);
+              next.push(finalPath);
+              return next;
+            });
+            setHistoryIndex((prev) => prev + 1);
+          }
         }
 
         const tabTitle =
-          path === "recents"
+          finalPath === "recents"
             ? "Recent Files"
-            : path.split(/[\\/]/).filter(Boolean).pop() || "Folder";
-        setTabs((prev) =>
-          prev.map((t) => {
-            if (t.id !== effectiveTabId) return t;
-            const curHist = t.history || [];
-            const curIdx = t.historyIndex ?? (curHist.length - 1);
-            const nextHist = pushHistory
-              ? [...curHist.slice(0, curIdx + 1), path]
-              : curHist.length > 0
-              ? curHist
-              : [path];
-            return {
-              ...t,
-              title: tabTitle,
-              path,
-              history: nextHist,
-              historyIndex: pushHistory ? curIdx + 1 : curIdx,
-            };
-          })
-        );
+            : finalPath.split(/[\\/]/).filter(Boolean).pop() || "Folder";
+        const nextTabs = tabsRef.current.map((t) => {
+          if (t.id !== effectiveTabId) return t;
+          const curHist = t.history || [];
+          const curIdx = t.historyIndex ?? (curHist.length - 1);
+          const nextHist = pushHistory
+            ? [...curHist.slice(0, curIdx + 1), finalPath]
+            : curHist.length > 0
+            ? curHist
+            : [finalPath];
+          return {
+            ...t,
+            title: tabTitle,
+            path: finalPath,
+            history: nextHist,
+            historyIndex: pushHistory ? curIdx + 1 : curIdx,
+          };
+        });
+        tabsRef.current = nextTabs;
+        setTabs(nextTabs);
       } catch (err) {
         setStatus({ msg: `Navigation error: ${err}`, type: "error" });
       } finally {
@@ -462,6 +481,25 @@ const App: React.FC = () => {
       try {
         const qa = await invoke<QuickAccessItem[]>("get_quick_access");
         setQuickAccess(qa);
+
+        // Populate default pinned folders if not previously customized
+        setPinnedFolders((prev) => {
+          if (prev.length > 0) return prev;
+          const docs = qa.find((q) => q.name.toLowerCase() === "documents")?.path;
+          const dl = qa.find((q) => q.name.toLowerCase() === "downloads")?.path;
+          const desk = qa.find((q) => q.name.toLowerCase() === "desktop")?.path;
+          const initialPinned = [
+            docs ? { name: "Documents", path: docs } : null,
+            dl ? { name: "Downloads", path: dl } : null,
+            desk ? { name: "Desktop", path: desk } : null,
+          ].filter((p): p is { name: string; path: string } => Boolean(p));
+          if (initialPinned.length > 0) {
+            localStorage.setItem("folderly_pinned_folders", JSON.stringify(initialPinned));
+            return initialPinned;
+          }
+          return prev;
+        });
+
         const defaultTarget =
           qa.find((q) => q.name === "Downloads")?.path ||
           qa.find((q) => q.name === "Desktop")?.path ||
@@ -469,15 +507,15 @@ const App: React.FC = () => {
         if (defaultTarget) {
           const title =
             defaultTarget.split(/[\\/]/).filter(Boolean).pop() || "Downloads";
-          setTabs([
-            {
-              id: "tab-default",
-              title,
-              path: defaultTarget,
-              history: [defaultTarget],
-              historyIndex: 0,
-            },
-          ]);
+          const initialTab: TabItem = {
+            id: "tab-default",
+            title,
+            path: defaultTarget,
+            history: [defaultTarget],
+            historyIndex: 0,
+          };
+          tabsRef.current = [initialTab];
+          setTabs([initialTab]);
           activeTabIdRef.current = "tab-default";
           setActiveTabId("tab-default");
           navigateTo(defaultTarget, false, "tab-default");
@@ -556,7 +594,7 @@ const App: React.FC = () => {
    */
   const handleSelectTab = useCallback(
     (tabId: string) => {
-      const target = tabs.find((t) => t.id === tabId);
+      const target = tabsRef.current.find((t) => t.id === tabId);
       if (!target) return;
       activeTabIdRef.current = tabId;
       setActiveTabId(tabId);
@@ -566,11 +604,11 @@ const App: React.FC = () => {
         navigateTo(target.path, false, tabId);
       }
     },
-    [tabs, navigateTo]
+    [navigateTo]
   );
 
   /**
-   * Opens a new tab, loading either a given folder or the Downloads / default folder.
+   * Opens a new tab, picking a distinct default folder so it does not clone the active tab.
    *
    * @param initialPath - Optional folder path to seed the new tab with.
    * @returns void
@@ -579,14 +617,36 @@ const App: React.FC = () => {
     (initialPath?: string | unknown) => {
       const safePath =
         typeof initialPath === "string" && initialPath.trim().length > 0
-          ? initialPath
+          ? initialPath.trim()
           : undefined;
-      const targetPath =
-        safePath ||
-        quickAccess.find((q) => q.name === "Downloads")?.path ||
-        quickAccess.find((q) => q.name === "Desktop")?.path ||
-        quickAccess[0]?.path ||
+
+      // Avoid duplicating the current tab's path when clicking +
+      const activeTab = tabsRef.current.find((t) => t.id === activeTabIdRef.current);
+      const activePathLower = activeTab?.path?.toLowerCase() || "";
+
+      const homeItem = quickAccess.find((q) => q.name.toLowerCase() === "home");
+      const desktopItem = quickAccess.find((q) => q.name.toLowerCase() === "desktop");
+      const downloadsItem = quickAccess.find((q) => q.name.toLowerCase() === "downloads");
+      const documentsItem = quickAccess.find((q) => q.name.toLowerCase() === "documents");
+      const picturesItem = quickAccess.find((q) =>
+        q.name.toLowerCase().includes("picture") || q.name.toLowerCase().includes("photo")
+      );
+
+      const candidates = [
+        homeItem?.path,
+        desktopItem?.path,
+        downloadsItem?.path,
+        documentsItem?.path,
+        picturesItem?.path,
+        "recents",
+      ].filter((p): p is string => Boolean(p));
+
+      const fallbackTarget =
+        candidates.find((p) => p.toLowerCase() !== activePathLower) ||
+        candidates[0] ||
         "recents";
+
+      const targetPath = safePath || fallbackTarget;
       const title =
         targetPath === "recents"
           ? "Recent Files"
@@ -599,9 +659,10 @@ const App: React.FC = () => {
         history: [targetPath],
         historyIndex: 0,
       };
-      // Synchronously set ref before state update to prevent previous tab overwrite
+
+      tabsRef.current = [...tabsRef.current, newTab];
       activeTabIdRef.current = newTabId;
-      setTabs((prev) => [...prev, newTab]);
+      setTabs(tabsRef.current);
       setActiveTabId(newTabId);
       setHistory([targetPath]);
       setHistoryIndex(0);
@@ -619,9 +680,11 @@ const App: React.FC = () => {
    */
   const handleCloseTab = useCallback(
     (tabId: string) => {
-      if (tabs.length <= 1) return;
-      const closeIndex = tabs.findIndex((t) => t.id === tabId);
-      const remaining = tabs.filter((t) => t.id !== tabId);
+      const currentTabs = tabsRef.current;
+      if (currentTabs.length <= 1) return;
+      const closeIndex = currentTabs.findIndex((t) => t.id === tabId);
+      const remaining = currentTabs.filter((t) => t.id !== tabId);
+      tabsRef.current = remaining;
       setTabs(remaining);
       if (activeTabIdRef.current === tabId) {
         const nextActive = remaining[Math.max(0, closeIndex - 1)];
@@ -636,8 +699,55 @@ const App: React.FC = () => {
         }
       }
     },
-    [tabs, navigateTo]
+    [navigateTo]
   );
+
+  /**
+   * Pins an arbitrary folder chosen via native folder picker.
+   */
+  const handlePinFolder = useCallback(async () => {
+    try {
+      const selected = await open({ directory: true, multiple: false });
+      if (selected && typeof selected === "string") {
+        const name = selected.split(/[\\/]/).filter(Boolean).pop() || selected;
+        setPinnedFolders((prev) => {
+          if (prev.some((p) => p.path.toLowerCase() === selected.toLowerCase())) return prev;
+          const next = [...prev, { name, path: selected }];
+          localStorage.setItem("folderly_pinned_folders", JSON.stringify(next));
+          return next;
+        });
+        setStatus({ msg: `Pinned folder "${name}".`, type: "success" });
+      }
+    } catch (err) {
+      setStatus({ msg: `Failed to pin folder: ${err}`, type: "error" });
+    }
+  }, []);
+
+  /**
+   * Pins a folder directly by path (e.g. from context menu).
+   */
+  const handlePinFolderPath = useCallback((path: string) => {
+    const name = path.split(/[\\/]/).filter(Boolean).pop() || path;
+    setPinnedFolders((prev) => {
+      if (prev.some((p) => p.path.toLowerCase() === path.toLowerCase())) return prev;
+      const next = [...prev, { name, path }];
+      localStorage.setItem("folderly_pinned_folders", JSON.stringify(next));
+      return next;
+    });
+    setStatus({ msg: `Pinned "${name}" to sidebar.`, type: "success" });
+  }, []);
+
+  /**
+   * Unpins a folder from the pinned list.
+   */
+  const handleUnpinFolder = useCallback((path: string) => {
+    setPinnedFolders((prev) => {
+      const next = prev.filter((p) => p.path.toLowerCase() !== path.toLowerCase());
+      localStorage.setItem("folderly_pinned_folders", JSON.stringify(next));
+      return next;
+    });
+    setStatus({ msg: "Folder unpinned.", type: "info" });
+  }, []);
 
   /**
    * Moves a file or folder into a destination directory using the backend move_item command.
@@ -994,6 +1104,9 @@ const App: React.FC = () => {
                 }
               }}
               onClose={() => setIsSidebarOpen(false)}
+              pinnedFolders={pinnedFolders}
+              onAddPinnedFolder={handlePinFolder}
+              onRemovePinnedFolder={handleUnpinFolder}
               displayName={displayName}
               workspaceName={workspaceName}
               onOpenSettings={() => setIsSettingsOpen(true)}
@@ -1053,10 +1166,30 @@ const App: React.FC = () => {
           onSelectTab={handleSelectTab}
           onNewTab={handleNewTab}
           onCloseTab={handleCloseTab}
+          onMoveItem={handleMoveItem}
         />
 
-        {/* Workspace Central Area */}
-        <div className="flex flex-1 min-h-0 overflow-hidden relative">
+        {/* Workspace Central Area (accepts drops onto empty canvas to move items into current folder) */}
+        <div
+          onDragOver={(e) => {
+            if (currentPath && currentPath !== "recents") {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+            }
+          }}
+          onDrop={(e) => {
+            if (currentPath && currentPath !== "recents") {
+              e.preventDefault();
+              const src =
+                e.dataTransfer.getData("application/folderly-path") ||
+                e.dataTransfer.getData("text/plain");
+              if (src) {
+                handleMoveItem(src, currentPath);
+              }
+            }
+          }}
+          className="flex flex-1 min-h-0 overflow-hidden relative"
+        >
           <div className="flex-1 overflow-y-auto">
             <ErrorBoundary>
               {viewMode === "details" ? (
@@ -1132,6 +1265,8 @@ const App: React.FC = () => {
         }}
         onShowInFileManager={handleShowInFileManager}
         onDelete={handleDeleteItem}
+        onOpenInNewTab={(path) => handleNewTab(path)}
+        onPinFolder={handlePinFolderPath}
       />
 
       {/* Universal Search Across Entire Laptop Modal */}

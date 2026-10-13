@@ -22,6 +22,10 @@ export interface FileContextMenuProps {
   onShowInFileManager: (path: string) => void;
   /** Callback invoked to delete the target item. */
   onDelete: (path: string) => void;
+  /** Callback invoked to open the folder in a new tab. */
+  onOpenInNewTab?: (path: string) => void;
+  /** Callback invoked to pin the folder to the sidebar. */
+  onPinFolder?: (path: string) => void;
 }
 
 /**
@@ -40,6 +44,8 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onOpen,
   onShowInFileManager,
   onDelete,
+  onOpenInNewTab,
+  onPinFolder,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<{ x: number; y: number }>({ x, y });
@@ -183,6 +189,38 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
         </svg>
         <span className="font-medium truncate">{isFolder ? "Open Folder" : "Open"}</span>
       </button>
+
+      {/* Open in New Tab (Folders only) */}
+      {isFolder && onOpenInNewTab && (
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => {
+            onOpenInNewTab(targetPath);
+            onClose();
+          }}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-neutral-200 hover:bg-neutral-800 hover:text-white transition-colors duration-150 cursor-pointer"
+        >
+          <span className="w-4 h-4 text-neutral-400 shrink-0 text-center text-xs">⊞</span>
+          <span className="font-medium truncate">Open in New Tab</span>
+        </button>
+      )}
+
+      {/* Pin to Sidebar (Folders only) */}
+      {isFolder && onPinFolder && (
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => {
+            onPinFolder(targetPath);
+            onClose();
+          }}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-neutral-200 hover:bg-neutral-800 hover:text-white transition-colors duration-150 cursor-pointer"
+        >
+          <span className="w-4 h-4 text-neutral-400 shrink-0 text-center text-xs">📌</span>
+          <span className="font-medium truncate">Pin to Sidebar</span>
+        </button>
+      )}
 
       {/* Show in Windows Explorer */}
       <button

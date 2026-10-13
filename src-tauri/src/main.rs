@@ -202,15 +202,11 @@ fn compute_new_path(original: &Path, rules: &RenameRules) -> Result<PathBuf, Str
     Ok(parent.join(new_name))
 }
 
-/// Resolves a directory path, handling Windows OneDrive folder redirection.
-///
-/// On Windows, folders like Desktop, Documents, or Pictures may be relocated
-/// into a OneDrive directory (e.g. C:\Users\<user>\OneDrive\Desktop). If the
-/// initially requested path does not exist, this function attempts to map between
-/// the local user profile and the OneDrive directory.
+/// Resolves a directory path, handling Windows OneDrive folder redirection
+/// and cross-platform path recovery (e.g. running with Windows paths on macOS or vice-versa).
 ///
 /// * `raw_path`: Raw directory path requested by client or UI.
-/// * Returns: The resolved existing `PathBuf` or the original `PathBuf`.
+/// * Returns: The resolved existing `PathBuf` or a safe existing fallback `PathBuf`.
 fn resolve_system_path(raw_path: &str) -> PathBuf {
     let trimmed = raw_path.trim();
     if trimmed.is_empty() {
@@ -227,24 +223,35 @@ fn resolve_system_path(raw_path: &str) -> PathBuf {
         if let Ok(profile) = std::env::var("USERPROFILE") {
             let user_dir = Path::new(&profile);
 
-            // Handle bare names like "desktop", "photos", "pictures", etc.
+            // Handle bare names and aliases like "desktop", "photos", "photos & pictures", "home", etc.
             let lower = trimmed.to_lowercase();
-            let subfolder_name = match lower.as_str() {
-                "desktop" => Some("Desktop"),
-                "pictures" | "photos" => Some("Pictures"),
-                "downloads" => Some("Downloads"),
-                "documents" => Some("Documents"),
-                "music" => Some("Music"),
-                "videos" => Some("Videos"),
-                _ => None,
+            let subfolder_name: Option<&str> = if lower == "desktop" || lower.contains("desktop") {
+                Some("Desktop")
+            } else if lower == "pictures" || lower == "photos" || lower.contains("picture") || lower.contains("photo") {
+                Some("Pictures")
+            } else if lower == "downloads" || lower.contains("download") {
+                Some("Downloads")
+            } else if lower == "documents" || lower.contains("document") {
+                Some("Documents")
+            } else if lower == "music" || lower.contains("music") {
+                Some("Music")
+            } else if lower == "videos" || lower == "movies" || lower.contains("video") || lower.contains("movie") {
+                Some("Videos")
+            } else if lower == "home" || lower == "~" {
+                Some("")
+            } else {
+                None
             };
 
             if let Some(sub) = subfolder_name {
+                if sub.is_empty() {
+                    return user_dir.to_path_buf();
+                }
                 let od_cand = user_dir.join("OneDrive").join(sub);
                 if od_cand.exists() {
                     return od_cand;
                 }
-                if let Ok(od_env) = std::env::var("OneDrive") {
+                if let Ok(od_env) = std::env::var("OneDrive").or_else(|_| std::env::var("OneDriveConsumer")) {
                     let od_env_cand = Path::new(&od_env).join(sub);
                     if od_env_cand.exists() {
                         return od_env_cand;
@@ -258,7 +265,6 @@ fn resolve_system_path(raw_path: &str) -> PathBuf {
 
             // Case 1: Client asked for C:\Users\<user>\<subfolder>, but it's redirected to OneDrive
             if let Ok(rel) = path.strip_prefix(user_dir) {
-                // Also handle "Photos" alias mapping to "Pictures"
                 let rel_str = rel.to_string_lossy();
                 let effective_rel = if rel_str.eq_ignore_ascii_case("Photos") {
                     Path::new("Pictures")
@@ -270,7 +276,7 @@ fn resolve_system_path(raw_path: &str) -> PathBuf {
                 if od_cand.exists() {
                     return od_cand;
                 }
-                if let Ok(od_env) = std::env::var("OneDrive") {
+                if let Ok(od_env) = std::env::var("OneDrive").or_else(|_| std::env::var("OneDriveConsumer")) {
                     let od_env_cand = Path::new(&od_env).join(effective_rel);
                     if od_env_cand.exists() {
                         return od_env_cand;
@@ -283,9 +289,47 @@ fn resolve_system_path(raw_path: &str) -> PathBuf {
             }
 
             // Case 2: Client asked for OneDrive\<subfolder>, but it's located locally
-            if let Ok(od_env) = std::env::var("OneDrive") {
+            if let Ok(od_env) = std::env::var("OneDrive").or_else(|_| std::env::var("OneDriveConsumer")) {
                 if let Ok(rel) = path.strip_prefix(Path::new(&od_env)) {
                     let local_cand = user_dir.join(rel);
+                    if local_cand.exists() {
+                        return local_cand;
+                    }
+                }
+            }
+
+            // Case 3: Path contained a hardcoded user path or mismatched username (e.g. C:\Users\other\Pictures)
+            let normalized = trimmed.replace('/', "\\");
+            for part in normalized.split('\\').filter(|p| !p.is_empty()) {
+                let p_lower = part.to_lowercase();
+                let sub_match = if p_lower == "desktop" || p_lower.contains("desktop") {
+                    Some("Desktop")
+                } else if p_lower == "pictures" || p_lower == "photos" || p_lower.contains("picture") || p_lower.contains("photo") {
+                    Some("Pictures")
+                } else if p_lower == "downloads" || p_lower.contains("download") {
+                    Some("Downloads")
+                } else if p_lower == "documents" || p_lower.contains("document") {
+                    Some("Documents")
+                } else if p_lower == "music" || p_lower.contains("music") {
+                    Some("Music")
+                } else if p_lower == "videos" || p_lower.contains("video") {
+                    Some("Videos")
+                } else {
+                    None
+                };
+
+                if let Some(sub) = sub_match {
+                    let od_cand = user_dir.join("OneDrive").join(sub);
+                    if od_cand.exists() {
+                        return od_cand;
+                    }
+                    if let Ok(od_env) = std::env::var("OneDrive").or_else(|_| std::env::var("OneDriveConsumer")) {
+                        let od_env_cand = Path::new(&od_env).join(sub);
+                        if od_env_cand.exists() {
+                            return od_env_cand;
+                        }
+                    }
+                    let local_cand = user_dir.join(sub);
                     if local_cand.exists() {
                         return local_cand;
                     }
@@ -299,27 +343,73 @@ fn resolve_system_path(raw_path: &str) -> PathBuf {
         if let Ok(home) = std::env::var("HOME") {
             let user_dir = Path::new(&home);
             let lower = trimmed.to_lowercase();
-            let subfolder_name = match lower.as_str() {
-                "desktop" => Some("Desktop"),
-                "pictures" | "photos" => Some("Pictures"),
-                "downloads" => Some("Downloads"),
-                "documents" => Some("Documents"),
-                "music" => Some("Music"),
-                "videos" | "movies" => Some("Movies"),
-                _ => None,
+            let subfolder_name: Option<&str> = if lower == "desktop" || lower.contains("desktop") {
+                Some("Desktop")
+            } else if lower == "pictures" || lower == "photos" || lower.contains("picture") || lower.contains("photo") {
+                Some("Pictures")
+            } else if lower == "downloads" || lower.contains("download") {
+                Some("Downloads")
+            } else if lower == "documents" || lower.contains("document") {
+                Some("Documents")
+            } else if lower == "music" || lower.contains("music") {
+                Some("Music")
+            } else if lower == "videos" || lower == "movies" || lower.contains("video") || lower.contains("movie") {
+                Some("Movies")
+            } else if lower == "home" || lower == "~" {
+                Some("")
+            } else {
+                None
             };
+
             if let Some(sub) = subfolder_name {
+                if sub.is_empty() {
+                    return user_dir.to_path_buf();
+                }
                 let cand = user_dir.join(sub);
                 if cand.exists() {
                     return cand;
                 }
             }
+
             if raw_path.starts_with("~/") || raw_path == "~" {
                 let tail = if raw_path == "~" { "" } else { &raw_path[2..] };
                 let cand = user_dir.join(tail);
                 if cand.exists() {
                     return cand;
                 }
+            }
+
+            // If raw_path has Windows-style C:\Users\... or C:/Users/... on macOS:
+            let normalized = trimmed.replace('\\', "/");
+            for part in normalized.split('/').filter(|p| !p.is_empty()) {
+                let p_lower = part.to_lowercase();
+                let sub_match = if p_lower == "desktop" || p_lower.contains("desktop") {
+                    Some("Desktop")
+                } else if p_lower == "pictures" || p_lower == "photos" || p_lower.contains("picture") || p_lower.contains("photo") {
+                    Some("Pictures")
+                } else if p_lower == "downloads" || p_lower.contains("download") {
+                    Some("Downloads")
+                } else if p_lower == "documents" || p_lower.contains("document") {
+                    Some("Documents")
+                } else if p_lower == "music" || p_lower.contains("music") {
+                    Some("Music")
+                } else if p_lower == "videos" || p_lower == "movies" || p_lower.contains("video") || p_lower.contains("movie") {
+                    Some("Movies")
+                } else {
+                    None
+                };
+
+                if let Some(sub) = sub_match {
+                    let cand = user_dir.join(sub);
+                    if cand.exists() {
+                        return cand;
+                    }
+                }
+            }
+
+            // Fallback for foreign Windows-style drive root on macOS
+            if trimmed.contains(":\\") || trimmed.contains(":/") {
+                return user_dir.to_path_buf();
             }
         }
     }

@@ -13,6 +13,7 @@ interface Props {
   onClose?: () => void;
   pinnedFolders?: Array<{ name: string; path: string }>;
   onAddPinnedFolder?: () => void;
+  onRemovePinnedFolder?: (path: string) => void;
   displayName?: string;
   workspaceName?: string;
   onOpenSettings?: () => void;
@@ -38,12 +39,9 @@ const Sidebar: React.FC<Props> = ({
   quickAccess,
   onOpenFolder,
   onNavigate,
-  pinnedFolders = [
-    { name: "folderly", path: "C:\\Users\\rayna\\Downloads\\folderly" },
-    { name: "PDF documents", path: "C:\\Users\\rayna\\Documents" },
-    { name: "Work Study", path: "C:\\Users\\rayna\\Desktop" },
-  ],
+  pinnedFolders,
   onAddPinnedFolder,
+  onRemovePinnedFolder,
   displayName = "Raynald Gitau",
   workspaceName = "Personal workspace",
   onOpenSettings,
@@ -63,27 +61,32 @@ const Sidebar: React.FC<Props> = ({
   );
   const homeItem = quickAccess.find((q) => q.name.toLowerCase() === "home");
 
-  const resolvedDesktopPath = desktopItem?.path || "C:\\Users\\rayna\\OneDrive\\Desktop";
-  const resolvedPicturesPath = picturesItem?.path || "C:\\Users\\rayna\\OneDrive\\Pictures";
-  const resolvedDownloadsPath = downloadsItem?.path || "C:\\Users\\rayna\\Downloads";
-  const resolvedDocumentsPath = documentsItem?.path || "C:\\Users\\rayna\\OneDrive\\Documents";
+  const resolvedDesktopPath = desktopItem?.path || "Desktop";
+  const resolvedPicturesPath = picturesItem?.path || "Pictures";
+  const resolvedDownloadsPath = downloadsItem?.path || "Downloads";
+  const resolvedDocumentsPath = documentsItem?.path || "Documents";
+  const resolvedMusicPath = musicItem?.path || "Music";
+  const resolvedVideosPath = videosItem?.path || "Videos";
+  const resolvedHomePath = homeItem?.path || "Home";
 
-  const effectivePinnedFolders = pinnedFolders || [
-    { name: "folderly", path: "C:\\Users\\rayna\\Downloads\\folderly" },
-    { name: "PDF documents", path: resolvedDocumentsPath },
-    { name: "Work Study", path: resolvedDesktopPath },
-  ];
+  const effectivePinnedFolders = pinnedFolders && pinnedFolders.length > 0
+    ? pinnedFolders
+    : [
+        { name: "Documents", path: resolvedDocumentsPath },
+        { name: "Downloads", path: resolvedDownloadsPath },
+        { name: "Desktop", path: resolvedDesktopPath },
+      ];
 
-  // Default Quick Access standard locations with reliable OneDrive fallbacks
+  // Default Quick Access standard locations with reliable dynamic resolution
   const standardQuickAccess = [
     { name: "Recents", icon: "🕒", path: "recents" },
-    { name: "Home", icon: "🏠", path: homeItem?.path || "C:\\Users\\rayna" },
+    { name: "Home", icon: "🏠", path: resolvedHomePath },
     { name: "Desktop", icon: "🖥️", path: resolvedDesktopPath },
     { name: "Downloads", icon: "📥", path: resolvedDownloadsPath },
     { name: "Documents", icon: "📁", path: resolvedDocumentsPath },
     { name: "Photos & Pictures", icon: "🖼️", path: resolvedPicturesPath },
-    { name: "Music", icon: "🎵", path: musicItem?.path || "C:\\Users\\rayna\\Music" },
-    { name: "Videos", icon: "🎬", path: videosItem?.path || "C:\\Users\\rayna\\Videos" },
+    { name: "Music", icon: "🎵", path: resolvedMusicPath },
+    { name: "Videos", icon: "🎬", path: resolvedVideosPath },
   ].map((sq) => {
     if (sq.path === "recents") {
       return sq;
@@ -225,8 +228,8 @@ const Sidebar: React.FC<Props> = ({
             {effectivePinnedFolders.map((p) => {
               const isOver = dragOverPath === p.path;
               return (
-                <button
-                  key={p.name}
+                <div
+                  key={p.path}
                   onClick={() => onNavigate(p.path)}
                   onDragOver={(e) => {
                     e.preventDefault();
@@ -246,14 +249,28 @@ const Sidebar: React.FC<Props> = ({
                       onMoveItem(src, p.path);
                     }
                   }}
-                  className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs text-primary-color hover:bg-card hover:text-[#ff2d87] transition-all truncate ${
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs text-primary-color hover:bg-card hover:text-[#ff2d87] transition-all cursor-pointer group ${
                     isOver ? "ring-2 ring-[#ff2d87] bg-[#ff2d87]/20 font-bold" : ""
                   }`}
                   title={p.path}
                 >
-                  <MacFolderIcon size={16} />
-                  <span className="truncate">{p.name}</span>
-                </button>
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1 truncate">
+                    <MacFolderIcon size={16} />
+                    <span className="truncate">{p.name}</span>
+                  </div>
+                  {onRemovePinnedFolder && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemovePinnedFolder(p.path);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 hover:text-red-400 p-0.5 rounded text-[10px] shrink-0"
+                      title="Unpin folder"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>

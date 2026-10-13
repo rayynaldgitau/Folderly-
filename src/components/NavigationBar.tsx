@@ -77,9 +77,11 @@ export interface NavigationBarProps {
   /** Callback invoked when switching active tabs. */
   onSelectTab: (tabId: string) => void;
   /** Callback invoked to open a new tab. */
-  onNewTab: () => void;
+  onNewTab: (initialPath?: string) => void;
   /** Callback invoked to close a tab by id. */
   onCloseTab: (tabId: string) => void;
+  /** Callback fired when an item is dropped onto a tab destination. */
+  onMoveItem?: (sourcePath: string, destDir: string) => void;
 }
 
 /** Represents a single clickable breadcrumb segment. */
@@ -174,7 +176,10 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
   onSelectTab,
   onNewTab,
   onCloseTab,
+  onMoveItem,
 }) => {
+  const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
+  const tabHoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isEditingPath, setIsEditingPath] = useState(false);
   const [editPathValue, setEditPathValue] = useState("");
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
@@ -260,16 +265,64 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
           {/* Active & Inactive Tabs */}
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;
+            const isOver = dragOverTabId === tab.id;
+
             return (
               <div
                 key={tab.id}
                 onClick={() => onSelectTab(tab.id)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  if (dragOverTabId !== tab.id) {
+                    setDragOverTabId(tab.id);
+                  }
+                }}
+                onDragEnter={() => {
+                  setDragOverTabId(tab.id);
+                  // Hovering over an inactive tab for 350ms automatically activates it so user sees the folder
+                  if (!tabHoverTimerRef.current && tab.id !== activeTabId) {
+                    tabHoverTimerRef.current = setTimeout(() => {
+                      onSelectTab(tab.id);
+                      tabHoverTimerRef.current = null;
+                    }, 350);
+                  }
+                }}
+                onDragLeave={() => {
+                  if (dragOverTabId === tab.id) {
+                    setDragOverTabId(null);
+                  }
+                  if (tabHoverTimerRef.current) {
+                    clearTimeout(tabHoverTimerRef.current);
+                    tabHoverTimerRef.current = null;
+                  }
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOverTabId(null);
+                  if (tabHoverTimerRef.current) {
+                    clearTimeout(tabHoverTimerRef.current);
+                    tabHoverTimerRef.current = null;
+                  }
+                  const src =
+                    e.dataTransfer.getData("application/folderly-path") ||
+                    e.dataTransfer.getData("text/plain");
+                  if (src && tab.path && tab.path !== "recents" && onMoveItem) {
+                    onMoveItem(src, tab.path);
+                  }
+                }}
                 className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs max-w-[200px] min-w-[110px] shrink-0 cursor-pointer transition-all select-none border ${
-                  isActive
+                  isOver
+                    ? "ring-2 ring-[#ff2d87] border-[#ff2d87] bg-[#ff2d87]/20 text-[#ff2d87] font-bold scale-[1.03] shadow-md"
+                    : isActive
                     ? "bg-card border-neutral-700/60 text-primary-color font-semibold shadow-sm ring-1 ring-[#ff2d87]/40"
                     : "bg-transparent border-transparent text-muted-color hover:text-primary-color hover:bg-card/40"
                 }`}
-                title={tab.path || tab.title}
+                title={
+                  tab.path
+                    ? `${tab.path}\nDrag items here to move into this folder`
+                    : tab.title
+                }
               >
                 <span className="shrink-0 flex items-center">
                   {tab.path === "recents" ? (
@@ -299,11 +352,24 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
             );
           })}
 
-          {/* + New Tab Button */}
+          {/* + New Tab Button (also supports dropping a folder/file to open it in a new tab) */}
           <button
             onClick={() => onNewTab()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "copy";
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              const src =
+                e.dataTransfer.getData("application/folderly-path") ||
+                e.dataTransfer.getData("text/plain");
+              if (src) {
+                onNewTab(src);
+              }
+            }}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-card/60 hover:bg-card border border-neutral-800/40 hover:border-[#ff2d87]/40 text-muted-color hover:text-[#ff2d87] text-xs font-semibold shrink-0 transition-all shadow-sm group"
-            title="Open a new tab (Ctrl+T)"
+            title="Open a new tab (Ctrl+T) or drag a folder/file here"
           >
             <span className="font-bold text-sm leading-none group-hover:scale-110 transition-transform">+</span>
           </button>
