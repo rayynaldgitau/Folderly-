@@ -84,8 +84,10 @@ jobs:
         with:
           name: Foldy-Windows-Installer
           path: |
-            src-tauri/target/release/bundle/msi/*.msi
-            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi*
+            src-tauri/target/release/bundle/nsis/*.exe*
+            src-tauri/target/release/bundle/nsis/*.sig*
+            src-tauri/target/release/bundle/msi/*.sig*
             src-tauri/target/release/bundle/nsis/*.nsis.zip*
             src-tauri/target/release/latest.json
 
@@ -117,12 +119,14 @@ jobs:
 
       - name: Merge Multi-Platform Updater Manifests
         run: node scripts/merge-updater-manifests.js
+        env:
+          TAG_NAME: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v0.1.0' }}
-          name: Foldy ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v0.1.0' }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v0.1.2' }}
+          name: Foldy ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v0.1.2' }}
           draft: false
           prerelease: false
           generate_release_notes: true
@@ -158,8 +162,9 @@ jobs:
             mac-artifacts/**/*.dmg
             mac-artifacts/**/*.command
             mac-artifacts/**/*.tar.gz*
-            win-artifacts/**/*.msi
-            win-artifacts/**/*.exe
+            win-artifacts/**/*.msi*
+            win-artifacts/**/*.exe*
+            win-artifacts/**/*.sig*
             win-artifacts/**/*.nsis.zip*
             latest.json
         env:
