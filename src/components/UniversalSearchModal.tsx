@@ -276,7 +276,7 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
         e.preventDefault();
         const selected = results[selectedIndex];
         if (selected) {
-          const isFolder = selected.extension.toLowerCase() === "folder";
+          const isFolder = selected.extension.toLowerCase() === "folder" || !selected.extension;
           if (isFolder) {
             onNavigateFolder(selected.path);
           } else {
@@ -455,7 +455,7 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
 
           {/* Matches List */}
           {results.map((item, index) => {
-            const isFolder = item.extension.toLowerCase() === "folder";
+            const isFolder = item.extension.toLowerCase() === "folder" || !item.extension;
             const icon = getItemIcon(item.extension, isFolder);
             const parentPath = getParentPath(item.path);
             const isSelected = index === selectedIndex;
@@ -512,16 +512,20 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
                     {/* Open Action */}
                     <button
                       type="button"
-                      title="Open file"
+                      title={isFolder ? "Open folder in Foldy" : "Open file"}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onOpenFile(item.path);
+                        if (isFolder) {
+                          onNavigateFolder(item.path);
+                        } else {
+                          onOpenFile(item.path);
+                        }
                         onClose();
                       }}
                       className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700/60 hover:text-white transition-colors"
                     >
-                      <span>🚀</span>
-                      <span className="hidden sm:inline">Open</span>
+                      <span>{isFolder ? "📂" : "🚀"}</span>
+                      <span className="hidden sm:inline">{isFolder ? "Open Folder" : "Open"}</span>
                     </button>
 
                     {/* Browse Folder Action */}

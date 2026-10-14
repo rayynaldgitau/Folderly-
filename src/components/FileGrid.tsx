@@ -121,22 +121,34 @@ const FileGrid: React.FC<FileGridProps> = ({
                     setDragOverFolder(folder.path);
                   }
                 }}
-                onDragLeave={() => {
-                  if (dragOverFolder === folder.path) {
-                    setDragOverFolder(null);
+                onDragLeave={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                    if (dragOverFolder === folder.path) {
+                      setDragOverFolder(null);
+                    }
                   }
                 }}
                 onDrop={(e) => {
                   e.preventDefault();
                   setDragOverFolder(null);
-                  const src =
-                    e.dataTransfer.getData("application/foldy-path") ||
-                    e.dataTransfer.getData("application/folderly-path") ||
-                    e.dataTransfer.getData("text/plain");
-                  if (src && src.toLowerCase() !== folder.path.toLowerCase() && onMoveItem) {
-                    onMoveItem(src, folder.path);
+                  const pathsJson = e.dataTransfer.getData("application/foldy-paths");
+                  const paths: string[] = pathsJson
+                    ? JSON.parse(pathsJson)
+                    : [
+                        e.dataTransfer.getData("application/foldy-path") ||
+                        e.dataTransfer.getData("application/folderly-path") ||
+                        e.dataTransfer.getData("text/plain")
+                      ].filter(Boolean);
+
+                  if (onMoveItem) {
+                    for (const src of paths) {
+                      if (src && src.toLowerCase() !== folder.path.toLowerCase()) {
+                        onMoveItem(src, folder.path);
+                      }
+                    }
                   }
                 }}
+                onClick={() => onNavigateFolder(folder.path)}
                 onDoubleClick={() => onNavigateFolder(folder.path)}
                 onContextMenu={(e) => onContextMenu(e, folder.path, true)}
                 className={`bg-card hover:bg-card/90 rounded-2xl p-3.5 border cursor-pointer transition-all select-none group flex items-center gap-3 shadow-sm ${
@@ -144,13 +156,13 @@ const FileGrid: React.FC<FileGridProps> = ({
                     ? "ring-2 ring-[#ff2d87] border-[#ff2d87] bg-[#ff2d87]/15 scale-[1.03]"
                     : "border-neutral-800/20 hover:border-[#ff2d87]/40"
                 }`}
-                title={`${folder.name}\nDouble-click to open (or drop items here)`}
+                title={`${folder.name}\nClick to open (or drop items here to move)`}
               >
                 {/* macOS Style Folder Icon */}
-                <div className="shrink-0 group-hover:scale-105 transition-transform">
+                <div className="shrink-0 group-hover:scale-105 transition-transform pointer-events-none">
                   <MacFolderIcon size={36} />
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 pointer-events-none">
                   <p className="text-xs font-semibold text-primary-color truncate leading-tight group-hover:text-[#ff2d87] transition-colors">
                     {folder.name}
                   </p>
@@ -192,9 +204,14 @@ const FileGrid: React.FC<FileGridProps> = ({
                   key={file.path}
                   draggable={true}
                   onDragStart={(e) => {
+                    const isTargetSelected = selectedPaths.has(file.path);
+                    const pathsToDrag = isTargetSelected && selectedPaths.size > 1
+                      ? Array.from(selectedPaths)
+                      : [file.path];
                     e.dataTransfer.setData("application/foldy-path", file.path);
+                    e.dataTransfer.setData("application/foldy-paths", JSON.stringify(pathsToDrag));
                     e.dataTransfer.setData("application/folderly-path", file.path);
-                    e.dataTransfer.setData("text/plain", file.path);
+                    e.dataTransfer.setData("text/plain", pathsToDrag.join("\n"));
                     e.dataTransfer.effectAllowed = "move";
                   }}
                   onClick={() => onToggle(file.path)}
@@ -255,9 +272,14 @@ const FileGrid: React.FC<FileGridProps> = ({
                       key={file.path}
                       draggable={true}
                       onDragStart={(e) => {
+                        const isTargetSelected = selectedPaths.has(file.path);
+                        const pathsToDrag = isTargetSelected && selectedPaths.size > 1
+                          ? Array.from(selectedPaths)
+                          : [file.path];
                         e.dataTransfer.setData("application/foldy-path", file.path);
+                        e.dataTransfer.setData("application/foldy-paths", JSON.stringify(pathsToDrag));
                         e.dataTransfer.setData("application/folderly-path", file.path);
-                        e.dataTransfer.setData("text/plain", file.path);
+                        e.dataTransfer.setData("text/plain", pathsToDrag.join("\n"));
                         e.dataTransfer.effectAllowed = "move";
                       }}
                       onClick={() => onToggle(file.path)}

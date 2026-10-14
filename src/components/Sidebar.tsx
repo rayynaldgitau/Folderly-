@@ -8,17 +8,21 @@ interface Props {
   folderCount: number;
   quickAccess: QuickAccessItem[];
   currentFolders: FolderEntry[];
-  onOpenFolder: () => void;
+  onOpenUniversalSearch?: () => void;
   onNavigate: (path: string) => void;
   onClose?: () => void;
   pinnedFolders?: Array<{ name: string; path: string }>;
   onAddPinnedFolder?: () => void;
+  onPinFolderPath?: (path: string) => void;
   onRemovePinnedFolder?: (path: string) => void;
+  onReorderPinnedFolders?: (fromIndex: number, toIndex: number) => void;
   displayName?: string;
   workspaceName?: string;
   onOpenSettings?: () => void;
   /** Callback fired when an item is dropped onto a destination folder. */
   onMoveItem?: (sourcePath: string, destDir: string) => void;
+  /** Indicates whether a new version update is ready. */
+  hasUpdateAvailable?: boolean;
 }
 
 /**
@@ -26,9 +30,9 @@ interface Props {
  *
  * Features:
  * - User workspace profile header (Avatar + name + workspace)
- * - Hot pink "Open Folder" button
- * - Quick Access with active hot pink item fill and count badge
- * - Pinned Folders section with "+" button
+ * - Persistent Search Laptop feature
+ * - Quick Access with active item fill and count badge
+ * - Pinned Folders section with drag-to-pin and drag-to-reorder
  * - This PC / Drives list
  * - Storage usage progress widget
  * - Settings action item
@@ -37,17 +41,23 @@ const Sidebar: React.FC<Props> = ({
   selectedDir,
   fileCount,
   quickAccess,
-  onOpenFolder,
+  onOpenUniversalSearch,
   onNavigate,
   pinnedFolders,
   onAddPinnedFolder,
+  onPinFolderPath,
   onRemovePinnedFolder,
-  displayName = "Raynald Gitau",
+  onReorderPinnedFolders,
+  displayName = "User",
   workspaceName = "Personal workspace",
   onOpenSettings,
   onMoveItem,
+  hasUpdateAvailable = false,
 }) => {
   const [dragOverPath, setDragOverPath] = useState<string | null>(null);
+  const [isOverPinnedSection, setIsOverPinnedSection] = useState<boolean>(false);
+  const [draggedPinnedIndex, setDraggedPinnedIndex] = useState<number | null>(null);
+  const [dragOverPinnedIndex, setDragOverPinnedIndex] = useState<number | null>(null);
   const drives = quickAccess.filter((item) => item.is_drive);
   const desktopItem = quickAccess.find((q) => q.name.toLowerCase() === "desktop");
   const picturesItem = quickAccess.find(
@@ -123,25 +133,38 @@ const Sidebar: React.FC<Props> = ({
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-primary-color truncate leading-tight group-hover:text-[#ff2d87] transition-colors">
-                {displayName}
+                {displayName || "User"}
               </p>
               <p className="text-[10px] text-muted-color truncate leading-tight mt-0.5">
                 {workspaceName}
               </p>
             </div>
           </div>
-          <span className="text-muted-color text-xs px-1">⚙️</span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {hasUpdateAvailable && (
+              <span className="px-1.5 py-0.5 rounded-full bg-[#ff2d87] text-white text-[9px] font-bold tracking-tight animate-pulse shadow-sm">
+                UPDATE
+              </span>
+            )}
+            <span className="text-muted-color text-xs px-1">⚙️</span>
+          </div>
         </div>
       </div>
 
-      {/* ── 2. Open Folder Button (Solid Hot Pink) ── */}
+      {/* ── 2. Search Laptop (Persistent in Sidebar) ── */}
       <div className="px-3.5 py-1.5">
         <button
-          onClick={onOpenFolder}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#ff2d87] hover:bg-[#e61b74] text-white text-xs font-bold shadow-md shadow-[#ff2d87]/20 transition-all active:scale-[0.98]"
+          onClick={onOpenUniversalSearch}
+          className="w-full flex items-center gap-2.5 py-2 px-3 rounded-xl bg-card border border-neutral-800/40 hover:border-[#ff2d87]/50 text-neutral-300 hover:text-white text-xs font-medium transition-all shadow-sm group active:scale-[0.98]"
+          title="Search files and folders across your laptop (Ctrl+K)"
         >
-          <span>📂</span>
-          <span>Open Folder</span>
+          <span className="text-[#ff2d87] group-hover:scale-110 transition-transform text-sm shrink-0">🔍</span>
+          <span className="flex-1 text-left text-muted-color group-hover:text-primary-color font-medium truncate">
+            Search Laptop...
+          </span>
+          <kbd className="px-1.5 py-0.5 bg-black/40 border border-neutral-700/60 rounded text-[9px] text-muted-color font-mono shrink-0">
+            Ctrl K
+          </kbd>
         </button>
       </div>
 
@@ -211,38 +234,100 @@ const Sidebar: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* PINNED FOLDERS Section */}
-        <div>
+        {/* PINNED FOLDERS Section (Accepts dropped folders to pin, plus drag-to-reorder) */}
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "copy";
+            if (!isOverPinnedSection) setIsOverPinnedSection(true);
+          }}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+              setIsOverPinnedSection(false);
+            }
+          }}
+          onDrop={(e) => {
+            setIsOverPinnedSection(false);
+            const fromIndexStr = e.dataTransfer.getData("application/foldy-pinned-index");
+            if (!fromIndexStr) {
+              // It's a folder being dropped to pin it!
+              e.preventDefault();
+              const src =
+                e.dataTransfer.getData("application/foldy-path") ||
+                e.dataTransfer.getData("application/folderly-path") ||
+                e.dataTransfer.getData("text/plain");
+              if (src && onPinFolderPath) {
+                onPinFolderPath(src);
+              }
+            }
+          }}
+          className={`rounded-2xl transition-all ${
+            isOverPinnedSection ? "ring-2 ring-[#ff2d87] bg-[#ff2d87]/10 p-1" : ""
+          }`}
+        >
           <div className="flex items-center justify-between px-2 mb-1.5">
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-color">
               Pinned Folders
             </p>
             <button
               onClick={onAddPinnedFolder}
-              className="text-muted-color hover:text-[#ff2d87] text-xs font-bold"
-              title="Pin a folder"
+              className="text-muted-color hover:text-[#ff2d87] text-xs font-bold px-1.5 py-0.5 rounded-md hover:bg-card transition-colors"
+              title="Pin current folder to sidebar"
             >
               +
             </button>
           </div>
           <div className="space-y-0.5">
-            {effectivePinnedFolders.map((p) => {
-              const isOver = dragOverPath === p.path;
+            {effectivePinnedFolders.map((p, index) => {
+              const isOver = dragOverPath === p.path || dragOverPinnedIndex === index;
+              const isDragging = draggedPinnedIndex === index;
+
               return (
                 <div
                   key={p.path}
+                  draggable={true}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("application/foldy-pinned-index", String(index));
+                    e.dataTransfer.setData("application/foldy-path", p.path);
+                    e.dataTransfer.setData("text/plain", p.path);
+                    e.dataTransfer.effectAllowed = "move";
+                    setDraggedPinnedIndex(index);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedPinnedIndex(null);
+                    setDragOverPinnedIndex(null);
+                    setDragOverPath(null);
+                  }}
                   onClick={() => onNavigate(p.path)}
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = "move";
+                    if (dragOverPinnedIndex !== index) setDragOverPinnedIndex(index);
                     if (dragOverPath !== p.path) setDragOverPath(p.path);
                   }}
-                  onDragLeave={() => {
-                    if (dragOverPath === p.path) setDragOverPath(null);
+                  onDragLeave={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                      if (dragOverPinnedIndex === index) setDragOverPinnedIndex(null);
+                      if (dragOverPath === p.path) setDragOverPath(null);
+                    }
                   }}
                   onDrop={(e) => {
                     e.preventDefault();
+                    e.stopPropagation();
+                    setDragOverPinnedIndex(null);
                     setDragOverPath(null);
+                    setDraggedPinnedIndex(null);
+
+                    const fromIndexStr = e.dataTransfer.getData("application/foldy-pinned-index");
+                    if (fromIndexStr !== "") {
+                      const fromIndex = parseInt(fromIndexStr, 10);
+                      if (!isNaN(fromIndex) && fromIndex !== index && onReorderPinnedFolders) {
+                        onReorderPinnedFolders(fromIndex, index);
+                        return;
+                      }
+                    }
+
+                    // Move dropped item into this pinned folder
                     const src =
                       e.dataTransfer.getData("application/foldy-path") ||
                       e.dataTransfer.getData("application/folderly-path") ||
@@ -251,12 +336,14 @@ const Sidebar: React.FC<Props> = ({
                       onMoveItem(src, p.path);
                     }
                   }}
-                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs text-primary-color hover:bg-card hover:text-[#ff2d87] transition-all cursor-pointer group ${
-                    isOver ? "ring-2 ring-[#ff2d87] bg-[#ff2d87]/20 font-bold" : ""
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs text-primary-color hover:bg-card hover:text-[#ff2d87] transition-all cursor-grab active:cursor-grabbing group ${
+                    isDragging ? "opacity-40" : ""
+                  } ${
+                    isOver ? "ring-2 ring-[#ff2d87] bg-[#ff2d87]/20 font-bold scale-[1.02]" : ""
                   }`}
-                  title={p.path}
+                  title={`${p.path}\nClick to browse, drag to rearrange, or drop items here to move them`}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1 truncate">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1 truncate pointer-events-none">
                     <MacFolderIcon size={16} />
                     <span className="truncate">{p.name}</span>
                   </div>
@@ -322,10 +409,17 @@ const Sidebar: React.FC<Props> = ({
         {/* Settings Button */}
         <button
           onClick={onOpenSettings}
-          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-primary-color hover:bg-card hover:text-[#ff2d87] transition-all"
+          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium text-primary-color hover:bg-card hover:text-[#ff2d87] transition-all group"
         >
-          <span>⚙️</span>
-          <span>Settings</span>
+          <div className="flex items-center gap-2.5">
+            <span>⚙️</span>
+            <span>Settings</span>
+          </div>
+          {hasUpdateAvailable && (
+            <span className="px-1.5 py-0.5 rounded-full bg-[#ff2d87] text-white text-[9px] font-bold tracking-tight shadow-sm">
+              UPDATE
+            </span>
+          )}
         </button>
       </div>
     </aside>

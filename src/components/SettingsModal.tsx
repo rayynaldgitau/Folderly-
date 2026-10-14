@@ -24,6 +24,8 @@ export interface SettingsModalProps {
   workspaceName: string;
   /** Callback fired to update the workspace name. */
   onUpdateWorkspaceName: (ws: string) => void;
+  /** Optional tab to open when the modal becomes visible. */
+  initialTab?: "appearance" | "profile" | "shortcuts" | "updates";
 }
 
 /** Theme metadata for the settings picker card list. */
@@ -58,30 +60,30 @@ const THEME_OPTIONS: ThemeOption[] = [
   },
   {
     id: "material",
-    name: "Material Design",
-    description: "Google Material 3 inspired theme with indigo and cyan tones.",
-    accentColor: "#6750a4",
-    bgColor: "#141218",
-    textColor: "#e6e1e5",
-    tag: "Material",
+    name: "Material You (Google & Android)",
+    description: "Authentic Google & Android Material 3 with signature Google Blue and Android Green.",
+    accentColor: "#1a73e8",
+    bgColor: "#131314",
+    textColor: "#f1f3f4",
+    tag: "Android",
   },
   {
     id: "apple",
     name: "Apple Design (macOS)",
-    description: "Cupertino minimalist styling with subtle cool grey and blue tints.",
-    accentColor: "#0a84ff",
-    bgColor: "#1c1c1e",
-    textColor: "#ffffff",
+    description: "Neutral gray-and-silver system backdrop with Apple Multicolor accents.",
+    accentColor: "#e5e7eb",
+    bgColor: "#24262b",
+    textColor: "#f5f5f7",
     tag: "macOS",
   },
   {
     id: "dark",
-    name: "Midnight Dark",
-    description: "Professional neutral dark theme with violet accents.",
-    accentColor: "#8b5cf6",
-    bgColor: "#09090b",
-    textColor: "#fafafa",
-    tag: "Dark",
+    name: "Midnight Orange",
+    description: "Obsidian midnight black with subtle matte orange accents.",
+    accentColor: "#ea580c",
+    bgColor: "#0c0c0e",
+    textColor: "#f4f4f5",
+    tag: "Matte",
   },
 ];
 
@@ -101,10 +103,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onUpdateDisplayName,
   workspaceName,
   onUpdateWorkspaceName,
+  initialTab = "appearance",
 }) => {
   const [localName, setLocalName] = useState(displayName);
   const [localWorkspace, setLocalWorkspace] = useState(workspaceName);
-  const [activeTab, setActiveTab] = useState<"appearance" | "profile" | "shortcuts" | "updates">("appearance");
+  const [activeTab, setActiveTab] = useState<"appearance" | "profile" | "shortcuts" | "updates">(initialTab);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Auto-updater state
@@ -128,8 +131,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       setLocalName(displayName);
       setLocalWorkspace(workspaceName);
       setSaveSuccess(false);
+      if (initialTab) {
+        setActiveTab(initialTab);
+      }
     }
-  }, [isOpen, displayName, workspaceName]);
+  }, [isOpen, displayName, workspaceName, initialTab]);
 
   // Handle escape key to close modal
   useEffect(() => {
@@ -435,7 +441,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   type="text"
                   value={localName}
                   onChange={(e) => setLocalName(e.target.value)}
-                  placeholder="e.g. Raynald Gitau"
+                  placeholder="e.g. Alex"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-sidebar border border-neutral-800/40 text-xs text-primary-color placeholder-muted-color outline-none focus:border-[#ff2d87] transition-colors"
                 />
               </div>

@@ -631,13 +631,20 @@ mod commands {
     /// * Returns: Ok(()) on successful spawn or an error message.
     #[tauri::command]
     pub fn open_in_os(path: String) -> Result<(), String> {
+        let p = Path::new(&path);
+        if p.is_dir() {
+            // Folders are navigated internally inside Foldy to prevent launching OS File Explorer
+            return Err(format!("'{path}' is a folder; folders are browsed inside Foldy."));
+        }
+
         #[cfg(target_os = "windows")]
         {
-            // Use explorer / shell execute to open files with their registered associations
+            // Normalize path separators to backslashes so cmd /c start does not interpret / as switch
+            let win_path = path.replace('/', "\\");
             Command::new("cmd")
-                .args(["/c", "start", "", &path])
+                .args(["/c", "start", "", &win_path])
                 .spawn()
-                .map_err(|e| format!("Failed to open '{path}': {e}"))?;
+                .map_err(|e| format!("Failed to open '{win_path}': {e}"))?;
         }
 
         #[cfg(target_os = "macos")]
@@ -1159,11 +1166,14 @@ mod commands {
                         Err(_) => continue,
                     };
 
-                    let extension = path
-                        .extension()
-                        .and_then(|e| e.to_str())
-                        .unwrap_or(if meta.is_dir() { "folder" } else { "" })
-                        .to_lowercase();
+                    let extension = if meta.is_dir() {
+                        "folder".to_string()
+                    } else {
+                        path.extension()
+                            .and_then(|e| e.to_str())
+                            .unwrap_or("")
+                            .to_lowercase()
+                    };
 
                     results.push(FileEntry {
                         path: path.to_string_lossy().to_string(),

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
-import { open } from "@tauri-apps/plugin-dialog";
+import { check } from "@tauri-apps/plugin-updater";
 
 import NavigationBar from "./components/NavigationBar";
 import Sidebar from "./components/Sidebar";
@@ -108,15 +108,38 @@ const App: React.FC = () => {
   const [sortField, setSortField] = useState<SortField>("name");
   const [isUniversalSearchOpen, setIsUniversalSearchOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [settingsTab, setSettingsTab] = useState<"appearance" | "profile" | "shortcuts" | "updates">("appearance");
+  const [pendingUpdateVersion, setPendingUpdateVersion] = useState<string | null>(null);
+
+  // Background check for newer app releases 2.5s after launch
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      try {
+        const update = await check();
+        if (update && update.available) {
+          setPendingUpdateVersion(update.version);
+        }
+      } catch {
+        // Silently catch network or dev-environment errors
+      }
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // ── User Profile & Microsoft Account State ────────────────────────────────
   const [detectedUser, setDetectedUser] = useState<SystemUserInfo | null>(null);
   const [displayName, setDisplayName] = useState<string>(() => {
-    return (
+    const saved =
       localStorage.getItem("foldy_username") ||
-      localStorage.getItem("folderly_username") ||
-      "Raynald Gitau"
-    );
+      localStorage.getItem("folderly_username");
+    if (saved && saved !== "Raynald Gitau") {
+      return saved;
+    }
+    if (saved === "Raynald Gitau") {
+      localStorage.removeItem("foldy_username");
+      localStorage.removeItem("folderly_username");
+    }
+    return "";
   });
   const [workspaceName, setWorkspaceName] = useState<string>(() => {
     return (
@@ -440,17 +463,6 @@ const App: React.FC = () => {
     }
   }, [currentPath, navigateTo]);
 
-  const handleOpenFolderPicker = useCallback(async () => {
-    try {
-      const dir = await open({ directory: true, multiple: false });
-      if (dir && typeof dir === "string") {
-        navigateTo(dir);
-      }
-    } catch (err) {
-      setStatus({ msg: `Dialog error: ${err}`, type: "error" });
-    }
-  }, [navigateTo]);
-
   /** Prompts for a folder name and creates a new directory in the current path. */
   const handleNewFolder = useCallback(async () => {
     if (!currentPath || currentPath === "recents") {
@@ -485,8 +497,13 @@ const App: React.FC = () => {
       try {
         const sysUser = await invoke<SystemUserInfo>("get_system_user");
         setDetectedUser(sysUser);
-        if (!localStorage.getItem("foldy_username") && !localStorage.getItem("folderly_username") && sysUser.display_name) {
+        const saved =
+          localStorage.getItem("foldy_username") ||
+          localStorage.getItem("folderly_username");
+        if ((!saved || saved === "Raynald Gitau") && sysUser.display_name) {
           setDisplayName(sysUser.display_name);
+        } else if (!saved && sysUser.username) {
+          setDisplayName(sysUser.username);
         }
       } catch (e) {
         console.error("System user detection error:", e);
@@ -586,20 +603,34 @@ const App: React.FC = () => {
 
   /**
    * Opens a file using the operating system's default handler and registers it in recents.
+   * If the path is a folder, navigates into it inside Foldy instead of opening File Explorer.
    *
    * @param path - The absolute file path to open.
    */
   const handleOpenFile = useCallback(
     async (path: string) => {
+      // Check if path is an existing folder entry in the current view
+      const isKnownFolder = folders.some((f) => f.path.toLowerCase() === path.toLowerCase());
+      if (isKnownFolder) {
+        navigateTo(path);
+        return;
+      }
+
       try {
         await invoke("open_in_os", { path });
         recordRecentFile(path);
         setStatus({ msg: `Opened: ${path}`, type: "info" });
       } catch (err) {
-        setStatus({ msg: `Error opening item: ${err}`, type: "error" });
+        const errStr = String(err).toLowerCase();
+        if (errStr.includes("folder") || errStr.includes("directory")) {
+          // If the item turns out to be a folder, browse it directly in Foldy
+          navigateTo(path);
+        } else {
+          setStatus({ msg: `Error opening item: ${err}`, type: "error" });
+        }
       }
     },
-    [recordRecentFile]
+    [folders, navigateTo, recordRecentFile]
   );
 
   /**
@@ -719,28 +750,7 @@ const App: React.FC = () => {
   );
 
   /**
-   * Pins an arbitrary folder chosen via native folder picker.
-   */
-  const handlePinFolder = useCallback(async () => {
-    try {
-      const selected = await open({ directory: true, multiple: false });
-      if (selected && typeof selected === "string") {
-        const name = selected.split(/[\\/]/).filter(Boolean).pop() || selected;
-        setPinnedFolders((prev) => {
-          if (prev.some((p) => p.path.toLowerCase() === selected.toLowerCase())) return prev;
-          const next = [...prev, { name, path: selected }];
-          localStorage.setItem("foldy_pinned_folders", JSON.stringify(next));
-          return next;
-        });
-        setStatus({ msg: `Pinned folder "${name}".`, type: "success" });
-      }
-    } catch (err) {
-      setStatus({ msg: `Failed to pin folder: ${err}`, type: "error" });
-    }
-  }, []);
-
-  /**
-   * Pins a folder directly by path (e.g. from context menu).
+   * Pins a folder directly by path (e.g. from context menu or drag and drop).
    */
   const handlePinFolderPath = useCallback((path: string) => {
     const name = path.split(/[\\/]/).filter(Boolean).pop() || path;
@@ -751,6 +761,66 @@ const App: React.FC = () => {
       return next;
     });
     setStatus({ msg: `Pinned "${name}" to sidebar.`, type: "success" });
+  }, []);
+
+  /**
+   * Pins the current folder to the sidebar without opening the OS File Explorer dialog.
+   */
+  const handlePinFolder = useCallback(() => {
+    if (currentPath && currentPath !== "recents") {
+      const name = currentPath.split(/[\\/]/).filter(Boolean).pop() || currentPath;
+      if (pinnedFolders.some((p) => p.path.toLowerCase() === currentPath.toLowerCase())) {
+        setStatus({ msg: `"${name}" is already pinned to sidebar.`, type: "info" });
+        return;
+      }
+      handlePinFolderPath(currentPath);
+      return;
+    }
+    // If on recents or no folder is active, prompt for a path directly without launching external explorer
+    const input = window.prompt("Enter the absolute folder path to pin:");
+    if (input && input.trim()) {
+      handlePinFolderPath(input.trim());
+    }
+  }, [currentPath, pinnedFolders, handlePinFolderPath]);
+
+  /**
+   * Reorders pinned folders when dragged and dropped in the sidebar.
+   *
+   * @param fromIndex - Source index of dragged folder.
+   * @param toIndex - Destination index to place folder.
+   */
+  const handleReorderPinnedFolders = useCallback((fromIndex: number, toIndex: number) => {
+    setPinnedFolders((prev) => {
+      if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= prev.length || toIndex >= prev.length) {
+        return prev;
+      }
+      const updated = [...prev];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      localStorage.setItem("foldy_pinned_folders", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  /**
+   * Reorders open tabs when a tab is dragged and dropped over another tab.
+   *
+   * @param fromTabId - ID of dragged tab.
+   * @param toTabId - ID of target tab.
+   */
+  const handleReorderTabs = useCallback((fromTabId: string, toTabId: string) => {
+    if (fromTabId === toTabId) return;
+    const currentTabs = tabsRef.current;
+    const fromIndex = currentTabs.findIndex((t) => t.id === fromTabId);
+    const toIndex = currentTabs.findIndex((t) => t.id === toTabId);
+    if (fromIndex === -1 || toIndex === -1) return;
+
+    const updated = [...currentTabs];
+    const [moved] = updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, moved);
+
+    tabsRef.current = updated;
+    setTabs(updated);
   }, []);
 
   /**
@@ -1111,7 +1181,7 @@ const App: React.FC = () => {
               folderCount={filteredFolders.length}
               quickAccess={quickAccess}
               currentFolders={folders}
-              onOpenFolder={handleOpenFolderPicker}
+              onOpenUniversalSearch={() => setIsUniversalSearchOpen(true)}
               onNavigate={(path) => {
                 navigateTo(path);
                 // On mobile/narrow split, close sidebar after clicking
@@ -1122,11 +1192,17 @@ const App: React.FC = () => {
               onClose={() => setIsSidebarOpen(false)}
               pinnedFolders={pinnedFolders}
               onAddPinnedFolder={handlePinFolder}
+              onPinFolderPath={handlePinFolderPath}
               onRemovePinnedFolder={handleUnpinFolder}
+              onReorderPinnedFolders={handleReorderPinnedFolders}
               displayName={displayName}
               workspaceName={workspaceName}
-              onOpenSettings={() => setIsSettingsOpen(true)}
+              onOpenSettings={() => {
+                setSettingsTab("appearance");
+                setIsSettingsOpen(true);
+              }}
               onMoveItem={handleMoveItem}
+              hasUpdateAvailable={Boolean(pendingUpdateVersion)}
             />
           </div>
         </>
@@ -1176,12 +1252,16 @@ const App: React.FC = () => {
           onNewFolder={handleNewFolder}
           sortField={sortField}
           onSortChange={setSortField}
-          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenSettings={() => {
+            setSettingsTab("appearance");
+            setIsSettingsOpen(true);
+          }}
           tabs={tabs}
           activeTabId={activeTabId}
           onSelectTab={handleSelectTab}
           onNewTab={handleNewTab}
           onCloseTab={handleCloseTab}
+          onReorderTabs={handleReorderTabs}
           onMoveItem={handleMoveItem}
         />
 
@@ -1196,12 +1276,18 @@ const App: React.FC = () => {
           onDrop={(e) => {
             if (currentPath && currentPath !== "recents") {
               e.preventDefault();
-              const src =
-                e.dataTransfer.getData("application/foldy-path") ||
-                e.dataTransfer.getData("application/folderly-path") ||
-                e.dataTransfer.getData("text/plain");
-              if (src) {
-                handleMoveItem(src, currentPath);
+              const pathsJson = e.dataTransfer.getData("application/foldy-paths");
+              const paths: string[] = pathsJson
+                ? JSON.parse(pathsJson)
+                : [
+                    e.dataTransfer.getData("application/foldy-path") ||
+                    e.dataTransfer.getData("application/folderly-path") ||
+                    e.dataTransfer.getData("text/plain")
+                  ].filter(Boolean);
+              for (const p of paths) {
+                if (p) {
+                  handleMoveItem(p, currentPath);
+                }
               }
             }
           }}
@@ -1306,7 +1392,39 @@ const App: React.FC = () => {
         onUpdateDisplayName={handleUpdateDisplayName}
         workspaceName={workspaceName}
         onUpdateWorkspaceName={handleUpdateWorkspaceName}
+        initialTab={settingsTab}
       />
+
+      {/* Floating Live Update Notification Banner */}
+      {pendingUpdateVersion && (
+        <aside
+          role="region"
+          aria-label="Application update announcement"
+          className="fixed bottom-10 right-5 z-40 flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-[#ff2d87] text-white shadow-2xl text-xs backdrop-blur-md border border-white/20 select-none animate-fade-in"
+        >
+          <span className="text-base shrink-0 animate-bounce">🚀</span>
+          <div className="leading-tight min-w-0">
+            <p className="font-bold truncate">Foldy v{pendingUpdateVersion} is ready!</p>
+            <p className="text-[10px] text-white/80 truncate">A new version is available to install.</p>
+          </div>
+          <button
+            onClick={() => {
+              setSettingsTab("updates");
+              setIsSettingsOpen(true);
+            }}
+            className="px-3 py-1.5 bg-white text-[#ff2d87] font-bold rounded-xl text-xs hover:bg-neutral-100 active:scale-95 transition-all shadow-sm ml-1 shrink-0"
+          >
+            Update Now
+          </button>
+          <button
+            onClick={() => setPendingUpdateVersion(null)}
+            className="text-white/70 hover:text-white p-1 text-xs shrink-0"
+            title="Dismiss"
+          >
+            ✕
+          </button>
+        </aside>
+      )}
     </div>
   );
 };

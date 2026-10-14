@@ -81,6 +81,8 @@ export interface NavigationBarProps {
   onNewTab: (initialPath?: string) => void;
   /** Callback invoked to close a tab by id. */
   onCloseTab: (tabId: string) => void;
+  /** Callback fired to rearrange tabs by dragging. */
+  onReorderTabs?: (fromTabId: string, toTabId: string) => void;
   /** Callback fired when an item is dropped onto a tab destination. */
   onMoveItem?: (sourcePath: string, destDir: string) => void;
 }
@@ -177,9 +179,11 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
   onSelectTab,
   onNewTab,
   onCloseTab,
+  onReorderTabs,
   onMoveItem,
 }) => {
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
+  const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const tabHoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isEditingPath, setIsEditingPath] = useState(false);
   const [editPathValue, setEditPathValue] = useState("");
@@ -272,10 +276,22 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;
             const isOver = dragOverTabId === tab.id;
+            const isDragging = draggedTabId === tab.id;
 
             return (
               <div
                 key={tab.id}
+                draggable={true}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("application/foldy-tab-id", tab.id);
+                  e.dataTransfer.setData("text/plain", tab.path || tab.title);
+                  e.dataTransfer.effectAllowed = "move";
+                  setDraggedTabId(tab.id);
+                }}
+                onDragEnd={() => {
+                  setDraggedTabId(null);
+                  setDragOverTabId(null);
+                }}
                 onClick={() => onSelectTab(tab.id)}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -294,9 +310,11 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                     }, 350);
                   }
                 }}
-                onDragLeave={() => {
-                  if (dragOverTabId === tab.id) {
-                    setDragOverTabId(null);
+                onDragLeave={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                    if (dragOverTabId === tab.id) {
+                      setDragOverTabId(null);
+                    }
                   }
                   if (tabHoverTimerRef.current) {
                     clearTimeout(tabHoverTimerRef.current);
@@ -306,10 +324,18 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                 onDrop={(e) => {
                   e.preventDefault();
                   setDragOverTabId(null);
+                  setDraggedTabId(null);
                   if (tabHoverTimerRef.current) {
                     clearTimeout(tabHoverTimerRef.current);
                     tabHoverTimerRef.current = null;
                   }
+
+                  const droppedTabId = e.dataTransfer.getData("application/foldy-tab-id");
+                  if (droppedTabId && droppedTabId !== tab.id && onReorderTabs) {
+                    onReorderTabs(droppedTabId, tab.id);
+                    return;
+                  }
+
                   const src =
                     e.dataTransfer.getData("application/foldy-path") ||
                     e.dataTransfer.getData("application/folderly-path") ||
@@ -318,7 +344,9 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                     onMoveItem(src, tab.path);
                   }
                 }}
-                className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs max-w-[200px] min-w-[110px] shrink-0 cursor-pointer transition-all select-none border ${
+                className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs max-w-[200px] min-w-[110px] shrink-0 cursor-grab active:cursor-grabbing transition-all select-none border ${
+                  isDragging ? "opacity-40" : ""
+                } ${
                   isOver
                     ? "ring-2 ring-[#ff2d87] border-[#ff2d87] bg-[#ff2d87]/20 text-[#ff2d87] font-bold scale-[1.03] shadow-md"
                     : isActive
@@ -327,11 +355,11 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                 }`}
                 title={
                   tab.path
-                    ? `${tab.path}\nDrag items here to move into this folder`
+                    ? `${tab.path}\nDrag to reorder tabs, or drop items here to move into this folder`
                     : tab.title
                 }
               >
-                <span className="shrink-0 flex items-center">
+                <span className="shrink-0 flex items-center pointer-events-none">
                   {tab.path === "recents" ? (
                     <span>🕒</span>
                   ) : !tab.path ? (
@@ -340,7 +368,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                     <MacFolderIcon size={14} />
                   )}
                 </span>
-                <span className="truncate flex-1 text-[11px] font-medium">
+                <span className="truncate flex-1 text-[11px] font-medium pointer-events-none">
                   {tab.title}
                 </span>
                 {tabs.length > 1 && (
@@ -462,7 +490,22 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                           e.stopPropagation();
                           onNavigate(seg.fullPath);
                         }}
-                        className="hover:text-[#ff2d87] transition-colors truncate font-medium"
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = "move";
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          const src =
+                            e.dataTransfer.getData("application/foldy-path") ||
+                            e.dataTransfer.getData("application/folderly-path") ||
+                            e.dataTransfer.getData("text/plain");
+                          if (src && seg.fullPath !== "recents" && onMoveItem) {
+                            onMoveItem(src, seg.fullPath);
+                          }
+                        }}
+                        className="hover:text-[#ff2d87] transition-colors truncate font-medium hover:underline"
+                        title={`Click to navigate to ${seg.name}, or drop items here to move`}
                       >
                         {seg.name}
                       </button>

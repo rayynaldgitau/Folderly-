@@ -432,9 +432,14 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
                     key={item.path}
                     draggable={true}
                     onDragStart={(e) => {
+                      const isTargetSelected = selectedPaths.has(item.path);
+                      const pathsToDrag = isTargetSelected && selectedPaths.size > 1
+                        ? Array.from(selectedPaths)
+                        : [item.path];
                       e.dataTransfer.setData("application/foldy-path", item.path);
+                      e.dataTransfer.setData("application/foldy-paths", JSON.stringify(pathsToDrag));
                       e.dataTransfer.setData("application/folderly-path", item.path);
-                      e.dataTransfer.setData("text/plain", item.path);
+                      e.dataTransfer.setData("text/plain", pathsToDrag.join("\n"));
                       e.dataTransfer.effectAllowed = "move";
                     }}
                     onDragOver={(e) => {
@@ -444,19 +449,30 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
                         if (dragOverFolder !== item.path) setDragOverFolder(item.path);
                       }
                     }}
-                    onDragLeave={() => {
-                      if (dragOverFolder === item.path) setDragOverFolder(null);
+                    onDragLeave={(e) => {
+                      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                        if (dragOverFolder === item.path) setDragOverFolder(null);
+                      }
                     }}
                     onDrop={(e) => {
                       if (item.isFolder) {
                         e.preventDefault();
                         setDragOverFolder(null);
-                        const src =
-                          e.dataTransfer.getData("application/foldy-path") ||
-                          e.dataTransfer.getData("application/folderly-path") ||
-                          e.dataTransfer.getData("text/plain");
-                        if (src && src.toLowerCase() !== item.path.toLowerCase() && onMoveItem) {
-                          onMoveItem(src, item.path);
+                        const pathsJson = e.dataTransfer.getData("application/foldy-paths");
+                        const paths: string[] = pathsJson
+                          ? JSON.parse(pathsJson)
+                          : [
+                              e.dataTransfer.getData("application/foldy-path") ||
+                              e.dataTransfer.getData("application/folderly-path") ||
+                              e.dataTransfer.getData("text/plain")
+                            ].filter(Boolean);
+
+                        if (onMoveItem) {
+                          for (const src of paths) {
+                            if (src && src.toLowerCase() !== item.path.toLowerCase()) {
+                              onMoveItem(src, item.path);
+                            }
+                          }
                         }
                       }
                     }}
