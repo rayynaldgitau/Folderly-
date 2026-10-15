@@ -122,6 +122,15 @@ jobs:
         env:
           TAG_NAME: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
 
+      - name: Stage Release Assets without duplicates
+        run: |
+          mkdir -p dist-release
+          find mac-artifacts -type f \( -name "*.dmg" -o -name "*.command" -o -name "*.tar.gz" -o -name "*.tar.gz.sig" \) -exec cp {} dist-release/ \; 2>/dev/null || true
+          find win-artifacts -type f \( -name "*.msi" -o -name "*.msi.sig" -o -name "*.exe" -o -name "*.exe.sig" -o -name "*.zip" \) -exec cp {} dist-release/ \; 2>/dev/null || true
+          if [ -f latest.json ]; then cp latest.json dist-release/; fi
+          echo "Discovered release assets in dist-release:"
+          ls -la dist-release
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -130,6 +139,7 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
+          fail_on_unmatched_files: false
           body: |
             # Foldy Release
 
@@ -159,13 +169,6 @@ jobs:
                *(Or double-click the included `fix-macos-gatekeeper.command` helper script)*.
             3. Open Foldy normally!
           files: |
-            mac-artifacts/**/*.dmg
-            mac-artifacts/**/*.command
-            mac-artifacts/**/*.tar.gz*
-            win-artifacts/**/*.msi*
-            win-artifacts/**/*.exe*
-            win-artifacts/**/*.sig*
-            win-artifacts/**/*.nsis.zip*
-            latest.json
+            dist-release/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
