@@ -1,7 +1,13 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+import * as pdfjsLib from "pdfjs-dist";
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.js?url";
+import mammoth from "mammoth";
 import { MacFileIcon, MacFolderIcon } from "./MacIcons";
 import type { DirContents, FileEntry } from "../types";
+
+// Configure worker for PDF.js canvas rendering
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 /**
  * Item metadata representation passed to the QuickPreviewModal.
@@ -61,8 +67,11 @@ const TEXT_EXTENSIONS = new Set([
   "jsonc", "ini", "env", "gitignore", "dockerfile", "makefile", "c", "cpp", "h", "hpp"
 ]);
 
-/** Supported document extension for PDF inline iframe viewer. */
+/** Supported document extension for PDF inline viewer. */
 const PDF_EXTENSIONS = new Set(["pdf"]);
+
+/** Supported Microsoft Word document extensions. */
+const WORD_EXTENSIONS = new Set(["docx", "doc", "rtf", "odt"]);
 
 /**
  * Formats a byte count into a human-readable size string.
@@ -94,8 +103,35 @@ function getItemExtension(item: QuickPreviewItem): string {
 }
 
 /**
+ * Maps common image and media extensions to standard MIME types.
+ *
+ * @param ext - Lowercase file extension.
+ * @returns Standard MIME type string.
+ */
+function getMimeType(ext: string): string {
+  switch (ext) {
+    case "png": return "image/png";
+    case "jpg":
+    case "jpeg": return "image/jpeg";
+    case "gif": return "image/gif";
+    case "webp": return "image/webp";
+    case "svg": return "image/svg+xml";
+    case "bmp": return "image/bmp";
+    case "ico": return "image/x-icon";
+    case "mp4": return "video/mp4";
+    case "webm": return "video/webm";
+    case "mov": return "video/quicktime";
+    case "mp3": return "audio/mpeg";
+    case "wav": return "audio/wav";
+    case "ogg": return "audio/ogg";
+    case "pdf": return "application/pdf";
+    default: return "application/octet-stream";
+  }
+}
+
+/**
  * Quick Look preview modal providing instant full-size previews for images,
- * videos, audio files, code, markdown, PDFs, directories, and generic binaries.
+ * videos, audio files, Word documents, PDFs, code, markdown, and directories.
  *
  * @param props - Component properties for preview modal state and handlers.
  * @returns React modal element or null when closed.
@@ -114,6 +150,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
   // ── Image preview states ───────────────────────────────────────────────────
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
   const [imageMeta, setImageMeta] = useState<{ width: number; height: number } | null>(null);
+  const [blobSrc, setBlobSrc] = useState<string>("");
 
   // ── Code / text preview states ─────────────────────────────────────────────
   const [textContent, setTextContent] = useState<string>("");
@@ -121,6 +158,20 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
   const [textError, setTextError] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
   const [wrapText, setWrapText] = useState<boolean>(true);
+
+  // ── Word document preview states ───────────────────────────────────────────
+  const [docxHtml, setDocxHtml] = useState<string>("");
+  const [docxLoading, setDocxLoading] = useState<boolean>(false);
+  const [docxError, setDocxError] = useState<string | null>(null);
+
+  // ── PDF preview states ─────────────────────────────────────────────────────
+  const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
+  const [pdfPageNum, setPdfPageNum] = useState<number>(1);
+  const [pdfTotalPages, setPdfTotalPages] = useState<number>(1);
+  const [pdfScale, setPdfScale] = useState<number>(1.25);
+  const [pdfLoading, setPdfLoading] = useState<boolean>(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // ── Folder preview states ──────────────────────────────────────────────────
   const [folderContents, setFolderContents] = useState<DirContents | null>(null);
@@ -138,6 +189,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
   const isAudio = !isFolder && AUDIO_EXTENSIONS.has(extension);
   const isText = !isFolder && TEXT_EXTENSIONS.has(extension);
   const isPdf = !isFolder && PDF_EXTENSIONS.has(extension);
+  const isWord = !isFolder && WORD_EXTENSIONS.has(extension);
 
   // Convert filesystem path to a safe browser-renderable asset URL
   const fileAssetSrc = useMemo(() => {
@@ -149,20 +201,52 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
     }
   }, [item?.path, isFolder]);
 
+  // Cleanup blob object URLs when unmounting or switching items
+  useEffect(() => {
+    return () => {
+      if (blobSrc) {
+        URL.revokeObjectURL(blobSrc);
+      }
+    };
+  }, [blobSrc]);
+
+  // Fallback to reading raw file bytes into blob if asset protocol fails
+  const loadFileAsBlob = useCallback(async (path: string, mime: string) => {
+    try {
+      const bytes = await invoke<number[]>("read_file_bytes", { path });
+      const uint8 = new Uint8Array(bytes);
+      const blob = new Blob([uint8], { type: mime });
+      const url = URL.createObjectURL(blob);
+      setBlobSrc(url);
+      return url;
+    } catch (err) {
+      console.error("Failed to read file as blob:", err);
+      return "";
+    }
+  }, []);
+
   // Reset local viewer states whenever active item changes
   useEffect(() => {
     setZoomLevel(1.0);
     setImageMeta(null);
+    setBlobSrc("");
     setTextContent("");
     setTextError(null);
     setCopiedCode(false);
+    setDocxHtml("");
+    setDocxError(null);
+    setPdfDoc(null);
+    setPdfPageNum(1);
+    setPdfTotalPages(1);
+    setPdfScale(1.25);
+    setPdfError(null);
     setFolderContents(null);
     setFolderError(null);
     setMediaDuration("");
 
     if (!isOpen || !item) return;
 
-    // Load text content asynchronously for code and text files
+    // 1. Text & Code files
     if (isText) {
       setTextLoading(true);
       invoke<string>("read_file_text_preview", { path: item.path })
@@ -176,7 +260,62 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
         });
     }
 
-    // Load directory contents asynchronously for folders
+    // 2. Word documents (.docx, .doc)
+    if (isWord) {
+      setDocxLoading(true);
+      invoke<number[]>("read_file_bytes", { path: item.path })
+        .then(async (bytes) => {
+          try {
+            const uint8 = new Uint8Array(bytes);
+            if (extension === "docx") {
+              const res = await mammoth.convertToHtml({ arrayBuffer: uint8.buffer });
+              setDocxHtml(res.value || "<p class='italic text-muted-color'>Document is empty.</p>");
+            } else {
+              // Legacy .doc format: extract text strings if available
+              const raw = await mammoth.extractRawText({ arrayBuffer: uint8.buffer });
+              setDocxHtml(
+                raw.value
+                  ? `<pre class="whitespace-pre-wrap font-sans text-sm">${raw.value}</pre>`
+                  : "<p class='italic text-muted-color'>Binary .doc file. Click 'Open in OS Application' to view in Microsoft Word.</p>"
+              );
+            }
+          } catch (e) {
+            setDocxError("Could not parse Word document structure.");
+          } finally {
+            setDocxLoading(false);
+          }
+        })
+        .catch((err) => {
+          setDocxError(String(err));
+          setDocxLoading(false);
+        });
+    }
+
+    // 3. PDF Documents (Render via PDF.js)
+    if (isPdf) {
+      setPdfLoading(true);
+      invoke<number[]>("read_file_bytes", { path: item.path })
+        .then(async (bytes) => {
+          try {
+            const uint8 = new Uint8Array(bytes);
+            const loadingTask = pdfjsLib.getDocument({ data: uint8 });
+            const doc = await loadingTask.promise;
+            setPdfDoc(doc);
+            setPdfTotalPages(doc.numPages);
+            setPdfPageNum(1);
+          } catch (err) {
+            setPdfError(`Could not render PDF: ${err}`);
+          } finally {
+            setPdfLoading(false);
+          }
+        })
+        .catch((err) => {
+          setPdfError(String(err));
+          setPdfLoading(false);
+        });
+    }
+
+    // 4. Folders
     if (isFolder) {
       setFolderLoading(true);
       invoke<DirContents>("read_folder_contents", { dirPath: item.path })
@@ -189,19 +328,41 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
           setFolderLoading(false);
         });
     }
-  }, [item?.path, isFolder, isText, isOpen]);
+  }, [item?.path, isFolder, isText, isWord, isPdf, extension, isOpen]);
+
+  // PDF Page Renderer (renders current page to HTML5 Canvas)
+  useEffect(() => {
+    if (!pdfDoc || !canvasRef.current) return;
+
+    let isCancelled = false;
+    pdfDoc.getPage(pdfPageNum).then((page) => {
+      if (isCancelled || !canvasRef.current) return;
+      const canvas = canvasRef.current;
+      const context = canvas.getContext("2d");
+      if (!context) return;
+
+      const viewport = page.getViewport({ scale: pdfScale });
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      const renderContext = {
+        canvasContext: context,
+        viewport,
+      };
+
+      page.render(renderContext);
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [pdfDoc, pdfPageNum, pdfScale]);
 
   // Keyboard navigation shortcuts listener
   useEffect(() => {
     if (!isOpen) return;
 
-    /**
-     * Handles keydown events to support Quick Look shortcuts.
-     *
-     * @param e - Triggering keyboard event.
-     */
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept shortcuts when editing inside input or textarea
       const target = e.target as HTMLElement;
       if (
         target &&
@@ -219,7 +380,6 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
         e.preventDefault();
         onClose();
       } else if (e.key === " " && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        // Space key toggles Quick Look closed
         e.preventDefault();
         onClose();
       } else if (e.key === "ArrowLeft") {
@@ -239,9 +399,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose, hasPrev, hasNext, onPrevItem, onNextItem]);
 
-  /**
-   * Copies the current code preview content to system clipboard.
-   */
+  /** Copies the current code preview content to system clipboard. */
   const handleCopyCode = useCallback(() => {
     if (!textContent) return;
     navigator.clipboard.writeText(textContent);
@@ -249,28 +407,36 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
     setTimeout(() => setCopiedCode(false), 2000);
   }, [textContent]);
 
-  /**
-   * Zooms in on the image preview up to maximum 4x.
-   */
+  /** Zooms in on image or PDF preview. */
   const handleZoomIn = useCallback(() => {
-    setZoomLevel((prev) => Math.min(4.0, parseFloat((prev + 0.25).toFixed(2))));
-  }, []);
+    if (isPdf) {
+      setPdfScale((s) => Math.min(3.0, parseFloat((s + 0.25).toFixed(2))));
+    } else {
+      setZoomLevel((prev) => Math.min(4.0, parseFloat((prev + 0.25).toFixed(2))));
+    }
+  }, [isPdf]);
 
-  /**
-   * Zooms out on the image preview down to minimum 0.25x.
-   */
+  /** Zooms out on image or PDF preview. */
   const handleZoomOut = useCallback(() => {
-    setZoomLevel((prev) => Math.max(0.25, parseFloat((prev - 0.25).toFixed(2))));
-  }, []);
+    if (isPdf) {
+      setPdfScale((s) => Math.max(0.5, parseFloat((s - 0.25).toFixed(2))));
+    } else {
+      setZoomLevel((prev) => Math.max(0.25, parseFloat((prev - 0.25).toFixed(2))));
+    }
+  }, [isPdf]);
 
-  /**
-   * Resets image zoom to original scale 100%.
-   */
+  /** Resets zoom to default 100%. */
   const handleZoomReset = useCallback(() => {
-    setZoomLevel(1.0);
-  }, []);
+    if (isPdf) {
+      setPdfScale(1.25);
+    } else {
+      setZoomLevel(1.0);
+    }
+  }, [isPdf]);
 
   if (!isOpen || !item) return null;
+
+  const currentDisplaySrc = blobSrc || fileAssetSrc;
 
   return (
     <div
@@ -415,7 +581,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
             <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden p-4">
               <div className="relative flex-1 w-full flex items-center justify-center overflow-auto">
                 <img
-                  src={fileAssetSrc}
+                  src={currentDisplaySrc}
                   alt={item.name}
                   style={{
                     transform: `scale(${zoomLevel})`,
@@ -423,6 +589,12 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                     transition: "transform 0.15s ease-out",
                   }}
                   className="max-h-full max-w-full object-contain rounded-lg shadow-xl"
+                  onError={() => {
+                    // Fallback to reading raw file bytes into Blob if asset protocol fails
+                    if (!blobSrc) {
+                      loadFileAsBlob(item.path, getMimeType(extension));
+                    }
+                  }}
                   onLoad={(e) => {
                     setImageMeta({
                       width: e.currentTarget.naturalWidth,
@@ -490,10 +662,17 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
             <div className="w-full h-full flex flex-col items-center justify-center p-6 gap-4">
               <div className="relative w-full max-w-4xl max-h-[75vh] flex items-center justify-center bg-black/50 rounded-2xl overflow-hidden border border-neutral-800 shadow-2xl">
                 <video
-                  src={fileAssetSrc}
+                  src={currentDisplaySrc}
                   controls
                   autoPlay
+                  playsInline
                   className="max-w-full max-h-[70vh] rounded-xl outline-none"
+                  onError={() => {
+                    // Fallback to loading blob directly if asset stream fails
+                    if (!blobSrc && item.size && item.size < 120 * 1024 * 1024) {
+                      loadFileAsBlob(item.path, getMimeType(extension));
+                    }
+                  }}
                   onLoadedMetadata={(e) => {
                     const durationSec = Math.round(e.currentTarget.duration);
                     const mins = Math.floor(durationSec / 60);
@@ -504,8 +683,8 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="badge badge-yellow">
-                  {extension.toUpperCase()} VIDEO
+                <span className="badge badge-yellow uppercase">
+                  {extension} VIDEO
                 </span>
                 {mediaDuration && (
                   <span className="text-xs text-muted-color font-mono">
@@ -524,7 +703,6 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
           {/* 3. AUDIO PREVIEW */}
           {isAudio && (
             <div className="w-full h-full flex flex-col items-center justify-center p-8 gap-6">
-              {/* Animated waveform visualizer mock */}
               <div className="flex items-center justify-center gap-1.5 h-24 px-8 py-4 bg-sidebar/80 rounded-2xl border border-neutral-700/50 shadow-inner">
                 {Array.from({ length: 24 }).map((_, i) => (
                   <div
@@ -547,13 +725,17 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                 </p>
               </div>
 
-              {/* Native audio player */}
               <div className="w-full max-w-md">
                 <audio
-                  src={fileAssetSrc}
+                  src={currentDisplaySrc}
                   controls
                   autoPlay
                   className="w-full outline-none"
+                  onError={() => {
+                    if (!blobSrc) {
+                      loadFileAsBlob(item.path, getMimeType(extension));
+                    }
+                  }}
                   onLoadedMetadata={(e) => {
                     const durationSec = Math.round(e.currentTarget.duration);
                     const mins = Math.floor(durationSec / 60);
@@ -568,7 +750,6 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
           {/* 4. CODE & TEXT PREVIEW */}
           {isText && (
             <div className="w-full h-full flex flex-col min-h-0 bg-neutral-950">
-              {/* Code toolbar */}
               <div className="flex items-center justify-between px-4 py-2 bg-sidebar/80 border-b border-neutral-800 text-xs text-muted-color">
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-[11px] uppercase px-2 py-0.5 rounded bg-neutral-800 border border-neutral-700/60 font-semibold text-neutral-300">
@@ -618,7 +799,6 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                 </div>
               </div>
 
-              {/* Code viewer body */}
               <div className="flex-1 min-h-0 overflow-auto font-mono text-xs leading-relaxed p-4 select-text">
                 {textLoading && (
                   <div className="flex items-center justify-center h-full text-muted-color gap-2">
@@ -636,14 +816,12 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
 
                 {!textLoading && !textError && (
                   <div className="flex">
-                    {/* Line numbers column */}
                     <div className="select-none text-neutral-600 text-right pr-4 border-r border-neutral-800">
                       {textContent.split("\n").map((_, i) => (
                         <div key={i}>{i + 1}</div>
                       ))}
                     </div>
 
-                    {/* Content column */}
                     <div
                       className={`pl-4 flex-1 text-neutral-200 ${
                         wrapText ? "whitespace-pre-wrap break-all" : "whitespace-pre overflow-x-auto"
@@ -657,18 +835,160 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
             </div>
           )}
 
-          {/* 5. PDF PREVIEW */}
-          {isPdf && (
-            <div className="w-full h-full flex flex-col min-h-0 bg-neutral-900">
-              <iframe
-                src={fileAssetSrc}
-                className="w-full h-full border-0 rounded-b-xl"
-                title={item.name}
-              />
+          {/* 5. WORD DOCUMENT PREVIEW (.docx, .doc) */}
+          {isWord && (
+            <div className="w-full h-full flex flex-col min-h-0 bg-neutral-900/50">
+              {/* Word toolbar */}
+              <div className="flex items-center justify-between px-5 py-2.5 bg-sidebar/90 border-b border-neutral-700/50 text-xs text-muted-color">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-[#2b579a] bg-blue-500/10 border border-blue-500/30 px-2 py-0.5 rounded uppercase">
+                    Word Document
+                  </span>
+                  <span>{item.name}</span>
+                </div>
+
+                {onOpenFile && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenFile(item.path)}
+                    className="flex items-center gap-1.5 px-3 py-1 bg-[#2b579a] hover:bg-[#1e3f6f] text-white rounded-lg font-semibold text-xs shadow-sm transition-all"
+                  >
+                    <span>Open in Microsoft Word</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Word document page simulation */}
+              <div className="flex-1 min-h-0 overflow-auto p-6 sm:p-10 flex justify-center bg-neutral-950/70">
+                {docxLoading && (
+                  <div className="flex items-center justify-center h-full text-muted-color gap-2">
+                    <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    <span>Parsing Word document...</span>
+                  </div>
+                )}
+
+                {docxError && (
+                  <div className="flex flex-col items-center justify-center h-full text-red-400 gap-2 text-center max-w-md">
+                    <p className="font-bold">Could not parse document</p>
+                    <p className="text-xs text-neutral-400">{docxError}</p>
+                    {onOpenFile && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenFile(item.path)}
+                        className="btn btn-primary mt-3"
+                      >
+                        Open with Word
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {!docxLoading && !docxError && (
+                  <div className="w-full max-w-3xl bg-white text-neutral-900 p-8 sm:p-14 rounded-xl shadow-2xl min-h-[500px] select-text font-serif leading-relaxed overflow-y-auto">
+                    <div
+                      className="prose prose-sm max-w-none text-neutral-900 leading-relaxed space-y-4"
+                      dangerouslySetInnerHTML={{ __html: docxHtml }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {/* 6. FOLDER / DIRECTORY PREVIEW */}
+          {/* 6. PDF PREVIEW (Rendered via PDF.js HTML5 Canvas) */}
+          {isPdf && (
+            <div className="w-full h-full flex flex-col min-h-0 bg-neutral-950">
+              {/* PDF Toolbar */}
+              <div className="flex items-center justify-between px-5 py-2.5 bg-sidebar/90 border-b border-neutral-700/50 text-xs">
+                {/* Page Navigation */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={pdfPageNum <= 1}
+                    onClick={() => setPdfPageNum((p) => Math.max(1, p - 1))}
+                    className="px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 disabled:opacity-40 disabled:hover:bg-neutral-800 transition-colors"
+                    title="Previous page"
+                  >
+                    ← Prev
+                  </button>
+                  <span className="text-muted-color font-mono text-[11px]">
+                    Page {pdfPageNum} of {pdfTotalPages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={pdfPageNum >= pdfTotalPages}
+                    onClick={() => setPdfPageNum((p) => Math.min(pdfTotalPages, p + 1))}
+                    className="px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 disabled:opacity-40 disabled:hover:bg-neutral-800 transition-colors"
+                    title="Next page"
+                  >
+                    Next →
+                  </button>
+                </div>
+
+                {/* PDF Zoom Controls */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleZoomOut}
+                    className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300"
+                    title="Zoom Out"
+                  >
+                    -
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleZoomReset}
+                    className="px-2 py-0.5 rounded bg-neutral-800 text-[11px] font-mono text-neutral-200"
+                    title="Reset Zoom"
+                  >
+                    {Math.round(pdfScale * 80)}%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleZoomIn}
+                    className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300"
+                    title="Zoom In"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* PDF Document Canvas View */}
+              <div className="flex-1 min-h-0 overflow-auto p-4 sm:p-8 flex items-center justify-center bg-neutral-900/60">
+                {pdfLoading && (
+                  <div className="flex items-center justify-center h-full text-muted-color gap-2">
+                    <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                    <span>Rendering PDF document...</span>
+                  </div>
+                )}
+
+                {pdfError && (
+                  <div className="flex flex-col items-center justify-center h-full text-red-400 gap-2 text-center max-w-md">
+                    <p className="font-bold">Unable to display PDF</p>
+                    <p className="text-xs text-neutral-400">{pdfError}</p>
+                    {onOpenFile && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenFile(item.path)}
+                        className="btn btn-primary mt-3"
+                      >
+                        Open in System PDF Viewer
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {!pdfLoading && !pdfError && (
+                  <div className="shadow-2xl rounded-lg overflow-hidden border border-neutral-700 bg-white">
+                    <canvas ref={canvasRef} className="block max-w-full" />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 7. FOLDER / DIRECTORY PREVIEW */}
           {isFolder && (
             <div className="w-full h-full flex flex-col min-h-0 p-6 max-w-4xl">
               {folderLoading && (
@@ -687,7 +1007,6 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
 
               {!folderLoading && !folderError && folderContents && (
                 <div className="flex flex-col h-full min-h-0 gap-5">
-                  {/* Folder Overview Banner */}
                   <div className="flex items-center justify-between p-4 rounded-xl bg-sidebar border border-neutral-700/50">
                     <div className="flex items-center gap-3">
                       <MacFolderIcon size={40} />
@@ -713,7 +1032,6 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                     )}
                   </div>
 
-                  {/* Top Items Table */}
                   <div className="flex-1 min-h-0 flex flex-col rounded-xl bg-sidebar/50 border border-neutral-700/40 overflow-hidden">
                     <div className="px-4 py-2.5 bg-sidebar border-b border-neutral-700/40 text-[11px] font-semibold text-muted-color uppercase tracking-wider flex justify-between">
                       <span>Name</span>
@@ -768,8 +1086,8 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
             </div>
           )}
 
-          {/* 7. GENERIC / OTHER BINARY FILES */}
-          {!isImage && !isVideo && !isAudio && !isText && !isPdf && !isFolder && (
+          {/* 8. GENERIC / OTHER BINARY FILES */}
+          {!isImage && !isVideo && !isAudio && !isText && !isPdf && !isWord && !isFolder && (
             <div className="w-full h-full flex flex-col items-center justify-center p-8 gap-6 text-center max-w-md">
               <div className="relative">
                 <MacFileIcon extension={extension} size={84} />

@@ -23,7 +23,23 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost data:; media-src 'self' asset: https://asset.localhost data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost"
+      "assetProtocol": {
+        "enable": true,
+        "scope": {
+          "requireLiteralLeadingDot": false,
+          "allow": [
+            "**/*",
+            "$HOME/**/*",
+            "$DOCUMENT/**/*",
+            "$DOWNLOAD/**/*",
+            "$PICTURES/**/*",
+            "$VIDEOS/**/*",
+            "$APPDATA/**/*",
+            "$LOCALAPPDATA/**/*"
+          ]
+        }
+      },
+      "csp": "default-src 'self' asset: https://asset.localhost http://asset.localhost; img-src 'self' asset: https://asset.localhost http://asset.localhost data: blob:; media-src 'self' asset: https://asset.localhost http://asset.localhost data: blob:; frame-src 'self' asset: https://asset.localhost http://asset.localhost data: blob:; child-src 'self' asset: https://asset.localhost http://asset.localhost data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost asset: https://asset.localhost http://asset.localhost"
     }
   },
   "bundle": {

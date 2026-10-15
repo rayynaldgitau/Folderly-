@@ -1560,6 +1560,29 @@ mod commands {
         let lossy = String::from_utf8_lossy(&chunk[..bytes_read]).to_string();
         Ok(lossy)
     }
+
+    /// Safely reads binary byte content of a file for high-performance in-app rendering
+    /// of images, PDFs, media, and documents up to `max_bytes` (default 32MB).
+    ///
+    /// * `path`: Full path of the file to preview.
+    /// * `max_bytes`: Optional maximum bytes to read to prevent memory exhaustion.
+    /// * Returns: Byte array vector (`Vec<u8>`) on success, or error string.
+    #[tauri::command]
+    pub fn read_file_bytes(path: String, max_bytes: Option<usize>) -> Result<Vec<u8>, String> {
+        let p = Path::new(&path);
+        if !p.is_file() {
+            return Err(format!("Target is not a readable file: {path}"));
+        }
+        let limit = max_bytes.unwrap_or(32 * 1024 * 1024);
+        let mut file = fs::File::open(p).map_err(|e| format!("Cannot open file: {e}"))?;
+        use std::io::Read;
+        let mut buffer = Vec::new();
+        file.by_ref()
+            .take(limit as u64)
+            .read_to_end(&mut buffer)
+            .map_err(|e| format!("Cannot read file: {e}"))?;
+        Ok(buffer)
+    }
 }
 
 /// Queries the real filesystem storage metrics for the drive containing `path`.
@@ -1802,6 +1825,7 @@ fn main() {
             commands::move_item,
             commands::get_recent_files,
             commands::read_file_text_preview,
+            commands::read_file_bytes,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -1999,5 +2023,33 @@ mod tests {
 
         // Cleanup
         let _ = fs::remove_file(&test_file);
+    }
+
+    /// Verifies that `read_file_bytes` reads binary data correctly and limits byte size.
+    ///
+    /// * Returns: Nothing (`()`). Panics on assertion failure.
+    #[test]
+    fn test_read_file_bytes() {
+        use std::io::Write;
+        let temp_dir = std::env::temp_dir();
+        let test_bin = temp_dir.join("foldy_test_binary.bin");
+        let payload = vec![0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]; // PNG signature
+        let mut f = fs::File::create(&test_bin).expect("Failed to create test binary");
+        f.write_all(&payload).expect("Failed to write to test binary");
+        drop(f);
+
+        let read_bytes = commands::read_file_bytes(test_bin.to_string_lossy().to_string(), None)
+            .expect("Should read binary bytes");
+        assert_eq!(read_bytes, payload);
+
+        let limited = commands::read_file_bytes(test_bin.to_string_lossy().to_string(), Some(4))
+            .expect("Should read limited bytes");
+        assert_eq!(limited.len(), 4);
+        assert_eq!(&limited[..], &payload[..4]);
+
+        let not_found = commands::read_file_bytes("missing_file_xyz_123.bin".to_string(), None);
+        assert!(not_found.is_err());
+
+        let _ = fs::remove_file(&test_bin);
     }
 }
