@@ -26,6 +26,10 @@ export interface SettingsModalProps {
   onUpdateWorkspaceName: (ws: string) => void;
   /** Optional tab to open when the modal becomes visible. */
   initialTab?: "appearance" | "profile" | "shortcuts" | "updates";
+  /** Opens the interactive onboarding and tutorial modal. */
+  onOpenTutorials?: () => void;
+  /** Opens the release highlights and What's New modal. */
+  onOpenWhatsNew?: () => void;
 }
 
 /** Theme metadata for the settings picker card list. */
@@ -42,48 +46,48 @@ interface ThemeOption {
 const THEME_OPTIONS: ThemeOption[] = [
   {
     id: "pink",
-    name: "OLED Pink (Dark)",
-    description: "Deep true-black OLED canvas with vibrant hot pink accents.",
+    name: "Midnight Sakura (OLED)",
+    description: "Deep OLED obsidian black illuminated by electric neon rose highlights",
     accentColor: "#ff2d87",
     bgColor: "#120e12",
     textColor: "#ffffff",
-    tag: "Dark",
+    tag: "OLED Dark",
   },
   {
     id: "pink_light",
-    name: "Light Pink",
-    description: "Soft pastel pink background with high-contrast hot pink accents.",
+    name: "Blush Cotton Candy",
+    description: "Soft pastel cashmere velvet canvas paired with sweet strawberry accents",
     accentColor: "#ff2d87",
     bgColor: "#fceef2",
     textColor: "#2d1a24",
-    tag: "Light",
+    tag: "Sweet Pastel",
   },
   {
     id: "material",
-    name: "Material You (Google & Android)",
-    description: "Authentic Google & Android Material 3 with signature Google Blue and Android Green.",
+    name: "Google Pixel Horizon",
+    description: "Authentic Google Material You design with signature Google Blue & Android Emerald",
     accentColor: "#1a73e8",
     bgColor: "#131314",
     textColor: "#f1f3f4",
-    tag: "Android",
+    tag: "Material 3",
   },
   {
     id: "apple",
-    name: "Apple Design (macOS)",
-    description: "Neutral gray-and-silver system backdrop with Apple Multicolor accents.",
+    name: "Cupertino Silver & Multicolor",
+    description: "Classic brushed aluminum silver system backdrop with Apple Multicolor radiance",
     accentColor: "#e5e7eb",
     bgColor: "#24262b",
     textColor: "#f5f5f7",
-    tag: "macOS",
+    tag: "Apple macOS",
   },
   {
     id: "dark",
-    name: "Midnight Orange",
-    description: "Obsidian midnight black with subtle matte orange accents.",
+    name: "Solar Sunset (Matte Orange)",
+    description: "Deep obsidian matte black ignited by warm, glowing sunset amber accents",
     accentColor: "#ea580c",
     bgColor: "#0c0c0e",
     textColor: "#f4f4f5",
-    tag: "Matte",
+    tag: "Matte Glow",
   },
 ];
 
@@ -104,6 +108,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   workspaceName,
   onUpdateWorkspaceName,
   initialTab = "appearance",
+  onOpenTutorials,
+  onOpenWhatsNew,
 }) => {
   const [localName, setLocalName] = useState(displayName);
   const [localWorkspace, setLocalWorkspace] = useState(workspaceName);
@@ -517,6 +523,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   </kbd>
                 </div>
               </div>
+
+              {onOpenTutorials && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenTutorials();
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl bg-card border border-neutral-700/50 hover:border-neutral-500 text-xs font-semibold text-primary-color flex items-center justify-center gap-2 transition-all shadow-sm"
+                  >
+                    <span>🎓</span>
+                    <span>Open Interactive Tutorials & Guide</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -651,6 +673,28 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="p-3 rounded-xl bg-neutral-900/40 border border-neutral-800/40 text-[11px] text-muted-color leading-relaxed">
                 💡 <strong>How live updates work:</strong> When you push an update to GitHub, GitHub Actions packages and signs the release. Foldy automatically downloads the signed update without needing to manually run installers again.
               </div>
+
+              {/* What's New Feature Highlights Trigger */}
+              {onOpenWhatsNew && (
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-neutral-900/40 border border-neutral-800/60">
+                  <div>
+                    <h4 className="text-xs font-bold text-primary-color flex items-center gap-1.5">
+                      <span>✨</span> Release Highlights & What's New
+                    </h4>
+                    <p className="text-[11px] text-muted-color mt-0.5">
+                      View recent features, performance boosts, and safety updates added to Foldy.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      onOpenWhatsNew();
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs font-semibold text-primary-color transition-all border border-neutral-700/50 shrink-0 ml-2"
+                  >
+                    View What's New
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

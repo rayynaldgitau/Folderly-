@@ -28,14 +28,25 @@
 
 ---
 
-## Key Features
+## Key Features & Safety
 
+- **Quick Look Preview (`P` or `Space`)**: Instant macOS/Windows style preview for photos, videos, audio waveforms, formatted code with line numbers, PDFs, and folder contents with arrow-key navigation.
+- **5 Lovable Themes**:
+  - 🌸 **Midnight Sakura (OLED)**: Deep OLED obsidian black with neon rose highlights.
+  - 🍬 **Blush Cotton Candy**: Soft pastel cashmere velvet with strawberry accents.
+  - 🌐 **Google Pixel Horizon**: Authentic Material You with Google Blue & Android Emerald.
+  - 🍎 **Cupertino Silver & Multicolor**: Classic brushed aluminum with Apple Multicolor vibrancy.
+  - 🌅 **Solar Sunset (Matte Orange)**: Deep matte black ignited by glowing amber sunset accents.
+- **Interactive In-App Tutorials**: Built-in 6-stage walkthrough guide, keyboard shortcuts cheat sheet, and onboarding tour (`TutorialModal.tsx`).
+- **Automatic "What's New" Pop-Up**: Automatically surfaces release highlights and major new features whenever a new update is installed on macOS or Windows (`WhatsNewModal.tsx`).
 - **Tabbed Browsing**: Modern browser-style tab strip (`Ctrl+T`, `Ctrl+W`) with drag & drop support.
-- **Cute Mascot & Polish**: Adorable Foldy mascot logo, custom themes (OLED Pink, Light Pink, Material, Apple, Dark).
 - **Universal Laptop Search**: Spotlight-style command palette (`Ctrl+K`) searching across your entire PC.
-- **Fast Navigation & Recents**: OneDrive redirection support, Quick Access drives, Recents history view.
-- **View Modes & Sorting**: Kanban grouped cards, details table, grid tiles; sort by type, name, date, size.
-- **Safe Bulk Renamer**: Rule builder (date prefix, regex, casing), side-by-side diff preview, and one-click batch undo.
+- **Safe Bulk Renamer & 1-Click Undo**: Rule builder, collision detection preview before touching disk, and transactional session undo ledger.
+- **Safety & ISO/IEC 25010 Compliance**:
+  - Protected OS directory guards: Prohibits accidental deletion of root drives (`C:\`, `/`) and system directories (`Windows`, `Program Files`, `/System`, etc.).
+  - Command injection immunity: Safe `ShellExecuteW` and argument isolation.
+  - Strict Content Security Policy (CSP): Tauri v2 hardened sandbox with zero remote script execution.
+  - 100% Offline & Private: Zero telemetry, zero tracking, local filesystem only.
 
 ---
 
@@ -50,11 +61,14 @@ npm run tauri dev
 
 # 3. Build standalone executable & installers
 npm run tauri build
+
+# 4. Run tests & quality assurance verification
+cargo test --manifest-path src-tauri/Cargo.toml
+npm run build
 ```
 
-### Outputs
-- **Windows**: `src-tauri/target/release/foldy.exe` & `bundle/nsis/Foldy_0.1.0_x64-setup.exe`
-- **macOS**: `src-tauri/target/release/bundle/dmg/Foldy_0.1.0_x64.dmg` & `Foldy.app`
+### Environment Variables
+- `TAURI_SIGNING_PRIVATE_KEY`: Optional Minisign private key string for signing updater artifacts.
 
 ---
 
@@ -62,16 +76,13 @@ npm run tauri build
 
 | Path | Purpose |
 |---|---|
-| `src-tauri/src/main.rs` | Rust backend: directory browsing, quick access drives, OS launch, dry-run, undo |
-| `src-tauri/Cargo.toml` | Rust dependencies (`walkdir`, `regex`, `chrono`, `serde`) |
-| `src-tauri/tauri.conf.json` | Tauri window, app bundle, and identifier configuration (`com.foldy.desktop`) |
-| `src/App.tsx` | Main application controller wiring explorer navigation and bulk renamer |
-| `src/components/FoldyLogo.tsx` | Vector SVG cute Foldy mascot logo |
+| `src-tauri/src/main.rs` | Rust backend: directory browsing, quick access, safe ShellExecute, protected paths, undo |
+| `src-tauri/tauri.conf.json` | Tauri v2 window, strict CSP security, and updater configuration |
+| `src/App.tsx` | Main application controller, parallelized startup, navigation, and state orchestration |
+| `src/components/TutorialModal.tsx` | Interactive 6-step walkthrough guide, keyboard shortcuts matrix, and safety overview |
+| `src/components/Sidebar.tsx` | Drives, Quick Access shortcuts, pinned folders, real-time APFS/NTFS storage usage |
 | `src/components/NavigationBar.tsx` | Foldy header brand, tabs, breadcrumbs, search button, view mode switchers |
-| `src/components/Sidebar.tsx` | Drives, Quick Access shortcuts, pinned folders, storage usage |
-| `src/components/FileTableView.tsx` | Classic details table with sortable columns |
-| `src/components/FileGrid.tsx` | Grouped cards and grid tile views |
-| `src/components/SettingsModal.tsx` | Preferences modal for theme selection & Microsoft user profile |
+| `src/components/SettingsModal.tsx` | Preferences modal for theme selection, user profile, and update management |
 
 ---
 

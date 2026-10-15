@@ -89,3 +89,26 @@ export interface TabItem {
   /** Current index in the navigation history stack. */
   historyIndex: number;
 }
+
+/** Storage usage metadata for a drive or filesystem volume. */
+export interface DiskUsage {
+  /** Display name of the drive (e.g. "Local Disk (C:)"). */
+  drive_name: string;
+  /** Mount or root path of the volume (e.g. "C:\\" or "/"). */
+  mount_path: string;
+  /** Total capacity of the volume in bytes. */
+  total_bytes: number;
+  /** Free/available space on the volume in bytes. */
+  free_bytes: number;
+  /** Used space on the volume in bytes. */
+  used_bytes: number;
+  /** Percentage of volume currently occupied (0 to 100). */
+  used_percentage: number;
+  /** Human-readable total capacity string (e.g. "512 GB"). */
+  total_formatted: string;
+  /** Human-readable free space string (e.g. "128 GB"). */
+  free_formatted: string;
+  /** Human-readable used space string (e.g. "384 GB"). */
+  used_formatted: string;
+}
+

@@ -13,6 +13,9 @@ import PreviewPanel from "./components/PreviewPanel";
 import StatusBar from "./components/StatusBar";
 import UniversalSearchModal from "./components/UniversalSearchModal";
 import SettingsModal from "./components/SettingsModal";
+import TutorialModal from "./components/TutorialModal";
+import QuickPreviewModal, { type QuickPreviewItem } from "./components/QuickPreviewModal";
+import { WhatsNewModal, WHATS_NEW_LAST_VERSION_KEY, APP_CURRENT_VERSION } from "./components/WhatsNewModal";
 import { THEMES } from "./themes";
 
 import type {
@@ -28,6 +31,7 @@ import type {
   SortField,
   SystemUserInfo,
   TabItem,
+  DiskUsage,
 } from "./types";
 
 /** Default initial rule configuration. */
@@ -109,7 +113,29 @@ const App: React.FC = () => {
   const [isUniversalSearchOpen, setIsUniversalSearchOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [settingsTab, setSettingsTab] = useState<"appearance" | "profile" | "shortcuts" | "updates">("appearance");
+  const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(() => {
+    return localStorage.getItem("foldy_hide_tutorial") !== "true";
+  });
+  const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(false);
+  const [previewItem, setPreviewItem] = useState<QuickPreviewItem | null>(null);
+  const [isWhatsNewOpen, setIsWhatsNewOpen] = useState<boolean>(false);
   const [pendingUpdateVersion, setPendingUpdateVersion] = useState<string | null>(null);
+
+  // Automatically pop up "What's New" when Foldy updates to a new version on macOS or Windows
+  useEffect(() => {
+    try {
+      const lastSeen = localStorage.getItem(WHATS_NEW_LAST_VERSION_KEY);
+      if (lastSeen !== APP_CURRENT_VERSION) {
+        // Subtle delay to allow directory cards and theme to mount first
+        const timer = setTimeout(() => {
+          setIsWhatsNewOpen(true);
+        }, 700);
+        return () => clearTimeout(timer);
+      }
+    } catch {
+      // Non-critical local storage check
+    }
+  }, []);
 
   // Background check for newer app releases 2.5s after launch
   useEffect(() => {
@@ -196,6 +222,7 @@ const App: React.FC = () => {
   const [folders, setFolders]             = useState<FolderEntry[]>([]);
   const [files, setFiles]                 = useState<FileEntry[]>([]);
   const [quickAccess, setQuickAccess]     = useState<QuickAccessItem[]>([]);
+  const [diskUsage, setDiskUsage]         = useState<DiskUsage | null>(null);
   const [searchQuery, setSearchQuery]     = useState<string>("");
   const [viewMode, setViewMode]           = useState<ViewMode>("cards");
   const [isRecursive, setIsRecursive]     = useState<boolean>(false);
@@ -381,6 +408,13 @@ const App: React.FC = () => {
           });
         }
 
+        // Non-blockingly update disk usage metrics for the active drive/volume
+        if (finalPath && finalPath !== "recents") {
+          invoke<DiskUsage>("get_disk_usage", { path: finalPath })
+            .then(setDiskUsage)
+            .catch(() => {});
+        }
+
         if (effectiveTabId === activeTabIdRef.current) {
           setCurrentPath(finalPath);
           if (pushHistory) {
@@ -493,21 +527,28 @@ const App: React.FC = () => {
     async function init() {
       refreshUndoCount();
 
-      // Query signed-in Microsoft / Windows user account
-      try {
-        const sysUser = await invoke<SystemUserInfo>("get_system_user");
-        setDetectedUser(sysUser);
-        const saved =
-          localStorage.getItem("foldy_username") ||
-          localStorage.getItem("folderly_username");
-        if ((!saved || saved === "Raynald Gitau") && sysUser.display_name) {
-          setDisplayName(sysUser.display_name);
-        } else if (!saved && sysUser.username) {
-          setDisplayName(sysUser.username);
-        }
-      } catch (e) {
-        console.error("System user detection error:", e);
-      }
+      // Parallelize non-blocking startup queries: system user, volume disk usage, quick access
+      invoke<SystemUserInfo>("get_system_user")
+        .then((sysUser) => {
+          setDetectedUser(sysUser);
+          const saved =
+            localStorage.getItem("foldy_username") ||
+            localStorage.getItem("folderly_username");
+          if ((!saved || saved === "Raynald Gitau") && sysUser.display_name) {
+            setDisplayName(sysUser.display_name);
+          } else if (!saved && sysUser.username) {
+            setDisplayName(sysUser.username);
+          }
+        })
+        .catch((e) => {
+          console.error("System user detection error:", e);
+        });
+
+      invoke<DiskUsage>("get_disk_usage", { path: null })
+        .then(setDiskUsage)
+        .catch((e) => {
+          console.error("Initial disk usage query error:", e);
+        });
 
       try {
         const qa = await invoke<QuickAccessItem[]>("get_quick_access");
@@ -1095,6 +1136,173 @@ const App: React.FC = () => {
     setPreviews([]);
   }, [filteredFiles]);
 
+  // ── Quick Look Preview Handlers ──────────────────────────────────────────
+
+  /**
+   * Combined list of all visible directories and files in current display order.
+   * Enables seamless cycling forward and backward in the preview modal.
+   */
+  const allVisibleItems = useMemo<QuickPreviewItem[]>(() => {
+    const list: QuickPreviewItem[] = [];
+    if (foldersFirst) {
+      for (const f of filteredFolders) {
+        list.push({
+          path: f.path,
+          name: f.name,
+          isFolder: true,
+          modified_at: f.modified_at,
+        });
+      }
+      for (const f of filteredFiles) {
+        list.push({
+          path: f.path,
+          name: f.name,
+          isFolder: false,
+          size: f.size,
+          extension: f.extension,
+          modified_at: f.modified_at,
+        });
+      }
+    } else {
+      for (const f of filteredFiles) {
+        list.push({
+          path: f.path,
+          name: f.name,
+          isFolder: false,
+          size: f.size,
+          extension: f.extension,
+          modified_at: f.modified_at,
+        });
+      }
+      for (const f of filteredFolders) {
+        list.push({
+          path: f.path,
+          name: f.name,
+          isFolder: true,
+          modified_at: f.modified_at,
+        });
+      }
+    }
+    return list;
+  }, [filteredFolders, filteredFiles, foldersFirst]);
+
+  /**
+   * Determines index of currently previewed item within the visible items array.
+   */
+  const previewCurrentIndex = useMemo(() => {
+    if (!previewItem) return -1;
+    return allVisibleItems.findIndex(
+      (i) => i.path.toLowerCase() === previewItem.path.toLowerCase()
+    );
+  }, [allVisibleItems, previewItem]);
+
+  const hasPrevPreviewItem = previewCurrentIndex > 0;
+  const hasNextPreviewItem =
+    previewCurrentIndex >= 0 && previewCurrentIndex < allVisibleItems.length - 1;
+
+  /**
+   * Opens or closes the Quick Look preview for targeted file/folder or active selection.
+   *
+   * @param targetPath - Optional specific file or folder path to preview directly.
+   * @param isFolder - Whether the targeted path is a folder.
+   * @returns void
+   */
+  const handleOpenPreviewForItem = useCallback(
+    (targetPath?: string, isFolder = false) => {
+      if (targetPath) {
+        const item =
+          allVisibleItems.find(
+            (i) => i.path.toLowerCase() === targetPath.toLowerCase()
+          ) || {
+            path: targetPath,
+            name: targetPath.split(/[\\/]/).pop() || targetPath,
+            isFolder,
+          };
+        setPreviewItem(item);
+        setIsPreviewOpen(true);
+        return;
+      }
+
+      // If already open, close it
+      if (isPreviewOpen) {
+        setIsPreviewOpen(false);
+        return;
+      }
+
+      // Target selection or first visible item
+      if (selectedPaths.size > 0) {
+        const firstSelectedPath = Array.from(selectedPaths)[0];
+        const item = allVisibleItems.find(
+          (i) => i.path.toLowerCase() === firstSelectedPath.toLowerCase()
+        );
+        if (item) {
+          setPreviewItem(item);
+          setIsPreviewOpen(true);
+          return;
+        }
+      }
+
+      if (allVisibleItems.length > 0) {
+        setPreviewItem(allVisibleItems[0]);
+        setIsPreviewOpen(true);
+      }
+    },
+    [allVisibleItems, isPreviewOpen, selectedPaths]
+  );
+
+  /**
+   * Navigates to the next item in the visible list for quick preview.
+   *
+   * @returns void
+   */
+  const handleNextPreviewItem = useCallback(() => {
+    if (!previewItem || allVisibleItems.length === 0) return;
+    const currentIndex = allVisibleItems.findIndex(
+      (i) => i.path.toLowerCase() === previewItem.path.toLowerCase()
+    );
+    if (currentIndex >= 0 && currentIndex < allVisibleItems.length - 1) {
+      setPreviewItem(allVisibleItems[currentIndex + 1]);
+    }
+  }, [allVisibleItems, previewItem]);
+
+  /**
+   * Navigates to the previous item in the visible list for quick preview.
+   *
+   * @returns void
+   */
+  const handlePrevPreviewItem = useCallback(() => {
+    if (!previewItem || allVisibleItems.length === 0) return;
+    const currentIndex = allVisibleItems.findIndex(
+      (i) => i.path.toLowerCase() === previewItem.path.toLowerCase()
+    );
+    if (currentIndex > 0) {
+      setPreviewItem(allVisibleItems[currentIndex - 1]);
+    }
+  }, [allVisibleItems, previewItem]);
+
+  // Global Quick Look preview shortcut listener ('p', 'P', or Space)
+  useEffect(() => {
+    const handlePreviewKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      const isInput =
+        activeEl instanceof HTMLInputElement ||
+        activeEl instanceof HTMLTextAreaElement ||
+        (activeEl && (activeEl as HTMLElement).isContentEditable);
+
+      // Never intercept keystrokes when typing in search bars or rename inputs
+      if (isInput) return;
+
+      if (e.key === "p" || e.key === "P" || e.code === "Space") {
+        if (e.code === "Space") {
+          e.preventDefault();
+        }
+        handleOpenPreviewForItem();
+      }
+    };
+    window.addEventListener("keydown", handlePreviewKeyDown);
+    return () => window.removeEventListener("keydown", handlePreviewKeyDown);
+  }, [handleOpenPreviewForItem]);
+
   // ── Renamer Drawer Render Helper ─────────────────────────────────────────
 
   const renderRenamerDrawer = () => (
@@ -1201,8 +1409,10 @@ const App: React.FC = () => {
                 setSettingsTab("appearance");
                 setIsSettingsOpen(true);
               }}
+              onOpenTutorials={() => setIsTutorialOpen(true)}
               onMoveItem={handleMoveItem}
               hasUpdateAvailable={Boolean(pendingUpdateVersion)}
+              diskUsage={diskUsage}
             />
           </div>
         </>
@@ -1370,6 +1580,7 @@ const App: React.FC = () => {
         onDelete={handleDeleteItem}
         onOpenInNewTab={(path) => handleNewTab(path)}
         onPinFolder={handlePinFolderPath}
+        onPreview={(path, isFolder) => handleOpenPreviewForItem(path, isFolder)}
       />
 
       {/* Universal Search Across Entire Laptop Modal */}
@@ -1393,6 +1604,41 @@ const App: React.FC = () => {
         workspaceName={workspaceName}
         onUpdateWorkspaceName={handleUpdateWorkspaceName}
         initialTab={settingsTab}
+        onOpenTutorials={() => setIsTutorialOpen(true)}
+        onOpenWhatsNew={() => setIsWhatsNewOpen(true)}
+      />
+
+      {/* Interactive Tutorials & Quality Assurance Onboarding Guide */}
+      <TutorialModal
+        isOpen={isTutorialOpen}
+        onClose={() => setIsTutorialOpen(false)}
+        onFinishTutorial={() => setIsTutorialOpen(false)}
+      />
+
+      {/* "What's New" Release Highlights Modal for New Updates */}
+      <WhatsNewModal
+        isOpen={isWhatsNewOpen}
+        onClose={() => setIsWhatsNewOpen(false)}
+        onOpenTutorials={() => setIsTutorialOpen(true)}
+        currentVersion={APP_CURRENT_VERSION}
+      />
+
+      {/* Quick Look Preview Modal (macOS & Windows 'P' / Space key preview) */}
+      <QuickPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        item={previewItem}
+        onNavigateFolder={(path) => {
+          setIsPreviewOpen(false);
+          navigateTo(path);
+        }}
+        onOpenFile={(path) => {
+          handleOpenFile(path);
+        }}
+        onNextItem={handleNextPreviewItem}
+        onPrevItem={handlePrevPreviewItem}
+        hasNext={hasNextPreviewItem}
+        hasPrev={hasPrevPreviewItem}
       />
 
       {/* Floating Live Update Notification Banner */}

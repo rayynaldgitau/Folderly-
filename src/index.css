@@ -248,6 +248,10 @@
   background-color: #1557b0 !important;
 }
 
+.theme-material .storage-progress-bar:not(.bg-amber-500) {
+  background: #1a73e8 !important;
+}
+
 /* ── THEME 4: Apple Design (macOS Neutral Silver & Multicolor) ── */
 .theme-apple {
   --scrollbar-thumb: #535760;
@@ -354,6 +358,11 @@
   background: linear-gradient(180deg, #666a74 0%, #4b4f57 100%) !important;
 }
 
+.theme-apple .storage-progress-bar:not(.bg-amber-500) {
+  background: linear-gradient(90deg, #30d158 0%, #ffd60a 35%, #0a84ff 70%, #bf5af2 100%) !important;
+  box-shadow: 0 0 6px rgba(48, 209, 88, 0.35) !important;
+}
+
 /* ── THEME 5: Midnight Matte Orange (No Pink) ── */
 .theme-dark {
   --scrollbar-thumb: #442b1a;
@@ -455,6 +464,10 @@
 .theme-dark .bg-red-600:hover,
 .theme-dark .hover\:bg-red-500:hover {
   background-color: #bf5215 !important;
+}
+
+.theme-dark .storage-progress-bar:not(.bg-amber-500) {
+  background: #ea580c !important;
 }
 
 /* Smooth transitions */

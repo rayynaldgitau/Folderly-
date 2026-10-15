@@ -476,8 +476,129 @@ export const MacFileIcon: React.FC<MacFileIconProps> = ({
   );
 };
 
+/**
+ * Properties accepted by the MacDriveIcon component.
+ */
+export interface MacDriveIconProps {
+  /** Dimension size in pixels or CSS units. Defaults to 20. */
+  size?: number | string;
+  /** Optional additional CSS class names. */
+  className?: string;
+  /** Optional inline styles. */
+  style?: React.CSSProperties;
+}
+
+/**
+ * Renders a faithful macOS Macintosh HD / internal SSD drive icon.
+ * Features brushed aluminum silver gradient, top-edge specular highlight,
+ * drive enclosure bevel, and soft power/activity indicator.
+ *
+ * @param props - Custom size, classes, or styles.
+ * @returns SVG element representing the Macintosh drive.
+ */
+export const MacDriveIcon: React.FC<MacDriveIconProps> = ({
+  size = 20,
+  className = "",
+  style,
+}) => {
+  const rawId = useId();
+  const id = `mac-drive-${rawId.replace(/:/g, "")}`;
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      style={{ verticalAlign: "middle", ...style }}
+      aria-label="Macintosh HD"
+    >
+      <defs>
+        {/* Brushed aluminum enclosure gradient */}
+        <linearGradient id={`${id}-body`} x1="0" y1="12" x2="0" y2="52" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#e2e8f0" />
+          <stop offset="40%" stopColor="#cbd5e1" />
+          <stop offset="100%" stopColor="#94a3b8" />
+        </linearGradient>
+
+        {/* Top-edge specular highlight */}
+        <linearGradient id={`${id}-bevel`} x1="0" y1="12" x2="64" y2="12" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
+          <stop offset="50%" stopColor="#ffffff" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0.8" />
+        </linearGradient>
+
+        {/* Front slot / faceplate gradient */}
+        <linearGradient id={`${id}-slot`} x1="0" y1="36" x2="0" y2="46" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#334155" />
+          <stop offset="100%" stopColor="#1e293b" />
+        </linearGradient>
+
+        {/* Drop shadow */}
+        <filter id={`${id}-shadow`} x="-10%" y="-10%" width="120%" height="130%" filterUnits="userSpaceOnUse">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000000" floodOpacity="0.25" />
+        </filter>
+      </defs>
+
+      {/* Main drive metallic chassis */}
+      <rect
+        x="6"
+        y="14"
+        width="52"
+        height="36"
+        rx="6"
+        fill={`url(#${id}-body)`}
+        stroke="#64748b"
+        strokeWidth="1.2"
+        filter={`url(#${id}-shadow)`}
+      />
+
+      {/* Top bevel highlight line */}
+      <line
+        x1="12"
+        y1="16"
+        x2="52"
+        y2="16"
+        stroke={`url(#${id}-bevel)`}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+
+      {/* Front darker faceplate section */}
+      <rect
+        x="10"
+        y="32"
+        width="44"
+        height="12"
+        rx="3"
+        fill={`url(#${id}-slot)`}
+        stroke="#0f172a"
+        strokeWidth="0.8"
+      />
+
+      {/* Optical/Drive slot */}
+      <line
+        x1="16"
+        y1="38"
+        x2="42"
+        y2="38"
+        stroke="#475569"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+
+      {/* Apple LED Activity light */}
+      <circle cx="48" cy="38" r="2" fill="#38bdf8" />
+      <circle cx="48" cy="38" r="3.5" fill="#38bdf8" fillOpacity="0.3" />
+    </svg>
+  );
+};
+
 export default {
   MacFolderIcon,
   MacFileIcon,
+  MacDriveIcon,
   getFileCategory,
 };

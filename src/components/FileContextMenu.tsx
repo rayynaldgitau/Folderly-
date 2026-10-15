@@ -26,6 +26,8 @@ export interface FileContextMenuProps {
   onOpenInNewTab?: (path: string) => void;
   /** Callback invoked to pin the folder to the sidebar. */
   onPinFolder?: (path: string) => void;
+  /** Callback invoked to launch the Quick Look preview for the target item. */
+  onPreview?: (path: string, isFolder: boolean) => void;
 }
 
 /**
@@ -46,6 +48,7 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onDelete,
   onOpenInNewTab,
   onPinFolder,
+  onPreview,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<{ x: number; y: number }>({ x, y });
@@ -189,6 +192,27 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
         </svg>
         <span className="font-medium truncate">{isFolder ? "Open Folder" : "Open"}</span>
       </button>
+
+      {/* Quick Look Preview action */}
+      {onPreview && targetPath && (
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => {
+            onPreview(targetPath, isFolder);
+            onClose();
+          }}
+          className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-neutral-200 hover:bg-neutral-800 hover:text-white transition-colors duration-150 cursor-pointer"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="w-4 h-4 text-neutral-400 shrink-0 text-center text-xs">👁</span>
+            <span className="font-medium truncate">Quick Look Preview</span>
+          </div>
+          <kbd className="px-1.5 py-0.5 text-[10px] rounded bg-neutral-800 text-neutral-400 font-mono border border-neutral-700">
+            P
+          </kbd>
+        </button>
+      )}
 
       {/* Open in New Tab (Folders only) */}
       {isFolder && onOpenInNewTab && (

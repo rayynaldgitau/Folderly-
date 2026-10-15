@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import type { QuickAccessItem, FolderEntry } from "../types";
-import { MacFolderIcon } from "./MacIcons";
+import type { QuickAccessItem, FolderEntry, DiskUsage } from "../types";
+import { MacFolderIcon, MacDriveIcon } from "./MacIcons";
 
 interface Props {
   selectedDir: string | null;
@@ -19,10 +19,14 @@ interface Props {
   displayName?: string;
   workspaceName?: string;
   onOpenSettings?: () => void;
+  /** Opens the interactive walkthrough and tutorial modal. */
+  onOpenTutorials?: () => void;
   /** Callback fired when an item is dropped onto a destination folder. */
   onMoveItem?: (sourcePath: string, destDir: string) => void;
   /** Indicates whether a new version update is ready. */
   hasUpdateAvailable?: boolean;
+  /** Real-time disk storage metrics for the active drive/volume. */
+  diskUsage?: DiskUsage | null;
 }
 
 /**
@@ -51,8 +55,10 @@ const Sidebar: React.FC<Props> = ({
   displayName = "User",
   workspaceName = "Personal workspace",
   onOpenSettings,
+  onOpenTutorials,
   onMoveItem,
   hasUpdateAvailable = false,
+  diskUsage = null,
 }) => {
   const [dragOverPath, setDragOverPath] = useState<string | null>(null);
   const [isOverPinnedSection, setIsOverPinnedSection] = useState<boolean>(false);
@@ -78,6 +84,30 @@ const Sidebar: React.FC<Props> = ({
   const resolvedMusicPath = musicItem?.path || "Music";
   const resolvedVideosPath = videosItem?.path || "Videos";
   const resolvedHomePath = homeItem?.path || "Home";
+
+  const isMac =
+    typeof navigator !== "undefined" &&
+    (navigator.userAgent.includes("Mac") || navigator.platform.includes("Mac"));
+
+  /**
+   * Checks whether a drive name or filesystem path corresponds to a macOS drive or volume.
+   *
+   * @param name - Drive label string.
+   * @param path - Filesystem volume path.
+   * @returns True if the volume corresponds to a macOS volume or root.
+   */
+  const isMacDrive = (name?: string, path?: string): boolean => {
+    if (!name && !path) return isMac;
+    const n = (name || "").toLowerCase();
+    const p = (path || "").toLowerCase();
+    return (
+      n.includes("mac") ||
+      n.includes("apple") ||
+      p === "/" ||
+      p.startsWith("/volumes") ||
+      (isMac && !p.match(/^[a-z]:/i))
+    );
+  };
 
   const effectivePinnedFolders = pinnedFolders && pinnedFolders.length > 0
     ? pinnedFolders
@@ -369,7 +399,7 @@ const Sidebar: React.FC<Props> = ({
         {drives.length > 0 && (
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-color px-2 mb-1.5">
-              This PC
+              {isMac ? "Locations" : "This PC"}
             </p>
             <div className="space-y-0.5">
               {drives.map((d) => (
@@ -379,7 +409,11 @@ const Sidebar: React.FC<Props> = ({
                   className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs text-primary-color hover:bg-card hover:text-[#ff2d87] transition-all truncate"
                   title={d.path}
                 >
-                  <span className="text-sm">💾</span>
+                  {isMacDrive(d.name, d.path) ? (
+                    <MacDriveIcon size={16} />
+                  ) : (
+                    <span className="text-sm">💾</span>
+                  )}
                   <span className="truncate">{d.name}</span>
                 </button>
               ))}
@@ -390,21 +424,68 @@ const Sidebar: React.FC<Props> = ({
 
       {/* ── 4. Bottom Storage Widget & Settings ── */}
       <div className="p-3 border-t border-neutral-800/40 space-y-2">
-        {/* Storage Widget Card */}
-        <div className="p-2.5 rounded-xl bg-card border border-neutral-800/30">
-          <div className="flex items-center gap-2 text-xs font-semibold text-primary-color mb-1.5">
-            <span>💾</span>
-            <span>Local Disk (C:)</span>
+        {/* Storage Widget Card (dynamic real storage visualization) */}
+        <div
+          onClick={() => diskUsage?.mount_path && onNavigate(diskUsage.mount_path)}
+          className="p-2.5 rounded-xl bg-card border border-neutral-800/30 hover:border-[#ff2d87]/40 cursor-pointer transition-all group select-none"
+          title={
+            diskUsage
+              ? `${diskUsage.drive_name} (${diskUsage.mount_path})\n${diskUsage.free_formatted} free of ${diskUsage.total_formatted} (${diskUsage.used_percentage}% used)\nClick to view drive root`
+              : "Local Storage"
+          }
+        >
+          <div className="flex items-center justify-between text-xs font-semibold text-primary-color mb-1.5">
+            <div className="flex items-center gap-2 truncate">
+              {isMacDrive(diskUsage?.drive_name, diskUsage?.mount_path) ? (
+                <MacDriveIcon size={18} />
+              ) : (
+                <span>💾</span>
+              )}
+              <span className="truncate group-hover:text-[#ff2d87] transition-colors">
+                {diskUsage?.drive_name || (isMac ? "Macintosh HD" : "Local Disk (C:)")}
+              </span>
+            </div>
+            {diskUsage && (
+              <span className="text-[10px] text-muted-color font-mono shrink-0 ml-1">
+                {diskUsage.used_percentage}%
+              </span>
+            )}
           </div>
-          {/* Pink Progress Bar */}
+          {/* Progress Bar with theme accent and high-capacity warning */}
           <div className="w-full h-1.5 bg-neutral-700/30 rounded-full overflow-hidden mb-1">
             <div
-              className="h-full bg-[#ff2d87] rounded-full"
-              style={{ width: "35%" }}
+              className={`h-full rounded-full transition-all duration-500 storage-progress-bar ${
+                (diskUsage?.used_percentage ?? 0) > 90
+                  ? "bg-amber-500"
+                  : "bg-[#ff2d87]"
+              }`}
+              style={{
+                width: `${Math.min(100, Math.max(0, diskUsage?.used_percentage ?? 0))}%`,
+              }}
             />
           </div>
-          <p className="text-[10px] text-muted-color">128 GB free of 512 GB</p>
+          <div className="flex items-center justify-between text-[10px] text-muted-color">
+            <span>{diskUsage ? `${diskUsage.free_formatted} free` : "Loading storage..."}</span>
+            <span>{diskUsage ? `of ${diskUsage.total_formatted}` : ""}</span>
+          </div>
         </div>
+
+        {/* Tutorials & Guide Button */}
+        {onOpenTutorials && (
+          <button
+            onClick={onOpenTutorials}
+            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium text-primary-color hover:bg-card hover:text-[#ff2d87] transition-all group"
+            title="Open Interactive Tutorials & Guide"
+          >
+            <div className="flex items-center gap-2.5">
+              <span>🎓</span>
+              <span>Tutorials & Guide</span>
+            </div>
+            <span className="text-[10px] text-muted-color font-mono group-hover:text-primary-color">
+              Tour
+            </span>
+          </button>
+        )}
 
         {/* Settings Button */}
         <button
