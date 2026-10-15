@@ -142,11 +142,14 @@ const App: React.FC = () => {
     const timer = setTimeout(async () => {
       try {
         const update = await check();
-        if (update && update.available) {
+        if (update) {
+          console.log(`[Foldy AutoUpdater] Update available: v${update.version} (current: ${update.currentVersion})`);
           setPendingUpdateVersion(update.version);
+        } else {
+          console.log("[Foldy AutoUpdater] App is up to date.");
         }
-      } catch {
-        // Silently catch network or dev-environment errors
+      } catch (err) {
+        console.warn("[Foldy AutoUpdater] Background update check notice:", err);
       }
     }, 2500);
     return () => clearTimeout(timer);

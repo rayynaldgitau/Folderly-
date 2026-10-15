@@ -7,7 +7,7 @@ import { FoldyLogo } from "./FoldyLogo";
 export const WHATS_NEW_LAST_VERSION_KEY = "foldy_last_seen_version";
 
 /** Current active release version string of Foldy. */
-export const APP_CURRENT_VERSION = "0.1.3";
+export const APP_CURRENT_VERSION = "0.1.4";
 
 /**
  * Feature change entry detailing a specific improvement or addition.
@@ -41,6 +41,46 @@ export interface ReleaseVersion {
  * Historical changelog data for Foldy releases.
  */
 export const CHANGELOG_DATA: ReleaseVersion[] = [
+  {
+    version: "0.1.4",
+    title: "Media & Document Preview Fix + Live Update Delivery",
+    date: "October 2026",
+    highlights: [
+      {
+        icon: "🎬",
+        title: "Seamless Video & Photo Rendering",
+        tag: "FIX & IMPROVEMENT",
+        tagColor: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+        description:
+          "Integrated the Tauri custom asset protocol with expanded OS security scopes, enabling instant playback of MP4 and WebM videos and crisp rendering of all photo formats.",
+        tip: "Press 'P' or 'Space' on any video or image to inspect immediately.",
+      },
+      {
+        icon: "📄",
+        title: "Interactive PDF Canvas Viewer",
+        tag: "NEW VIEWER",
+        tagColor: "bg-red-500/20 text-red-400 border-red-500/30",
+        description:
+          "High-performance PDF rendering directly to HTML5 canvas with interactive page flipping, zoom levels (+ / - / reset), and zero WebView2 CSP sandboxing friction.",
+      },
+      {
+        icon: "📝",
+        title: "Native Word Document (.docx) Viewer",
+        tag: "NEW VIEWER",
+        tagColor: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+        description:
+          "Instant parsing and clean HTML sheet rendering for Microsoft Word documents with live word and character counters, plus a 1-click 'Open in Word' shortcut.",
+      },
+      {
+        icon: "🔄",
+        title: "Over-the-Air Live Auto-Updater",
+        tag: "UPDATER",
+        tagColor: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+        description:
+          "Automated update delivery across Windows and macOS with dual target resolution, cryptographic verification, and one-click in-app background installation.",
+      },
+    ],
+  },
   {
     version: "0.1.3",
     title: "Quick Look Preview, What's New & Lovable Themes Update",

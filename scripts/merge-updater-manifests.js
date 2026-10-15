@@ -110,6 +110,14 @@ function generateOrMergeManifest() {
       signature,
       url: downloadUrl,
     };
+    merged.platforms["darwin-x86_64-app"] = {
+      signature,
+      url: downloadUrl,
+    };
+    merged.platforms["darwin-aarch64-app"] = {
+      signature,
+      url: downloadUrl,
+    };
     console.log(`Attached macOS platforms from: ${sigPath}`);
   }
 
@@ -126,6 +134,10 @@ function generateOrMergeManifest() {
     const downloadUrl = `https://github.com/rayynaldgitau/Folderly-/releases/download/${tag}/${installerName}`;
 
     merged.platforms["windows-x86_64"] = {
+      signature,
+      url: downloadUrl,
+    };
+    merged.platforms["windows-x86_64-nsis"] = {
       signature,
       url: downloadUrl,
     };
