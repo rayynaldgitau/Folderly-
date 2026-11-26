@@ -1056,6 +1056,18 @@ mod commands {
         Ok(results)
     }
 
+    /// Checks whether each provided file path still exists as a file on disk.
+    ///
+    /// * `paths`: List of file paths to verify.
+    /// * Returns: Boolean list in the same order (`true` if the path exists and is a file).
+    #[tauri::command]
+    pub fn check_files_exist(paths: Vec<String>) -> Vec<bool> {
+        paths
+            .into_iter()
+            .map(|p| resolve_system_path(&p).is_file())
+            .collect()
+    }
+
     /// Recursively reads all files under `dir_path` for recursive bulk operations.
     ///
     /// * `dir_path`: Root folder path.
@@ -1824,6 +1836,7 @@ fn main() {
             commands::universal_search,
             commands::move_item,
             commands::get_recent_files,
+            commands::check_files_exist,
             commands::read_file_text_preview,
             commands::read_file_bytes,
         ])
@@ -2051,5 +2064,24 @@ mod tests {
         assert!(not_found.is_err());
 
         let _ = fs::remove_file(&test_bin);
+    }
+
+    /// Tests that check_files_exist reports existing files and missing paths accurately.
+    ///
+    /// * Returns: Nothing (`()`). Panics on assertion failure.
+    #[test]
+    fn test_check_files_exist() {
+        let temp_dir = std::env::temp_dir();
+        let existing = temp_dir.join("foldy_test_exists_check.txt");
+        fs::write(&existing, "ok").expect("Failed to create temp file");
+        let missing = temp_dir.join("foldy_test_missing_check_xyz.txt");
+
+        let res = commands::check_files_exist(vec![
+            existing.to_string_lossy().to_string(),
+            missing.to_string_lossy().to_string(),
+        ]);
+        assert_eq!(res, vec![true, false]);
+
+        let _ = fs::remove_file(&existing);
     }
 }
