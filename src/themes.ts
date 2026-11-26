@@ -1,10 +1,9 @@
 import type { ThemeMode } from "./types";
 
-/** Metadata and styling tokens for each supported application theme. */
+/** Metadata and token-backed styling presets for each supported application theme. */
 export interface ThemeConfig {
   id: ThemeMode;
   name: string;
-  icon: string;
   description: string;
   rootClass: string;
   badgeClass: string;
@@ -14,66 +13,61 @@ export interface ThemeConfig {
   accentText: string;
 }
 
-/** Theme definitions mapping visual attributes to tailored class combinations. */
+/** Theme definitions backed by `--md-sys-*` CSS custom properties in `src/styles/tokens.css`. */
 export const THEMES: Record<ThemeMode, ThemeConfig> = {
+  material: {
+    id: "material",
+    name: "Material You (Cobalt Dark)",
+    description: "Material Design 3 tonal surfaces generated from a Cobalt Blue seed",
+    rootClass: "bg-surface text-on-surface selection:bg-primary/30",
+    badgeClass: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
+    buttonPrimary: "bg-primary text-on-primary font-semibold rounded-m3-full",
+    buttonSecondary: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
+    activeTabClass: "bg-primary-container text-on-primary-container font-semibold rounded-m3-md",
+    accentText: "text-primary",
+  },
   pink: {
     id: "pink",
     name: "Midnight Sakura (OLED)",
-    icon: "💖",
-    description: "Deep OLED obsidian black illuminated by electric neon rose highlights",
-    rootClass: "theme-pink bg-[#120e12] text-white selection:bg-[#ff2d87]/40",
-    badgeClass: "bg-[#251b23] text-[#ff66a3] border border-[#ff2d87]/40 rounded-full",
-    buttonPrimary: "bg-[#ff2d87] hover:bg-[#e61b74] text-white font-semibold rounded-xl shadow-md shadow-[#ff2d87]/25",
-    buttonSecondary: "bg-[#1e181d] text-[#ff8dbb] border border-[#ff2d87]/30 hover:bg-[#2c222b] rounded-xl",
-    activeTabClass: "bg-[#ff2d87] text-white font-semibold rounded-xl shadow-sm",
-    accentText: "text-[#ff2d87]",
+    description: "Deep OLED obsidian surface paired with high-contrast sakura rose tokens",
+    rootClass: "bg-surface text-on-surface selection:bg-primary/30",
+    badgeClass: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
+    buttonPrimary: "bg-primary text-on-primary font-semibold rounded-m3-full",
+    buttonSecondary: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
+    activeTabClass: "bg-primary-container text-on-primary-container font-semibold rounded-m3-md",
+    accentText: "text-primary",
   },
   pink_light: {
     id: "pink_light",
-    name: "Blush Cotton Candy",
-    icon: "🌸",
-    description: "Soft pastel cashmere velvet canvas paired with sweet strawberry accents",
-    rootClass: "theme-pink-light bg-[#fceef2] text-[#241820] selection:bg-[#ff2d87]/25",
-    badgeClass: "bg-[#fadee7] text-[#c91866] border border-[#ff2d87]/30 rounded-full",
-    buttonPrimary: "bg-[#ff2d87] hover:bg-[#e61b74] text-white font-semibold rounded-xl shadow-md shadow-[#ff2d87]/20",
-    buttonSecondary: "bg-[#fce4ec] text-[#241820] border border-[#ff2d87]/25 hover:bg-[#f8d4e0] rounded-xl",
-    activeTabClass: "bg-[#ff2d87] text-white font-semibold rounded-xl shadow-sm",
-    accentText: "text-[#ff2d87]",
-  },
-  material: {
-    id: "material",
-    name: "Google Pixel Horizon",
-    icon: "🤖",
-    description: "Authentic Google Material You design with signature Google Blue & Android Emerald",
-    rootClass: "theme-material bg-[#131314] text-[#f1f3f4] selection:bg-[#8ab4f8]/30",
-    badgeClass: "bg-[#3ddc84]/15 text-[#3ddc84] border border-[#3ddc84]/35 rounded-full shadow-sm",
-    buttonPrimary: "bg-[#1a73e8] hover:bg-[#1557b0] text-white font-semibold rounded-2xl shadow-md shadow-[#1a73e8]/25",
-    buttonSecondary: "bg-[#23252b] text-[#f1f3f4] border border-[#44474f]/40 hover:bg-[#2c2f37] rounded-2xl",
-    activeTabClass: "bg-[#004a77] text-[#c2e7ff] border border-[#8ab4f8]/40 rounded-2xl shadow-sm",
-    accentText: "text-[#8ab4f8]",
+    name: "Blush Cotton Candy (Light)",
+    description: "Warm light tonal surfaces paired with accessible berry rose accents",
+    rootClass: "bg-surface text-on-surface selection:bg-primary/20",
+    badgeClass: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
+    buttonPrimary: "bg-primary text-on-primary font-semibold rounded-m3-full",
+    buttonSecondary: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
+    activeTabClass: "bg-primary-container text-on-primary-container font-semibold rounded-m3-md",
+    accentText: "text-primary",
   },
   apple: {
     id: "apple",
-    name: "Cupertino Silver & Multicolor",
-    icon: "🍎",
-    description: "Classic brushed aluminum silver system backdrop with Apple Multicolor radiance",
-    rootClass: "theme-apple bg-[#24262b] text-[#f5f5f7] selection:bg-white/20",
-    badgeClass: "bg-[#30d158]/15 text-[#30d158] border border-[#30d158]/30 rounded-md shadow-sm",
-    buttonPrimary: "bg-gradient-to-b from-[#535760] to-[#3e4148] text-white border border-white/20 rounded-xl shadow-sm",
-    buttonSecondary: "bg-white/10 hover:bg-white/15 text-neutral-200 border border-white/15 rounded-xl backdrop-blur-md",
-    activeTabClass: "bg-gradient-to-r from-[#ff453a] via-[#ffd60a] to-[#30d158] text-white font-semibold rounded-xl shadow-sm",
-    accentText: "text-white",
+    name: "Cupertino Silver",
+    description: "Neutral brushed slate surfaces with crisp cobalt and emerald accents",
+    rootClass: "bg-surface text-on-surface selection:bg-primary/25",
+    badgeClass: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
+    buttonPrimary: "bg-primary text-on-primary font-semibold rounded-m3-full",
+    buttonSecondary: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
+    activeTabClass: "bg-primary-container text-on-primary-container font-semibold rounded-m3-md",
+    accentText: "text-primary",
   },
   dark: {
     id: "dark",
-    name: "Solar Sunset (Matte Orange)",
-    icon: "✨",
-    description: "Deep obsidian matte black ignited by warm, glowing sunset amber accents",
-    rootClass: "theme-dark bg-[#0c0c0e] text-[#f4f4f5] selection:bg-[#ea580c]/30",
-    badgeClass: "bg-[#ea580c]/15 text-[#fb923c] border border-[#ea580c]/30 rounded-full shadow-sm",
-    buttonPrimary: "bg-[#d96520] hover:bg-[#bf5215] text-white font-semibold rounded-xl shadow-md shadow-[#d96520]/20",
-    buttonSecondary: "bg-[#18181d] hover:bg-[#202026] text-[#f4f4f5] border border-[#272730] rounded-xl",
-    activeTabClass: "bg-[#ea580c] text-white font-semibold rounded-xl shadow-sm",
-    accentText: "text-[#fb923c]",
+    name: "Solar Sunset (Matte Amber)",
+    description: "Matte obsidian surfaces with warm amber-orange primary tokens",
+    rootClass: "bg-surface text-on-surface selection:bg-primary/30",
+    badgeClass: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
+    buttonPrimary: "bg-primary text-on-primary font-semibold rounded-m3-full",
+    buttonSecondary: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
+    activeTabClass: "bg-primary-container text-on-primary-container font-semibold rounded-m3-md",
+    accentText: "text-primary",
   },
 };
