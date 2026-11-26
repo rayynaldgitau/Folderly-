@@ -35,6 +35,9 @@ jobs:
 
       - name: Build Universal macOS DMG and App Bundle
         run: |
+          if [ -z "${APPLE_SIGNING_IDENTITY:-}" ]; then
+            unset APPLE_SIGNING_IDENTITY
+          fi
           npx tauri build --target universal-apple-darwin || npx tauri build
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
