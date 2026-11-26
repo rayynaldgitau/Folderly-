@@ -124,10 +124,10 @@ const FileGrid: React.FC<FileGridProps> = ({
         onClick={() => onNavigateFolder(folder.path)}
         onDoubleClick={() => onNavigateFolder(folder.path)}
         onContextMenu={(e) => onContextMenu(e, folder.path, true)}
-        className={`rounded-m3-md p-3.5 border cursor-pointer select-none group flex items-center gap-3 m3-state-surface m3-pressable ${
+        className={`rounded-m3-md p-3.5 cursor-pointer select-none group flex items-center gap-3 m3-state-surface m3-pressable ${
           isOver
-            ? "ring-2 ring-primary border-primary bg-primary-container text-on-primary-container"
-            : "bg-surface-container border-outline-variant/60 hover:border-outline"
+            ? "bg-primary-container text-on-primary-container"
+            : "bg-surface-container"
         }`}
         title={`${folder.name}\nClick to open (or drop items here to move)`}
       >
@@ -182,20 +182,24 @@ const FileGrid: React.FC<FileGridProps> = ({
           onOpenFile(file.path);
         }}
         onContextMenu={(e) => onContextMenu(e, file.path, false)}
-        className={`rounded-m3-md p-3.5 border cursor-grab active:cursor-grabbing select-none flex flex-col justify-between min-h-[92px] m3-state-surface m3-pressable ${
+        className={`rounded-m3-md p-3.5 cursor-grab active:cursor-grabbing select-none flex flex-col justify-between min-h-[92px] m3-state-surface m3-pressable ${
           selected
-            ? "bg-primary-container/35 border-primary ring-1 ring-primary"
-            : "bg-surface-container border-outline-variant/60 hover:border-outline"
+            ? "bg-primary-container text-on-primary-container"
+            : "bg-surface-container"
         }`}
         title={`${file.name}\nDouble-click to open (or drag into a folder)`}
       >
         <div className="flex items-center gap-2.5 min-w-0 mb-3">
           <MacFileIcon extension={file.extension} size={30} />
-          <p className="text-xs font-medium text-on-surface truncate leading-tight flex-1">
+          <p className="text-xs font-medium truncate leading-tight flex-1">
             {file.name}
           </p>
         </div>
-        <div className="flex items-center justify-between text-[11px] text-on-surface-variant border-t border-outline-variant/40 pt-1.5">
+        <div
+          className={`flex items-center justify-between text-[11px] pt-1 ${
+            selected ? "text-on-primary-container/80" : "text-on-surface-variant"
+          }`}
+        >
           <span>{formatSize(file.size)}</span>
           <span>{formatDate(file.modified_at)}</span>
         </div>

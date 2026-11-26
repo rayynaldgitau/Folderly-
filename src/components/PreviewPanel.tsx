@@ -64,9 +64,9 @@ const PreviewPanel: React.FC<Props> = ({ previews }) => {
 type RowType = "changed" | "noop" | "conflict";
 
 const ROW_STYLES: Record<RowType, string> = {
-  changed: "bg-success-container/40 border border-success/30",
-  noop: "bg-surface-container border border-outline-variant/50",
-  conflict: "bg-error-container/50 border border-error/40",
+  changed: "bg-success-container/60",
+  noop: "bg-surface-container",
+  conflict: "bg-error-container/70",
 };
 
 const OLD_STYLES: Record<RowType, string> = {

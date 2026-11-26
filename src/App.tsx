@@ -80,7 +80,7 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex-1 flex flex-col items-center justify-center p-8 m-4 bg-surface-container rounded-m3-lg border border-outline-variant">
+        <div className="flex-1 flex flex-col items-center justify-center p-8 m-4 bg-surface-container rounded-m3-lg">
           <StateView
             kind="error"
             title="Display Error Recovered"
@@ -1315,9 +1315,9 @@ const App: React.FC = () => {
   const renderRenamerDrawer = () => (
     <aside
       aria-label="Bulk Renamer Drawer"
-      className="w-full sm:w-[380px] max-w-full shrink-0 border-x border-outline-variant flex flex-col bg-surface-container-low overflow-hidden shadow-m3-2 z-20"
+      className="w-full sm:w-[380px] max-w-full shrink-0 flex flex-col bg-surface-container-low overflow-hidden shadow-m3-2 z-20"
     >
-      <div className="p-3.5 border-b border-outline-variant bg-surface-container flex items-center justify-between gap-2">
+      <div className="p-3.5 bg-surface-container flex items-center justify-between gap-2">
         <div className="min-w-0">
           <h2 className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
             <IconSliders size={15} />
@@ -1376,7 +1376,7 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto divide-y divide-outline-variant">
+      <div className="flex-1 overflow-y-auto space-y-2">
         <RuleBuilder rules={rules} onChange={setRules} />
         {previews.length > 0 && <PreviewPanel previews={previews} />}
       </div>

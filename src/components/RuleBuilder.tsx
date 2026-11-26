@@ -15,7 +15,7 @@ const RuleBuilder: React.FC<Props> = ({ rules, onChange }) => {
     onChange({ ...rules, ...partial });
 
   return (
-    <div className="p-4 space-y-5">
+    <div className="p-4 space-y-6">
       <div className="flex items-center gap-2 text-on-surface-variant">
         <IconSliders size={16} className="text-primary" />
         <h3 className="text-xs font-bold uppercase tracking-wider">Rule Builder</h3>
@@ -53,10 +53,8 @@ const RuleBuilder: React.FC<Props> = ({ rules, onChange }) => {
         />
       </section>
 
-      <hr className="border-outline-variant" />
-
       {/* Space replacement */}
-      <section className="space-y-3">
+      <section className="space-y-3 pt-2">
         <p className="text-xs text-primary font-semibold uppercase tracking-wider">
           Space Replacement
         </p>
@@ -68,10 +66,8 @@ const RuleBuilder: React.FC<Props> = ({ rules, onChange }) => {
         />
       </section>
 
-      <hr className="border-outline-variant" />
-
       {/* Regex find & replace */}
-      <section className="space-y-3">
+      <section className="space-y-3 pt-2">
         <p className="text-xs text-primary font-semibold uppercase tracking-wider">
           Regex Find &amp; Replace
         </p>
@@ -89,10 +85,8 @@ const RuleBuilder: React.FC<Props> = ({ rules, onChange }) => {
         />
       </section>
 
-      <hr className="border-outline-variant" />
-
       {/* Strip prefix / suffix */}
-      <section className="space-y-3">
+      <section className="space-y-3 pt-2">
         <p className="text-xs text-primary font-semibold uppercase tracking-wider">
           Strip from Name
         </p>
@@ -110,10 +104,8 @@ const RuleBuilder: React.FC<Props> = ({ rules, onChange }) => {
         />
       </section>
 
-      <hr className="border-outline-variant" />
-
       {/* Prepend / Append */}
-      <section className="space-y-3">
+      <section className="space-y-3 pt-2">
         <p className="text-xs text-primary font-semibold uppercase tracking-wider">
           Add Text
         </p>

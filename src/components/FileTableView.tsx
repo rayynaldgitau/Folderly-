@@ -353,7 +353,7 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
       <div className="flex-1 overflow-x-auto overflow-y-auto">
         <table className="w-full border-collapse text-left text-xs">
           {/* Table Header */}
-          <thead className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant text-on-surface-variant select-none">
+          <thead className="sticky top-0 z-10 bg-surface-container text-on-surface-variant select-none">
             <tr>
               <th className="w-12 px-3 py-3 text-center">
                 <input
@@ -413,7 +413,7 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
           </thead>
 
           {/* Table Body */}
-          <tbody className="divide-y divide-outline-variant/50 font-sans">
+          <tbody className="font-sans">
             {sortedItems.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-16 text-center text-on-surface-variant">
@@ -478,12 +478,12 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
                     onClick={() => handleRowClick(item.path)}
                     onDoubleClick={() => handleRowDoubleClick(item)}
                     onContextMenu={(e) => handleRowContextMenu(e, item)}
-                    className={`cursor-grab active:cursor-grabbing transition-colors border-y min-h-[44px] ${
+                    className={`cursor-grab active:cursor-grabbing transition-colors min-h-[44px] ${
                       isOver
-                        ? "bg-primary-container border-y-primary text-on-primary-container font-semibold"
+                        ? "bg-primary-container text-on-primary-container font-semibold"
                         : isSelected
-                        ? "bg-secondary-container/70 border-primary/40 text-on-surface font-medium"
-                        : "border-transparent hover:bg-surface-container-high text-on-surface"
+                        ? "bg-secondary-container text-on-secondary-container font-medium"
+                        : "hover:bg-surface-container-high text-on-surface"
                     }`}
                   >
                     <td className="px-3 py-2.5 text-center" onClick={handleStopPropagation}>
