@@ -165,7 +165,7 @@ function highlightMatch(text: string, query: string): React.ReactNode {
     regex.test(part) ? (
       <span
         key={index}
-        className="font-semibold text-pink-400 bg-pink-500/20 rounded px-0.5"
+        className="font-semibold bg-primary-container text-on-primary-container rounded px-0.5"
       >
         {part}
       </span>

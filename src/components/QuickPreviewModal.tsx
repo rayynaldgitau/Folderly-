@@ -269,14 +269,14 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
             const uint8 = new Uint8Array(bytes);
             if (extension === "docx") {
               const res = await mammoth.convertToHtml({ arrayBuffer: uint8.buffer });
-              setDocxHtml(res.value || "<p class='italic text-muted-color'>Document is empty.</p>");
+              setDocxHtml(res.value || "<p class='italic text-on-surface-variant'>Document is empty.</p>");
             } else {
               // Legacy .doc format: extract text strings if available
               const raw = await mammoth.extractRawText({ arrayBuffer: uint8.buffer });
               setDocxHtml(
                 raw.value
                   ? `<pre class="whitespace-pre-wrap font-sans text-sm">${raw.value}</pre>`
-                  : "<p class='italic text-muted-color'>Binary .doc file. Click 'Open in OS Application' to view in Microsoft Word.</p>"
+                  : "<p class='italic text-on-surface-variant'>Binary .doc file. Click 'Open in OS Application' to view in Microsoft Word.</p>"
               );
             }
           } catch (e) {
@@ -496,7 +496,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                 onClick={onPrevItem}
                 disabled={!hasPrev}
                 title="Previous item (← ArrowLeft)"
-                className="p-1.5 rounded-lg text-neutral-300 hover:text-white hover:bg-neutral-700/50 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
               >
                 <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                   <path
@@ -511,7 +511,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                 onClick={onNextItem}
                 disabled={!hasNext}
                 title="Next item (→ ArrowRight)"
-                className="p-1.5 rounded-lg text-neutral-300 hover:text-white hover:bg-neutral-700/50 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
               >
                 <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                   <path
@@ -561,7 +561,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
               type="button"
               onClick={onClose}
               title="Close Quick Look (Space or Esc)"
-              className="p-1.5 rounded-xl text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+              className="p-1.5 rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
             >
               <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
                 <path
@@ -575,7 +575,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
         </div>
 
         {/* ── Main Preview Content Area ── */}
-        <div className="flex-1 min-h-0 overflow-auto bg-main relative flex flex-col items-center justify-center">
+        <div className="flex-1 min-h-0 overflow-auto bg-surface relative flex flex-col items-center justify-center">
           {/* 1. IMAGE PREVIEW */}
           {isImage && (
             <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden p-4">
@@ -588,7 +588,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                     transformOrigin: "center center",
                     transition: "transform 0.15s ease-out",
                   }}
-                  className="max-h-full max-w-full object-contain rounded-lg shadow-xl"
+                  className="max-h-full max-w-full object-contain rounded-m3-sm shadow-m3-2"
                   onError={() => {
                     // Fallback to reading raw file bytes into Blob if asset protocol fails
                     if (!blobSrc) {
@@ -605,12 +605,12 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
               </div>
 
               {/* Floating Image Control Bar */}
-              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-900/90 border border-neutral-700/70 shadow-2xl backdrop-blur-md">
+              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-m3-full bg-surface-container-highest/95 border border-outline-variant shadow-m3-3 backdrop-blur-md">
                 <button
                   type="button"
                   onClick={handleZoomOut}
                   title="Zoom Out (-)"
-                  className="p-1 rounded-full text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
+                  className="p-1 rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                     <path
@@ -625,7 +625,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                   type="button"
                   onClick={handleZoomReset}
                   title="Reset Zoom to 100%"
-                  className="text-xs font-mono font-medium px-2 py-0.5 rounded text-neutral-200 hover:text-white hover:bg-neutral-800 transition-colors"
+                  className="text-xs font-mono font-medium px-2 py-0.5 rounded text-on-surface hover:bg-surface-container-high transition-colors"
                 >
                   {Math.round(zoomLevel * 100)}%
                 </button>
@@ -634,7 +634,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                   type="button"
                   onClick={handleZoomIn}
                   title="Zoom In (+)"
-                  className="p-1 rounded-full text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
+                  className="p-1 rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                     <path
@@ -647,8 +647,8 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
 
                 {imageMeta && (
                   <>
-                    <span className="w-px h-3.5 bg-neutral-700" />
-                    <span className="text-[11px] font-mono text-muted-color">
+                    <span className="w-px h-3.5 bg-outline-variant" />
+                    <span className="text-[11px] font-mono text-on-surface-variant">
                       {imageMeta.width} × {imageMeta.height}
                     </span>
                   </>
@@ -660,13 +660,13 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
           {/* 2. VIDEO PREVIEW */}
           {isVideo && (
             <div className="w-full h-full flex flex-col items-center justify-center p-6 gap-4">
-              <div className="relative w-full max-w-4xl max-h-[75vh] flex items-center justify-center bg-black/50 rounded-2xl overflow-hidden border border-neutral-800 shadow-2xl">
+              <div className="relative w-full max-w-4xl max-h-[75vh] flex items-center justify-center bg-surface-container-lowest rounded-m3-lg overflow-hidden border border-outline-variant shadow-m3-3">
                 <video
                   src={currentDisplaySrc}
                   controls
                   autoPlay
                   playsInline
-                  className="max-w-full max-h-[70vh] rounded-xl outline-none"
+                  className="max-w-full max-h-[70vh] rounded-m3-md outline-none"
                   onError={() => {
                     // Fallback to loading blob directly if asset stream fails
                     if (!blobSrc && item.size && item.size < 120 * 1024 * 1024) {
@@ -687,12 +687,12 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                   {extension} VIDEO
                 </span>
                 {mediaDuration && (
-                  <span className="text-xs text-muted-color font-mono">
+                  <span className="text-xs text-on-surface-variant font-mono">
                     Duration: {mediaDuration}
                   </span>
                 )}
                 {item.size != null && (
-                  <span className="text-xs text-muted-color">
+                  <span className="text-xs text-on-surface-variant">
                     {formatFileSize(item.size)}
                   </span>
                 )}
@@ -703,7 +703,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
           {/* 3. AUDIO PREVIEW */}
           {isAudio && (
             <div className="w-full h-full flex flex-col items-center justify-center p-8 gap-6">
-              <div className="flex items-center justify-center gap-1.5 h-24 px-8 py-4 bg-sidebar/80 rounded-2xl border border-neutral-700/50 shadow-inner">
+              <div className="flex items-center justify-center gap-1.5 h-24 px-8 py-4 bg-surface-container rounded-m3-lg border border-outline-variant">
                 {Array.from({ length: 24 }).map((_, i) => (
                   <div
                     key={i}
@@ -718,8 +718,8 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
               </div>
 
               <div className="text-center space-y-1">
-                <h3 className="text-base font-semibold text-primary-color">{item.name}</h3>
-                <p className="text-xs text-muted-color">
+                <h3 className="text-base font-semibold text-on-surface">{item.name}</h3>
+                <p className="text-xs text-on-surface-variant">
                   {extension.toUpperCase()} Audio • {formatFileSize(item.size)}
                   {mediaDuration ? ` • ${mediaDuration}` : ""}
                 </p>
@@ -749,10 +749,10 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
 
           {/* 4. CODE & TEXT PREVIEW */}
           {isText && (
-            <div className="w-full h-full flex flex-col min-h-0 bg-neutral-950">
-              <div className="flex items-center justify-between px-4 py-2 bg-sidebar/80 border-b border-neutral-800 text-xs text-muted-color">
+            <div className="w-full h-full flex flex-col min-h-0 bg-surface-container-lowest">
+              <div className="flex items-center justify-between px-4 py-2 bg-surface-container border-b border-outline-variant text-xs text-on-surface-variant">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-[11px] uppercase px-2 py-0.5 rounded bg-neutral-800 border border-neutral-700/60 font-semibold text-neutral-300">
+                  <span className="font-mono text-[11px] uppercase px-2 py-0.5 rounded bg-surface-container-high border border-outline-variant font-semibold text-on-surface">
                     {extension}
                   </span>
                   <span>
@@ -766,25 +766,25 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setWrapText((w) => !w)}
-                    className="px-2 py-1 rounded hover:bg-neutral-800 text-[11px] transition-colors"
+                    className="px-2 py-1 rounded hover:bg-surface-container-high text-[11px] transition-colors"
                   >
                     {wrapText ? "Disable Wrap" : "Enable Wrap"}
                   </button>
                   <button
                     type="button"
                     onClick={handleCopyCode}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-[11px] font-medium border border-neutral-700/60 transition-colors"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-[11px] font-medium border border-outline-variant transition-colors"
                   >
                     {copiedCode ? (
                       <>
-                        <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+                        <svg className="w-3.5 h-3.5 text-success" viewBox="0 0 20 20" fill="currentColor">
                           <path
                             fillRule="evenodd"
                             d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
                             clipRule="evenodd"
                           />
                         </svg>
-                        <span className="text-emerald-400 font-semibold">Copied!</span>
+                        <span className="text-success font-semibold">Copied!</span>
                       </>
                     ) : (
                       <>
@@ -801,29 +801,29 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
 
               <div className="flex-1 min-h-0 overflow-auto font-mono text-xs leading-relaxed p-4 select-text">
                 {textLoading && (
-                  <div className="flex items-center justify-center h-full text-muted-color gap-2">
+                  <div className="flex items-center justify-center h-full text-on-surface-variant gap-2">
                     <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-m3-full animate-spin" />
                     <span>Loading file preview...</span>
                   </div>
                 )}
 
                 {textError && (
-                  <div className="flex flex-col items-center justify-center h-full text-red-400 gap-2 p-4 text-center">
+                  <div className="flex flex-col items-center justify-center h-full text-error gap-2 p-4 text-center">
                     <p className="font-semibold">Unable to preview file as text</p>
-                    <p className="text-xs text-neutral-400 max-w-md">{textError}</p>
+                    <p className="text-xs text-on-surface-variant max-w-md">{textError}</p>
                   </div>
                 )}
 
                 {!textLoading && !textError && (
                   <div className="flex">
-                    <div className="select-none text-neutral-600 text-right pr-4 border-r border-neutral-800">
+                    <div className="select-none text-on-surface-variant/60 text-right pr-4 border-r border-outline-variant">
                       {textContent.split("\n").map((_, i) => (
                         <div key={i}>{i + 1}</div>
                       ))}
                     </div>
 
                     <div
-                      className={`pl-4 flex-1 text-neutral-200 ${
+                      className={`pl-4 flex-1 text-on-surface ${
                         wrapText ? "whitespace-pre-wrap break-all" : "whitespace-pre overflow-x-auto"
                       }`}
                     >
@@ -837,11 +837,11 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
 
           {/* 5. WORD DOCUMENT PREVIEW (.docx, .doc) */}
           {isWord && (
-            <div className="w-full h-full flex flex-col min-h-0 bg-neutral-900/50">
+            <div className="w-full h-full flex flex-col min-h-0 bg-surface-container-low">
               {/* Word toolbar */}
-              <div className="flex items-center justify-between px-5 py-2.5 bg-sidebar/90 border-b border-neutral-700/50 text-xs text-muted-color">
+              <div className="flex items-center justify-between px-5 py-2.5 bg-surface-container border-b border-outline-variant text-xs text-on-surface-variant">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-[#2b579a] bg-blue-500/10 border border-blue-500/30 px-2 py-0.5 rounded uppercase">
+                  <span className="font-bold bg-primary-container text-on-primary-container px-2 py-0.5 rounded-m3-xs uppercase">
                     Word Document
                   </span>
                   <span>{item.name}</span>
@@ -851,7 +851,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                   <button
                     type="button"
                     onClick={() => onOpenFile(item.path)}
-                    className="flex items-center gap-1.5 px-3 py-1 bg-[#2b579a] hover:bg-[#1e3f6f] text-white rounded-lg font-semibold text-xs shadow-sm transition-all"
+                    className="btn btn-primary"
                   >
                     <span>Open in Microsoft Word</span>
                   </button>
@@ -859,18 +859,18 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
               </div>
 
               {/* Word document page simulation */}
-              <div className="flex-1 min-h-0 overflow-auto p-6 sm:p-10 flex justify-center bg-neutral-950/70">
+              <div className="flex-1 min-h-0 overflow-auto p-6 sm:p-10 flex justify-center bg-surface">
                 {docxLoading && (
-                  <div className="flex items-center justify-center h-full text-muted-color gap-2">
-                    <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <div className="flex items-center justify-center h-full text-on-surface-variant gap-2">
+                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-m3-full animate-spin" />
                     <span>Parsing Word document...</span>
                   </div>
                 )}
 
                 {docxError && (
-                  <div className="flex flex-col items-center justify-center h-full text-red-400 gap-2 text-center max-w-md">
+                  <div className="flex flex-col items-center justify-center h-full text-error gap-2 text-center max-w-md">
                     <p className="font-bold">Could not parse document</p>
-                    <p className="text-xs text-neutral-400">{docxError}</p>
+                    <p className="text-xs text-on-surface-variant">{docxError}</p>
                     {onOpenFile && (
                       <button
                         type="button"
@@ -884,9 +884,9 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                 )}
 
                 {!docxLoading && !docxError && (
-                  <div className="w-full max-w-3xl bg-white text-neutral-900 p-8 sm:p-14 rounded-xl shadow-2xl min-h-[500px] select-text font-serif leading-relaxed overflow-y-auto">
+                  <div className="w-full max-w-3xl bg-surface-container-lowest text-on-surface p-8 sm:p-14 rounded-m3-md shadow-m3-3 border border-outline-variant min-h-[500px] select-text font-serif leading-relaxed overflow-y-auto">
                     <div
-                      className="prose prose-sm max-w-none text-neutral-900 leading-relaxed space-y-4"
+                      className="prose prose-sm max-w-none text-on-surface leading-relaxed space-y-4"
                       dangerouslySetInnerHTML={{ __html: docxHtml }}
                     />
                   </div>
@@ -897,28 +897,28 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
 
           {/* 6. PDF PREVIEW (Rendered via PDF.js HTML5 Canvas) */}
           {isPdf && (
-            <div className="w-full h-full flex flex-col min-h-0 bg-neutral-950">
+            <div className="w-full h-full flex flex-col min-h-0 bg-surface-container-lowest">
               {/* PDF Toolbar */}
-              <div className="flex items-center justify-between px-5 py-2.5 bg-sidebar/90 border-b border-neutral-700/50 text-xs">
+              <div className="flex items-center justify-between px-5 py-2.5 bg-surface-container border-b border-outline-variant text-xs">
                 {/* Page Navigation */}
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     disabled={pdfPageNum <= 1}
                     onClick={() => setPdfPageNum((p) => Math.max(1, p - 1))}
-                    className="px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 disabled:opacity-40 disabled:hover:bg-neutral-800 transition-colors"
+                    className="px-2.5 py-1 rounded-m3-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface disabled:opacity-40 transition-colors"
                     title="Previous page"
                   >
                     ← Prev
                   </button>
-                  <span className="text-muted-color font-mono text-[11px]">
+                  <span className="text-on-surface-variant font-mono text-[11px]">
                     Page {pdfPageNum} of {pdfTotalPages}
                   </span>
                   <button
                     type="button"
                     disabled={pdfPageNum >= pdfTotalPages}
                     onClick={() => setPdfPageNum((p) => Math.min(pdfTotalPages, p + 1))}
-                    className="px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 disabled:opacity-40 disabled:hover:bg-neutral-800 transition-colors"
+                    className="px-2.5 py-1 rounded-m3-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface disabled:opacity-40 transition-colors"
                     title="Next page"
                   >
                     Next →
@@ -930,7 +930,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                   <button
                     type="button"
                     onClick={handleZoomOut}
-                    className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300"
+                    className="px-2 py-1 rounded-m3-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface"
                     title="Zoom Out"
                   >
                     -
@@ -938,7 +938,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                   <button
                     type="button"
                     onClick={handleZoomReset}
-                    className="px-2 py-0.5 rounded bg-neutral-800 text-[11px] font-mono text-neutral-200"
+                    className="px-2 py-0.5 rounded-m3-xs bg-surface-container-high text-[11px] font-mono text-on-surface"
                     title="Reset Zoom"
                   >
                     {Math.round(pdfScale * 80)}%
@@ -946,7 +946,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                   <button
                     type="button"
                     onClick={handleZoomIn}
-                    className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300"
+                    className="px-2 py-1 rounded-m3-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface"
                     title="Zoom In"
                   >
                     +
@@ -955,18 +955,18 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
               </div>
 
               {/* PDF Document Canvas View */}
-              <div className="flex-1 min-h-0 overflow-auto p-4 sm:p-8 flex items-center justify-center bg-neutral-900/60">
+              <div className="flex-1 min-h-0 overflow-auto p-4 sm:p-8 flex items-center justify-center bg-surface">
                 {pdfLoading && (
-                  <div className="flex items-center justify-center h-full text-muted-color gap-2">
-                    <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                  <div className="flex items-center justify-center h-full text-on-surface-variant gap-2">
+                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-m3-full animate-spin" />
                     <span>Rendering PDF document...</span>
                   </div>
                 )}
 
                 {pdfError && (
-                  <div className="flex flex-col items-center justify-center h-full text-red-400 gap-2 text-center max-w-md">
+                  <div className="flex flex-col items-center justify-center h-full text-error gap-2 text-center max-w-md">
                     <p className="font-bold">Unable to display PDF</p>
-                    <p className="text-xs text-neutral-400">{pdfError}</p>
+                    <p className="text-xs text-on-surface-variant">{pdfError}</p>
                     {onOpenFile && (
                       <button
                         type="button"
@@ -980,7 +980,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                 )}
 
                 {!pdfLoading && !pdfError && (
-                  <div className="shadow-2xl rounded-lg overflow-hidden border border-neutral-700 bg-white">
+                  <div className="shadow-m3-3 rounded-m3-sm overflow-hidden border border-outline-variant bg-surface-container-lowest">
                     <canvas ref={canvasRef} className="block max-w-full" />
                   </div>
                 )}
@@ -992,27 +992,27 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
           {isFolder && (
             <div className="w-full h-full flex flex-col min-h-0 p-6 max-w-4xl">
               {folderLoading && (
-                <div className="flex items-center justify-center h-full text-muted-color gap-2">
-                  <div className="w-4 h-4 border-2 border-[#ff2d87] border-t-transparent rounded-full animate-spin" />
+                <div className="flex items-center justify-center h-full text-on-surface-variant gap-2">
+                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-m3-full animate-spin" />
                   <span>Inspecting directory contents...</span>
                 </div>
               )}
 
               {folderError && (
-                <div className="flex flex-col items-center justify-center h-full text-red-400 gap-2 text-center">
+                <div className="flex flex-col items-center justify-center h-full text-error gap-2 text-center">
                   <p className="font-semibold">Unable to read directory contents</p>
-                  <p className="text-xs text-neutral-400">{folderError}</p>
+                  <p className="text-xs text-on-surface-variant">{folderError}</p>
                 </div>
               )}
 
               {!folderLoading && !folderError && folderContents && (
                 <div className="flex flex-col h-full min-h-0 gap-5">
-                  <div className="flex items-center justify-between p-4 rounded-xl bg-sidebar border border-neutral-700/50">
+                  <div className="flex items-center justify-between p-4 rounded-m3-md bg-surface-container border border-outline-variant">
                     <div className="flex items-center gap-3">
                       <MacFolderIcon size={40} />
                       <div>
-                        <h3 className="text-base font-semibold text-primary-color">{item.name}</h3>
-                        <p className="text-xs text-muted-color">
+                        <h3 className="text-base font-semibold text-on-surface">{item.name}</h3>
+                        <p className="text-xs text-on-surface-variant">
                           Contains {folderContents.folders.length} subfolder(s) and {folderContents.files.length} file(s)
                         </p>
                       </div>
@@ -1032,17 +1032,17 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                     )}
                   </div>
 
-                  <div className="flex-1 min-h-0 flex flex-col rounded-xl bg-sidebar/50 border border-neutral-700/40 overflow-hidden">
-                    <div className="px-4 py-2.5 bg-sidebar border-b border-neutral-700/40 text-[11px] font-semibold text-muted-color uppercase tracking-wider flex justify-between">
+                  <div className="flex-1 min-h-0 flex flex-col rounded-m3-md bg-surface-container-low border border-outline-variant overflow-hidden">
+                    <div className="px-4 py-2.5 bg-surface-container border-b border-outline-variant text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider flex justify-between">
                       <span>Name</span>
                       <span>Details</span>
                     </div>
 
-                    <div className="flex-1 overflow-auto divide-y divide-neutral-800/60 p-1">
+                    <div className="flex-1 overflow-auto divide-y divide-outline-variant/50 p-1">
                       {folderContents.folders.map((folder) => (
                         <div
                           key={folder.path}
-                          className="flex items-center justify-between px-3 py-2 hover:bg-neutral-800/40 rounded-lg text-xs transition-colors cursor-pointer"
+                          className="flex items-center justify-between px-3 py-2 hover:bg-surface-container-high rounded-m3-sm text-xs transition-colors cursor-pointer"
                           onClick={() => {
                             onNavigateFolder?.(folder.path);
                             onClose();
@@ -1050,9 +1050,9 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             <MacFolderIcon size={18} />
-                            <span className="font-medium text-neutral-200 truncate">{folder.name}</span>
+                            <span className="font-medium text-on-surface truncate">{folder.name}</span>
                           </div>
-                          <span className="text-[11px] text-muted-color font-mono">
+                          <span className="text-[11px] text-on-surface-variant font-mono">
                             {folder.modified_at || "Folder"}
                           </span>
                         </div>
@@ -1061,21 +1061,21 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                       {folderContents.files.map((file: FileEntry) => (
                         <div
                           key={file.path}
-                          className="flex items-center justify-between px-3 py-2 hover:bg-neutral-800/40 rounded-lg text-xs transition-colors cursor-pointer"
+                          className="flex items-center justify-between px-3 py-2 hover:bg-surface-container-high rounded-m3-sm text-xs transition-colors cursor-pointer"
                           onClick={() => onOpenFile?.(file.path)}
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             <MacFileIcon extension={file.extension} size={18} />
-                            <span className="text-neutral-300 truncate">{file.name}</span>
+                            <span className="text-on-surface truncate">{file.name}</span>
                           </div>
-                          <span className="text-[11px] text-muted-color font-mono">
+                          <span className="text-[11px] text-on-surface-variant font-mono">
                             {formatFileSize(file.size)}
                           </span>
                         </div>
                       ))}
 
                       {folderContents.folders.length === 0 && folderContents.files.length === 0 && (
-                        <div className="text-center py-10 text-muted-color text-xs">
+                        <div className="text-center py-10 text-on-surface-variant text-xs">
                           This folder is currently empty.
                         </div>
                       )}
@@ -1094,13 +1094,13 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
               </div>
 
               <div className="space-y-2">
-                <h3 className="text-lg font-bold text-primary-color break-all">{item.name}</h3>
-                <p className="text-xs text-muted-color">
+                <h3 className="text-lg font-bold text-on-surface break-all">{item.name}</h3>
+                <p className="text-xs text-on-surface-variant">
                   {extension ? `${extension.toUpperCase()} File` : "Binary File"}
                   {item.size != null ? ` • ${formatFileSize(item.size)}` : ""}
                 </p>
                 {item.modified_at && (
-                  <p className="text-[11px] text-muted-color font-mono">
+                  <p className="text-[11px] text-on-surface-variant font-mono">
                     Modified: {item.modified_at}
                   </p>
                 )}
@@ -1110,7 +1110,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                 <button
                   type="button"
                   onClick={() => onOpenFile(item.path)}
-                  className="btn btn-primary px-5 py-2 text-sm rounded-xl shadow-lg"
+                  className="btn btn-primary px-5 py-2 text-sm rounded-m3-full shadow-m3-2"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
@@ -1124,14 +1124,14 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
         </div>
 
         {/* ── Bottom Status Bar ── */}
-        <div className="flex items-center justify-between px-5 py-2.5 bg-sidebar border-t border-neutral-700/50 text-[11px] text-muted-color flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-2.5 bg-surface-container border-t border-outline-variant text-[11px] text-on-surface-variant flex-shrink-0">
           <div className="flex items-center gap-3">
             <span>
-              Press <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700/60 font-mono">Space</kbd> or <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700/60 font-mono">P</kbd> to toggle
+              Press <kbd className="px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface border border-outline-variant font-mono">Space</kbd> or <kbd className="px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface border border-outline-variant font-mono">P</kbd> to toggle
             </span>
             <span>•</span>
             <span>
-              Use <kbd className="px-1 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700/60 font-mono">←</kbd> <kbd className="px-1 py-0.5 rounded bg-neutral-800 text-neutral-300 border border-neutral-700/60 font-mono">→</kbd> arrows to cycle
+              Use <kbd className="px-1 py-0.5 rounded bg-surface-container-high text-on-surface border border-outline-variant font-mono">←</kbd> <kbd className="px-1 py-0.5 rounded bg-surface-container-high text-on-surface border border-outline-variant font-mono">→</kbd> arrows to cycle
             </span>
           </div>
 

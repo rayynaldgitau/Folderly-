@@ -270,21 +270,23 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
             ✏️ Safe Bulk Renaming (Step 4)
           </button>
           <button
+            type="button"
             onClick={() => handleSelectCategory("safety_standards")}
-            className={`px-3 py-1 rounded-full font-medium transition-all ${
+            className={`px-3.5 min-h-[34px] rounded-m3-full font-medium m3-pressable ${
               activeCategory === "safety_standards"
-                ? "bg-[#ff2d87] text-white shadow-sm shadow-[#ff2d87]/30"
-                : "text-muted-color hover:text-primary-color hover:bg-neutral-800/40"
+                ? "bg-primary text-on-primary"
+                : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
             }`}
           >
             🛡️ Safety &amp; ISO 25010 (Step 5)
           </button>
           <button
+            type="button"
             onClick={() => handleSelectCategory("shortcuts")}
-            className={`px-3 py-1 rounded-full font-medium transition-all ${
+            className={`px-3.5 min-h-[34px] rounded-m3-full font-medium m3-pressable ${
               activeCategory === "shortcuts"
-                ? "bg-[#ff2d87] text-white shadow-sm shadow-[#ff2d87]/30"
-                : "text-muted-color hover:text-primary-color hover:bg-neutral-800/40"
+                ? "bg-primary text-on-primary"
+                : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
             }`}
           >
             ⌨️ Shortcuts Cheat Sheet (Step 6)
@@ -296,16 +298,16 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
           {/* SLIDE 1: WELCOME TO FOLDY */}
           {currentStep === 0 && (
             <div className="space-y-5 animate-fade-in">
-              <div className="flex flex-col sm:flex-row items-center gap-5 p-5 rounded-2xl bg-sidebar/50 border border-neutral-800/60">
-                <div className="relative flex items-center justify-center p-4 rounded-2xl bg-[#ff2d87]/10 border border-[#ff2d87]/20 shrink-0">
+              <div className="flex flex-col sm:flex-row items-center gap-5 p-5 rounded-m3-lg bg-surface-container border border-outline-variant">
+                <div className="relative flex items-center justify-center p-4 rounded-m3-lg bg-primary-container/50 border border-outline-variant shrink-0">
                   <FoldyLogo size={64} interactive={true} />
                 </div>
                 <div className="space-y-1.5 text-center sm:text-left">
                   <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
-                    <h3 className="text-lg font-bold text-primary-color">Welcome to Foldy</h3>
+                    <h3 className="text-lg font-bold text-on-surface">Welcome to Foldy</h3>
                     <span className="badge badge-green">100% Offline &amp; Private</span>
                   </div>
-                  <p className="text-xs text-muted-color leading-relaxed">
+                  <p className="text-xs text-on-surface-variant leading-relaxed">
                     A desktop file organizer and bulk-renaming suite engineered with Rust and Tauri.
                     Designed for individuals and enterprise teams who demand blazing native performance
                     without compromising on privacy or data sovereignty.
@@ -314,30 +316,30 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                <div className="p-4 rounded-2xl bg-sidebar/30 border border-neutral-800/50 space-y-2">
+                <div className="p-4 rounded-m3-lg bg-surface-container border border-outline-variant space-y-2">
                   <div className="text-xl">⚡</div>
-                  <h4 className="font-bold text-primary-color">Blazing Native Speed</h4>
-                  <p className="text-muted-color leading-relaxed text-[11px]">
+                  <h4 className="font-bold text-on-surface">Blazing Native Speed</h4>
+                  <p className="text-on-surface-variant leading-relaxed text-[11px]">
                     Direct multi-threaded filesystem indexing. Scans thousands of files and directories
                     in milliseconds with minimal memory footprint.
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-sidebar/30 border border-neutral-800/50 space-y-2">
+                <div className="p-4 rounded-m3-lg bg-surface-container border border-outline-variant space-y-2">
                   <div className="text-xl">🛡️</div>
-                  <h4 className="font-bold text-primary-color">Zero Cloud Telemetry</h4>
-                  <p className="text-muted-color leading-relaxed text-[11px]">
+                  <h4 className="font-bold text-on-surface">Zero Cloud Telemetry</h4>
+                  <p className="text-on-surface-variant leading-relaxed text-[11px]">
                     Foldy operates in a closed local sandbox. No data analytics, no cloud uploads, and
                     zero network pings. Your directory tree remains entirely yours.
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-sidebar/30 border border-neutral-800/50 space-y-2">
+                <div className="p-4 rounded-m3-lg bg-surface-container border border-outline-variant space-y-2">
                   <div className="text-xl">🎨</div>
-                  <h4 className="font-bold text-primary-color">Tailored Visual Themes</h4>
-                  <p className="text-muted-color leading-relaxed text-[11px]">
-                    Switch between OLED Deep Pink, Pastel Light, Apple macOS Graphite, Material You,
-                    and Midnight Matte themes tailored for comfortable long-session viewing.
+                  <h4 className="font-bold text-on-surface">Tailored Visual Themes</h4>
+                  <p className="text-on-surface-variant leading-relaxed text-[11px]">
+                    Switch between Material 3, Pink (Light &amp; Dark), and Black &amp; Orange themes
+                    built with WCAG AA contrast for comfortable long-session viewing.
                   </p>
                 </div>
               </div>
@@ -348,66 +350,66 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
           {currentStep === 1 && (
             <div className="space-y-4 animate-fade-in">
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-primary-color flex items-center gap-2">
+                <h3 className="text-base font-bold text-on-surface flex items-center gap-2">
                   <span>🧭</span> Seamless Multi-Tab Browsing &amp; Universal Search
                 </h3>
-                <p className="text-xs text-muted-color">
+                <p className="text-xs text-on-surface-variant">
                   Navigate your filesystem with browser-grade tab management and instant keyboard search.
                 </p>
               </div>
 
-              <div className="p-4 rounded-2xl bg-sidebar/40 border border-neutral-800/60 space-y-3">
-                <div className="flex items-center gap-2 pb-2 border-b border-neutral-800/40 text-[11px] font-mono text-muted-color">
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-card border border-neutral-700/50 text-primary-color">
+              <div className="p-4 rounded-m3-lg bg-surface-container border border-outline-variant space-y-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-outline-variant text-[11px] font-mono text-on-surface-variant">
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-m3-sm bg-primary-container text-on-primary-container">
                     <span>📁</span> <span>Projects</span>
                   </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-sidebar text-muted-color">
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-m3-sm bg-surface-container-high text-on-surface-variant">
                     <span>📥</span> <span>Downloads</span>
                   </div>
-                  <div className="px-2 py-0.5 rounded-md hover:bg-neutral-800 text-muted-color cursor-pointer">
+                  <div className="px-2 py-0.5 rounded-m3-xs hover:bg-surface-container-highest text-on-surface-variant cursor-pointer">
                     +
                   </div>
-                  <div className="ml-auto text-[10px] text-muted-color">
-                    Press <kbd className="px-1.5 py-0.5 rounded bg-card border border-neutral-700 text-primary-color font-sans">Ctrl+T</kbd> for new tab
+                  <div className="ml-auto text-[10px] text-on-surface-variant">
+                    Press <kbd className="px-1.5 py-0.5 rounded bg-surface-container-highest border border-outline-variant text-on-surface font-sans">Ctrl+T</kbd> for new tab
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
                   <div className="space-y-1.5">
-                    <h4 className="font-semibold text-primary-color flex items-center gap-1.5">
+                    <h4 className="font-semibold text-on-surface flex items-center gap-1.5">
                       <span>📑</span> Tabbed Workspaces
                     </h4>
-                    <p className="text-muted-color text-[11px] leading-relaxed">
+                    <p className="text-on-surface-variant text-[11px] leading-relaxed">
                       Keep multiple directories open simultaneously. Duplicate, switch, or close tabs using
-                      native shortcuts (<kbd className="px-1 py-0.5 rounded bg-card border border-neutral-700 text-[10px]">Ctrl+W</kbd>).
+                      native shortcuts (<kbd className="px-1 py-0.5 rounded bg-surface-container-highest border border-outline-variant text-on-surface text-[10px]">Ctrl+W</kbd>).
                     </p>
                   </div>
 
                   <div className="space-y-1.5">
-                    <h4 className="font-semibold text-primary-color flex items-center gap-1.5">
-                      <span>⚡</span> Universal Search (<kbd className="px-1.5 py-0.5 rounded bg-card border border-neutral-700 text-[10px]">Ctrl+K</kbd>)
+                    <h4 className="font-semibold text-on-surface flex items-center gap-1.5">
+                      <span>⚡</span> Universal Search (<kbd className="px-1.5 py-0.5 rounded bg-surface-container-highest border border-outline-variant text-on-surface text-[10px]">Ctrl+K</kbd>)
                     </h4>
-                    <p className="text-muted-color text-[11px] leading-relaxed">
+                    <p className="text-on-surface-variant text-[11px] leading-relaxed">
                       Instant fuzzy search indexing across filenames, extensions, and subdirectories with
                       instant navigation and file launch shortcuts.
                     </p>
                   </div>
 
                   <div className="space-y-1.5">
-                    <h4 className="font-semibold text-primary-color flex items-center gap-1.5">
+                    <h4 className="font-semibold text-on-surface flex items-center gap-1.5">
                       <span>💽</span> Drives &amp; Quick Access
                     </h4>
-                    <p className="text-muted-color text-[11px] leading-relaxed">
+                    <p className="text-on-surface-variant text-[11px] leading-relaxed">
                       Jump immediately to detected drives (C:, D:) and standard system folders (Desktop,
                       Documents, Downloads, Media) with live disk capacity bars.
                     </p>
                   </div>
 
                   <div className="space-y-1.5">
-                    <h4 className="font-semibold text-primary-color flex items-center gap-1.5">
+                    <h4 className="font-semibold text-on-surface flex items-center gap-1.5">
                       <span>📊</span> Flexible Display Views
                     </h4>
-                    <p className="text-muted-color text-[11px] leading-relaxed">
+                    <p className="text-on-surface-variant text-[11px] leading-relaxed">
                       Switch effortlessly between visual Grid cards, detailed sortable Table rows, and
                       compact lists to suit any collection of files.
                     </p>
@@ -421,55 +423,55 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
           {currentStep === 2 && (
             <div className="space-y-4 animate-fade-in">
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-primary-color flex items-center gap-2">
+                <h3 className="text-base font-bold text-on-surface flex items-center gap-2">
                   <span>🎯</span> Intuitive Drag &amp; Drop Organization
                 </h3>
-                <p className="text-xs text-muted-color">
+                <p className="text-xs text-on-surface-variant">
                   Restructure your files and workspace using fluid desktop gestures.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                <div className="p-4 rounded-2xl bg-sidebar/40 border border-neutral-800/60 space-y-2">
-                  <div className="flex items-center gap-2 text-primary-color font-semibold">
-                    <span className="p-1.5 rounded-lg bg-[#ff2d87]/15 text-[#ff2d87]">📥</span>
+                <div className="p-4 rounded-m3-lg bg-surface-container border border-outline-variant space-y-2">
+                  <div className="flex items-center gap-2 text-on-surface font-semibold">
+                    <span className="p-1.5 rounded-m3-sm bg-primary-container text-on-primary-container">📥</span>
                     Folder Drop Relocation
                   </div>
-                  <p className="text-muted-color text-[11px] leading-relaxed">
+                  <p className="text-on-surface-variant text-[11px] leading-relaxed">
                     Select single or multiple files from the main grid and drag them directly onto any folder
                     card or directory row. The file move executes immediately via native Rust I/O with
                     error containment.
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-sidebar/40 border border-neutral-800/60 space-y-2">
-                  <div className="flex items-center gap-2 text-primary-color font-semibold">
-                    <span className="p-1.5 rounded-lg bg-[#ff2d87]/15 text-[#ff2d87]">📌</span>
+                <div className="p-4 rounded-m3-lg bg-surface-container border border-outline-variant space-y-2">
+                  <div className="flex items-center gap-2 text-on-surface font-semibold">
+                    <span className="p-1.5 rounded-m3-sm bg-primary-container text-on-primary-container">📌</span>
                     Sidebar Quick-Pinning
                   </div>
-                  <p className="text-muted-color text-[11px] leading-relaxed">
+                  <p className="text-on-surface-variant text-[11px] leading-relaxed">
                     Drag any active project folder onto the Quick Access sidebar section to pin it permanently.
                     Pinned folders stay available across sessions for one-click access.
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-sidebar/40 border border-neutral-800/60 space-y-2">
-                  <div className="flex items-center gap-2 text-primary-color font-semibold">
-                    <span className="p-1.5 rounded-lg bg-[#ff2d87]/15 text-[#ff2d87]">↕️</span>
+                <div className="p-4 rounded-m3-lg bg-surface-container border border-outline-variant space-y-2">
+                  <div className="flex items-center gap-2 text-on-surface font-semibold">
+                    <span className="p-1.5 rounded-m3-sm bg-primary-container text-on-primary-container">↕️</span>
                     Reorder Pinned Priorities
                   </div>
-                  <p className="text-muted-color text-[11px] leading-relaxed">
+                  <p className="text-on-surface-variant text-[11px] leading-relaxed">
                     Organize your pinned sidebar folders by dragging items up and down. Your custom order
                     is automatically preserved in local settings.
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-sidebar/40 border border-neutral-800/60 space-y-2">
-                  <div className="flex items-center gap-2 text-primary-color font-semibold">
-                    <span className="p-1.5 rounded-lg bg-[#ff2d87]/15 text-[#ff2d87]">🪟</span>
+                <div className="p-4 rounded-m3-lg bg-surface-container border border-outline-variant space-y-2">
+                  <div className="flex items-center gap-2 text-on-surface font-semibold">
+                    <span className="p-1.5 rounded-m3-sm bg-primary-container text-on-primary-container">🪟</span>
                     OS Explorer Ingestion
                   </div>
-                  <p className="text-muted-color text-[11px] leading-relaxed">
+                  <p className="text-on-surface-variant text-[11px] leading-relaxed">
                     Drag files or whole directories directly from Windows Explorer into Foldy to inspect,
                     preview, and reconfigure them on the fly.
                   </p>
@@ -482,53 +484,53 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
           {currentStep === 3 && (
             <div className="space-y-4 animate-fade-in">
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-primary-color flex items-center gap-2">
+                <h3 className="text-base font-bold text-on-surface flex items-center gap-2">
                   <span>✏️</span> Safe Bulk Renaming Workflow
                 </h3>
-                <p className="text-xs text-muted-color">
+                <p className="text-xs text-on-surface-variant">
                   Rule-based transformations with real-time collision detection before touching storage.
                 </p>
               </div>
 
               {/* Step Flow Diagram */}
-              <div className="p-4 rounded-2xl bg-sidebar/50 border border-neutral-800/60 space-y-3">
+              <div className="p-4 rounded-m3-lg bg-surface-container border border-outline-variant space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-[11px] text-center">
-                  <div className="p-2.5 rounded-xl bg-card border border-neutral-800 space-y-1">
-                    <div className="font-bold text-[#ff2d87]">1. Build Rules</div>
-                    <p className="text-muted-color text-[10px]">Stack prefix, date, spaces, case, replace</p>
+                  <div className="p-2.5 rounded-m3-md bg-surface-container-high border border-outline-variant space-y-1">
+                    <div className="font-bold text-primary">1. Build Rules</div>
+                    <p className="text-on-surface-variant text-[10px]">Stack prefix, date, spaces, case, replace</p>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-card border border-neutral-800 space-y-1">
-                    <div className="font-bold text-yellow-400">2. Live Preview</div>
-                    <p className="text-muted-color text-[10px]">Inspect before/after computed names</p>
+                  <div className="p-2.5 rounded-m3-md bg-surface-container-high border border-outline-variant space-y-1">
+                    <div className="font-bold text-warning">2. Live Preview</div>
+                    <p className="text-on-surface-variant text-[10px]">Inspect before/after computed names</p>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-card border border-neutral-800 space-y-1">
-                    <div className="font-bold text-emerald-400">3. Safe Commit</div>
-                    <p className="text-muted-color text-[10px]">Atomic rename with conflict checks</p>
+                  <div className="p-2.5 rounded-m3-md bg-surface-container-high border border-outline-variant space-y-1">
+                    <div className="font-bold text-success">3. Safe Commit</div>
+                    <p className="text-on-surface-variant text-[10px]">Atomic rename with conflict checks</p>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-card border border-neutral-800 space-y-1">
-                    <div className="font-bold text-blue-400">4. 1-Click Undo</div>
-                    <p className="text-muted-color text-[10px]">Revert instantly with Ctrl+Z</p>
+                  <div className="p-2.5 rounded-m3-md bg-surface-container-high border border-outline-variant space-y-1">
+                    <div className="font-bold text-tertiary">4. 1-Click Undo</div>
+                    <p className="text-on-surface-variant text-[10px]">Revert instantly with Ctrl+Z</p>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-card/60 border border-neutral-800/50 space-y-2 text-xs">
-                  <div className="text-[11px] font-semibold text-primary-color">
+                <div className="p-3 rounded-m3-md bg-surface-container-low border border-outline-variant space-y-2 text-xs">
+                  <div className="text-[11px] font-semibold text-on-surface">
                     Sample Real-Time Preview:
                   </div>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-2 rounded-lg bg-neutral-900/40 border border-neutral-800 font-mono text-[11px]">
-                    <div className="text-muted-color truncate max-w-xs">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-2 rounded-m3-sm bg-surface-container-lowest border border-outline-variant font-mono text-[11px]">
+                    <div className="text-on-surface-variant truncate max-w-xs">
                       DSC_0942 copy (1).JPG
                     </div>
-                    <div className="text-[#ff2d87] shrink-0 font-bold">➔</div>
-                    <div className="text-emerald-400 font-semibold truncate max-w-xs">
+                    <div className="text-primary shrink-0 font-bold">➔</div>
+                    <div className="text-success font-semibold truncate max-w-xs">
                       2026-10-15_project_0942.jpg
                     </div>
                     <span className="badge badge-green shrink-0">Safe</span>
                   </div>
                 </div>
 
-                <p className="text-muted-color text-[11px] leading-relaxed">
-                  Press <kbd className="px-1.5 py-0.5 rounded bg-card border border-neutral-700 text-primary-color font-sans">Ctrl+R</kbd> at any time to toggle the Rule Builder drawer.
+                <p className="text-on-surface-variant text-[11px] leading-relaxed">
+                  Press <kbd className="px-1.5 py-0.5 rounded bg-surface-container-highest border border-outline-variant text-on-surface font-sans">Ctrl+R</kbd> at any time to toggle the Rule Builder drawer.
                   If any generated name would overwrite an existing file, Foldy highlights it in red and
                   disables committing until resolved.
                 </p>
@@ -540,56 +542,56 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
           {currentStep === 4 && (
             <div className="space-y-4 animate-fade-in">
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-primary-color flex items-center gap-2">
+                <h3 className="text-base font-bold text-on-surface flex items-center gap-2">
                   <span>🛡️</span> International Safety &amp; Quality Assurance (ISO/IEC 25010)
                 </h3>
-                <p className="text-xs text-muted-color">
+                <p className="text-xs text-on-surface-variant">
                   Engineered to meet rigorous global standards for systems and software product quality.
                 </p>
               </div>
 
-              <div className="p-4 rounded-2xl bg-sidebar/50 border border-neutral-800/60 space-y-3">
-                <div className="flex items-center gap-2 pb-2 border-b border-neutral-800/40">
+              <div className="p-4 rounded-m3-lg bg-surface-container border border-outline-variant space-y-3">
+                <div className="flex items-center gap-2 pb-2 border-b border-outline-variant">
                   <span className="badge badge-green text-[10px]">ISO/IEC 25010 Evaluated</span>
-                  <span className="text-[11px] text-muted-color">Software Product Quality Model</span>
+                  <span className="text-[11px] text-on-surface-variant">Software Product Quality Model</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div className="space-y-1 p-2.5 rounded-xl bg-card border border-neutral-800/40">
-                    <h4 className="font-semibold text-primary-color flex items-center gap-1.5">
+                  <div className="space-y-1 p-2.5 rounded-m3-md bg-surface-container-high border border-outline-variant">
+                    <h4 className="font-semibold text-on-surface flex items-center gap-1.5">
                       <span>🚫</span> Protected OS Directories
                     </h4>
-                    <p className="text-muted-color text-[11px] leading-relaxed">
-                      Automatic guard rails strictly forbid batch modifications inside <code className="text-[#ff2d87]">C:\Windows</code>, <code className="text-[#ff2d87]">Program Files</code>,
+                    <p className="text-on-surface-variant text-[11px] leading-relaxed">
+                      Automatic guard rails strictly forbid batch modifications inside <code className="text-primary">C:\Windows</code>, <code className="text-primary">Program Files</code>,
                       or critical system root paths.
                     </p>
                   </div>
 
-                  <div className="space-y-1 p-2.5 rounded-xl bg-card border border-neutral-800/40">
-                    <h4 className="font-semibold text-primary-color flex items-center gap-1.5">
+                  <div className="space-y-1 p-2.5 rounded-m3-md bg-surface-container-high border border-outline-variant">
+                    <h4 className="font-semibold text-on-surface flex items-center gap-1.5">
                       <span>📜</span> Non-Destructive Undo Ledger
                     </h4>
-                    <p className="text-muted-color text-[11px] leading-relaxed">
+                    <p className="text-on-surface-variant text-[11px] leading-relaxed">
                       All filesystem mutation batches are cataloged in an in-memory transactional ledger,
                       enabling instant 100% reversible rollbacks.
                     </p>
                   </div>
 
-                  <div className="space-y-1 p-2.5 rounded-xl bg-card border border-neutral-800/40">
-                    <h4 className="font-semibold text-primary-color flex items-center gap-1.5">
+                  <div className="space-y-1 p-2.5 rounded-m3-md bg-surface-container-high border border-outline-variant">
+                    <h4 className="font-semibold text-on-surface flex items-center gap-1.5">
                       <span>⚡</span> Reliability &amp; Fault Tolerance
                     </h4>
-                    <p className="text-muted-color text-[11px] leading-relaxed">
+                    <p className="text-on-surface-variant text-[11px] leading-relaxed">
                       All filesystem interactions are wrapped with isolated ErrorBoundaries and Rust
                       Result checks, preventing app crashes if a disk or network share disconnects.
                     </p>
                   </div>
 
-                  <div className="space-y-1 p-2.5 rounded-xl bg-card border border-neutral-800/40">
-                    <h4 className="font-semibold text-primary-color flex items-center gap-1.5">
+                  <div className="space-y-1 p-2.5 rounded-m3-md bg-surface-container-high border border-outline-variant">
+                    <h4 className="font-semibold text-on-surface flex items-center gap-1.5">
                       <span>🔒</span> Data Confidentiality &amp; Integrity
                     </h4>
-                    <p className="text-muted-color text-[11px] leading-relaxed">
+                    <p className="text-on-surface-variant text-[11px] leading-relaxed">
                       Zero tracking libraries, analytics scripts, or telemetry daemons. All operations
                       remain purely local to your device.
                     </p>
@@ -604,10 +606,10 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
             <div className="space-y-3 animate-fade-in">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="space-y-0.5">
-                  <h3 className="text-base font-bold text-primary-color flex items-center gap-2">
+                  <h3 className="text-base font-bold text-on-surface flex items-center gap-2">
                     <span>⌨️</span> Keyboard Shortcuts Reference
                   </h3>
-                  <p className="text-xs text-muted-color">
+                  <p className="text-xs text-on-surface-variant">
                     Accelerate your workflow with quick desktop keybindings.
                   </p>
                 </div>
@@ -619,48 +621,48 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
                     value={shortcutFilter}
                     onChange={(e) => setShortcutFilter(e.target.value)}
                     placeholder="Filter shortcuts..."
-                    className="px-3 py-1.5 pl-7 text-xs rounded-xl bg-input border border-neutral-700/60 text-primary-color placeholder-neutral-500 focus:outline-none focus:border-[#ff2d87] w-full sm:w-48"
+                    className="px-3 py-1.5 pl-7 text-xs rounded-m3-md bg-surface-container-lowest border border-outline text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary w-full sm:w-48"
                   />
-                  <span className="absolute left-2.5 top-2 text-[10px] text-muted-color">🔍</span>
+                  <span className="absolute left-2.5 top-2 text-[10px] text-on-surface-variant">🔍</span>
                 </div>
               </div>
 
               {/* Table of Shortcuts */}
-              <div className="rounded-2xl border border-neutral-800/70 overflow-hidden bg-sidebar/30">
+              <div className="rounded-m3-lg border border-outline-variant overflow-hidden bg-surface-container">
                 <div className="max-h-[36vh] overflow-y-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="border-b border-neutral-800/60 bg-sidebar/60 text-muted-color text-[10px] uppercase font-bold tracking-wider">
+                      <tr className="border-b border-outline-variant bg-surface-container-high text-on-surface-variant text-[10px] uppercase font-bold tracking-wider">
                         <th className="py-2 px-3">Shortcut</th>
                         <th className="py-2 px-3">Action Description</th>
                         <th className="py-2 px-3 text-right">Category</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-800/30">
+                    <tbody className="divide-y divide-outline-variant/50">
                       {filteredShortcuts.map((sc, idx) => (
                         <tr
                           key={idx}
-                          className="hover:bg-neutral-800/20 transition-colors text-primary-color"
+                          className="hover:bg-surface-container-high transition-colors text-on-surface"
                         >
                           <td className="py-2 px-3 font-mono">
                             <div className="flex items-center gap-1">
                               {sc.keys.map((k, kIdx) => (
                                 <React.Fragment key={kIdx}>
-                                  <kbd className="px-1.5 py-0.5 text-[10px] rounded-md bg-card border border-neutral-700/70 font-semibold shadow-xs">
+                                  <kbd className="px-1.5 py-0.5 text-[10px] rounded bg-surface-container-highest border border-outline-variant font-semibold">
                                     {k}
                                   </kbd>
                                   {kIdx < sc.keys.length - 1 && (
-                                    <span className="text-[10px] text-muted-color">+</span>
+                                    <span className="text-[10px] text-on-surface-variant">+</span>
                                   )}
                                 </React.Fragment>
                               ))}
                             </div>
                           </td>
-                          <td className="py-2 px-3 text-[11px] text-neutral-300">
+                          <td className="py-2 px-3 text-[11px] text-on-surface">
                             {sc.action}
                           </td>
-                          <td className="py-2 px-3 text-right text-[10px] text-muted-color">
-                            <span className="px-2 py-0.5 rounded-full bg-sidebar border border-neutral-800">
+                          <td className="py-2 px-3 text-right text-[10px] text-on-surface-variant">
+                            <span className="px-2 py-0.5 rounded-m3-full bg-surface-container-high border border-outline-variant">
                               {sc.category}
                             </span>
                           </td>
@@ -668,7 +670,7 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
                       ))}
                       {filteredShortcuts.length === 0 && (
                         <tr>
-                          <td colSpan={3} className="py-6 text-center text-muted-color text-xs">
+                          <td colSpan={3} className="py-6 text-center text-on-surface-variant text-xs">
                             No shortcuts match your search filter.
                           </td>
                         </tr>
@@ -682,14 +684,14 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
         </div>
 
         {/* Modal Footer Controls */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-3.5 border-t border-neutral-800/60 bg-sidebar/50">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-3.5 border-t border-outline-variant bg-surface-container">
           {/* Don't show again checkbox */}
-          <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-muted-color hover:text-primary-color">
+          <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-on-surface-variant hover:text-on-surface">
             <input
               type="checkbox"
               checked={dontShowAgain}
               onChange={(e) => handleToggleDontShowAgain(e.target.checked)}
-              className="w-4 h-4 rounded border-neutral-700 bg-neutral-900 accent-[#ff2d87] cursor-pointer"
+              className="w-4 h-4 rounded border-outline bg-surface-container-lowest accent-primary cursor-pointer"
             />
             <span>Don&apos;t show again on startup</span>
           </label>
@@ -701,12 +703,13 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
               {Array.from({ length: TOTAL_STEPS }).map((_, idx) => (
                 <button
                   key={idx}
+                  type="button"
                   onClick={() => setCurrentStep(idx)}
                   aria-label={`Go to slide ${idx + 1}`}
-                  className={`h-2 rounded-full transition-all duration-200 ${
+                  className={`h-2 rounded-m3-full transition-all duration-200 ${
                     currentStep === idx
-                      ? "w-6 bg-[#ff2d87]"
-                      : "w-2 bg-neutral-700 hover:bg-neutral-500"
+                      ? "w-6 bg-primary"
+                      : "w-2 bg-outline-variant hover:bg-outline"
                   }`}
                 />
               ))}
@@ -715,6 +718,7 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
             {/* Back / Next Buttons */}
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={handlePrev}
                 disabled={currentStep === 0}
                 className="btn btn-secondary disabled:opacity-30 disabled:cursor-not-allowed"
@@ -723,8 +727,9 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
               </button>
 
               <button
+                type="button"
                 onClick={handleNext}
-                className="btn btn-primary shadow-md shadow-[#ff2d87]/25"
+                className="btn btn-primary"
               >
                 {currentStep === TOTAL_STEPS - 1 ? "Get Started ✓" : "Next →"}
               </button>

@@ -50,7 +50,7 @@ export const CHANGELOG_DATA: ReleaseVersion[] = [
         icon: "🎬",
         title: "Seamless Video & Photo Rendering",
         tag: "FIX & IMPROVEMENT",
-        tagColor: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+        tagColor: "bg-tertiary-container text-on-tertiary-container border-outline-variant",
         description:
           "Integrated the Tauri custom asset protocol with expanded OS security scopes, enabling instant playback of MP4 and WebM videos and crisp rendering of all photo formats.",
         tip: "Press 'P' or 'Space' on any video or image to inspect immediately.",
@@ -59,7 +59,7 @@ export const CHANGELOG_DATA: ReleaseVersion[] = [
         icon: "📄",
         title: "Interactive PDF Canvas Viewer",
         tag: "NEW VIEWER",
-        tagColor: "bg-red-500/20 text-red-400 border-red-500/30",
+        tagColor: "bg-error-container text-on-error-container border-outline-variant",
         description:
           "High-performance PDF rendering directly to HTML5 canvas with interactive page flipping, zoom levels (+ / - / reset), and zero WebView2 CSP sandboxing friction.",
       },
@@ -67,7 +67,7 @@ export const CHANGELOG_DATA: ReleaseVersion[] = [
         icon: "📝",
         title: "Native Word Document (.docx) Viewer",
         tag: "NEW VIEWER",
-        tagColor: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+        tagColor: "bg-primary-container text-on-primary-container border-outline-variant",
         description:
           "Instant parsing and clean HTML sheet rendering for Microsoft Word documents with live word and character counters, plus a 1-click 'Open in Word' shortcut.",
       },
@@ -75,7 +75,7 @@ export const CHANGELOG_DATA: ReleaseVersion[] = [
         icon: "🔄",
         title: "Over-the-Air Live Auto-Updater",
         tag: "UPDATER",
-        tagColor: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+        tagColor: "bg-success-container text-on-success-container border-outline-variant",
         description:
           "Automated update delivery across Windows and macOS with dual target resolution, cryptographic verification, and one-click in-app background installation.",
       },
@@ -90,7 +90,7 @@ export const CHANGELOG_DATA: ReleaseVersion[] = [
         icon: "👁️",
         title: "Instant Quick Look Preview",
         tag: "NEW FEATURE",
-        tagColor: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+        tagColor: "bg-primary-container text-on-primary-container border-outline-variant",
         description:
           "Press 'P' or 'Space' on any file or folder to preview photos, stream full-length videos, play audio with live waveform animations, view syntax-formatted code with line numbers, open PDFs, or inspect folder contents without launching heavy external apps.",
         tip: "Keyboard shortcut: Press 'P' or 'Space' to preview, Left / Right arrows to cycle through items, and Escape to close.",
@@ -99,7 +99,7 @@ export const CHANGELOG_DATA: ReleaseVersion[] = [
         icon: "🎨",
         title: "5 Lovable Themes with Poetic Names",
         tag: "NEW DESIGN",
-        tagColor: "bg-pink-500/20 text-pink-400 border-pink-500/30",
+        tagColor: "bg-secondary-container text-on-secondary-container border-outline-variant",
         description:
           "Personalize your workspace with five lovable new theme identities: Midnight Sakura (OLED), Blush Cotton Candy, Google Pixel Horizon, Cupertino Silver & Multicolor, and Solar Sunset (Matte Orange).",
         tip: "Switch themes anytime under Preferences (⚙️) or in the header bar.",
@@ -108,7 +108,7 @@ export const CHANGELOG_DATA: ReleaseVersion[] = [
         icon: "⚡",
         title: "Zero-Lag Startup Directory Pre-Warming",
         tag: "PERFORMANCE",
-        tagColor: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+        tagColor: "bg-warning-container text-on-warning-container border-outline-variant",
         description:
           "A lightweight background worker pre-warms your primary user libraries (Downloads, Desktop, Documents, and Pictures) on startup without blocking the UI thread, completely eliminating initial loading delays.",
       },
@@ -116,7 +116,7 @@ export const CHANGELOG_DATA: ReleaseVersion[] = [
         icon: "💾",
         title: "Real-Time APFS & NTFS Storage Visualizer",
         tag: "STORAGE",
-        tagColor: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+        tagColor: "bg-success-container text-on-success-container border-outline-variant",
         description:
           "Live drive capacity visualization for internal and external volumes across macOS (APFS) and Windows (NTFS), reporting real-time used percentage, free gigabytes, and total disk size.",
       },
@@ -124,7 +124,7 @@ export const CHANGELOG_DATA: ReleaseVersion[] = [
         icon: "🛡️",
         title: "Safety & Quality Assurance (ISO/IEC 25010)",
         tag: "SECURITY",
-        tagColor: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+        tagColor: "bg-tertiary-container text-on-tertiary-container border-outline-variant",
         description:
           "Protected system path barriers prohibit accidental deletion of drive roots and OS directories (Windows, System32, Program Files, /System). Includes command-injection immunity via native ShellExecuteW and transactional undo history.",
       },
@@ -132,7 +132,7 @@ export const CHANGELOG_DATA: ReleaseVersion[] = [
         icon: "🎓",
         title: "Interactive Guided Tour & Cheat Sheet",
         tag: "DOCUMENTATION",
-        tagColor: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
+        tagColor: "bg-secondary-container text-on-secondary-container border-outline-variant",
         description:
           "New 6-slide interactive onboarding walkthrough and keyboard shortcuts reference matrix accessible from Settings or the Help menu.",
       },
@@ -147,7 +147,7 @@ export const CHANGELOG_DATA: ReleaseVersion[] = [
         icon: "🔍",
         title: "Universal Laptop Search",
         tag: "FEATURE",
-        tagColor: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+        tagColor: "bg-primary-container text-on-primary-container border-outline-variant",
         description:
           "Search for any file or directory across your entire computer using the Spotlight-style command palette (`Ctrl+K` or `⌘K`).",
       },
@@ -155,7 +155,7 @@ export const CHANGELOG_DATA: ReleaseVersion[] = [
         icon: "📑",
         title: "Browser-Style Tabbed Browsing",
         tag: "PRODUCTIVITY",
-        tagColor: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+        tagColor: "bg-success-container text-on-success-container border-outline-variant",
         description:
           "Open multiple explorer tabs simultaneously (`Ctrl+T` / `⌘T`), reorder them with drag and drop, and close active tabs with `Ctrl+W` / `⌘W`.",
       },
@@ -163,7 +163,7 @@ export const CHANGELOG_DATA: ReleaseVersion[] = [
         icon: "🔄",
         title: "1-Click Undo for Bulk Renaming",
         tag: "SAFETY",
-        tagColor: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+        tagColor: "bg-tertiary-container text-on-tertiary-container border-outline-variant",
         description:
           "Easily reverse accidental bulk renames with a single click or `Ctrl+Z` / `⌘Z` using the persistent disk undo journal.",
       },

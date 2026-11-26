@@ -409,7 +409,7 @@ export const FilePreviewPane: React.FC<FilePreviewPaneProps> = ({
                     src={currentDisplaySrc}
                     controls
                     playsInline
-                    className="w-full max-h-60 rounded-m3-sm bg-black/80 outline-none"
+                    className="w-full max-h-60 rounded-m3-sm bg-surface-container-lowest outline-none"
                     onError={() => {
                       if (!blobSrc && item.size && item.size < 120 * 1024 * 1024) {
                         loadFileAsBlob(item.path, getMimeType(extension));
