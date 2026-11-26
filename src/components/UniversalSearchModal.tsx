@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { FileEntry } from "../types";
+import { MacFolderIcon, MacFileIcon } from "./MacIcons";
 
 /**
  * Props accepted by the {@link UniversalSearchModal} component.
@@ -313,11 +314,11 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col rounded-m3-xl shadow-m3-3 border border-outline-variant bg-surface-container-high text-on-surface overflow-hidden animate-m3-dialog"
+        className="max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col rounded-m3-xl shadow-m3-3 bg-surface-container-high text-on-surface overflow-hidden animate-m3-dialog"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-outline-variant bg-surface-container">
+        <div className="flex items-center gap-3 px-4 py-3.5 bg-surface-container">
           <div className="text-on-surface-variant shrink-0 select-none">
             <svg
               className="w-5 h-5"
@@ -407,7 +408,7 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center gap-1 px-2.5 min-h-[32px] text-xs text-on-surface-variant hover:text-on-surface bg-surface-container-highest rounded-m3-xs border border-outline-variant m3-pressable"
+            className="flex items-center gap-1 px-2.5 min-h-[32px] text-xs text-on-surface-variant hover:text-on-surface bg-surface-container-highest rounded-m3-xs m3-pressable"
             title="Close modal (Esc)"
             aria-label="Close search modal"
           >
@@ -418,7 +419,7 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
         {/* Results Container */}
         <div
           ref={listRef}
-          className="flex-1 overflow-y-auto max-h-[60vh] p-2 space-y-1 divide-y divide-outline-variant/40"
+          className="flex-1 overflow-y-auto max-h-[60vh] p-2 space-y-1"
         >
           {!query.trim() && (
             <div className="flex flex-col items-center justify-center py-12 text-center text-on-surface-variant">
@@ -443,7 +444,6 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
           {/* Matches List */}
           {results.map((item, index) => {
             const isFolder = item.extension.toLowerCase() === "folder" || !item.extension;
-            const icon = getItemIcon(item.extension, isFolder);
             const parentPath = getParentPath(item.path);
             const isSelected = index === selectedIndex;
 
@@ -460,23 +460,27 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
                   onClose();
                 }}
                 onMouseEnter={() => setSelectedIndex(index)}
-                className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors duration-150 select-none ${
+                className={`group flex items-center justify-between p-2.5 rounded-m3-md cursor-pointer transition-colors duration-150 select-none ${
                   isSelected
-                    ? "bg-neutral-800 text-neutral-100 ring-1 ring-neutral-700"
-                    : "hover:bg-neutral-800/70 text-neutral-200"
+                    ? "bg-secondary-container text-on-secondary-container"
+                    : "hover:bg-surface-container text-on-surface"
                 }`}
               >
                 {/* Left side: Icon, Name, and Parent directory */}
                 <div className="flex items-center gap-3 min-w-0 mr-3">
-                  <span className="text-2xl shrink-0 select-none" aria-hidden="true">
-                    {icon}
+                  <span className="shrink-0 flex items-center justify-center">
+                    {isFolder ? (
+                      <MacFolderIcon size={22} />
+                    ) : (
+                      <MacFileIcon extension={item.extension} size={22} />
+                    )}
                   </span>
                   <div className="min-w-0 flex flex-col">
-                    <span className="text-sm font-medium text-neutral-100 truncate">
+                    <span className="text-sm font-medium text-on-surface truncate">
                       {highlightMatch(item.name, query)}
                     </span>
                     <span
-                      className="text-xs text-neutral-400 truncate max-w-md"
+                      className="text-xs text-on-surface-variant truncate max-w-md"
                       title={parentPath}
                     >
                       {parentPath}
@@ -487,16 +491,15 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
                 {/* Right side: Size & Date / Hover Action Buttons */}
                 <div className="flex items-center gap-2 shrink-0">
                   {/* Default Info: Size & Date */}
-                  <div className="text-right text-xs text-neutral-400 group-hover:hidden hidden sm:flex flex-col items-end">
+                  <div className="text-right text-xs text-on-surface-variant group-hover:hidden hidden sm:flex flex-col items-end">
                     <span>{isFolder ? "Folder" : formatSize(item.size)}</span>
-                    <span className="text-[11px] text-neutral-500">
+                    <span className="text-[11px] opacity-80">
                       {formatDate(item.modified_at)}
                     </span>
                   </div>
 
                   {/* Hover Quick Action Buttons */}
                   <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                    {/* Open Action */}
                     <button
                       type="button"
                       title={isFolder ? "Open folder in Foldy" : "Open file"}
@@ -509,13 +512,11 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
                         }
                         onClose();
                       }}
-                      className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700/60 hover:text-white transition-colors"
+                      className="px-2.5 min-h-[32px] text-xs font-medium rounded-m3-full bg-surface-container-highest hover:bg-primary hover:text-on-primary text-on-surface transition-colors"
                     >
-                      <span>{isFolder ? "📂" : "🚀"}</span>
-                      <span className="hidden sm:inline">{isFolder ? "Open Folder" : "Open"}</span>
+                      {isFolder ? "Open Folder" : "Open"}
                     </button>
 
-                    {/* Browse Folder Action */}
                     <button
                       type="button"
                       title="Browse parent folder"
@@ -524,13 +525,11 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
                         onNavigateFolder(parentPath);
                         onClose();
                       }}
-                      className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700/60 hover:text-white transition-colors"
+                      className="px-2.5 min-h-[32px] text-xs font-medium rounded-m3-full bg-surface-container-highest hover:bg-surface-container text-on-surface transition-colors"
                     >
-                      <span>📁</span>
-                      <span className="hidden sm:inline">Browse Folder</span>
+                      Parent
                     </button>
 
-                    {/* Show in Explorer Action */}
                     <button
                       type="button"
                       title="Show in File Manager"
@@ -538,10 +537,9 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
                         e.stopPropagation();
                         onShowInFileManager(item.path);
                       }}
-                      className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700/60 hover:text-white transition-colors"
+                      className="px-2.5 min-h-[32px] text-xs font-medium rounded-m3-full bg-surface-container-highest hover:bg-surface-container text-on-surface transition-colors"
                     >
-                      <span>🔍</span>
-                      <span className="hidden sm:inline">Show in Explorer</span>
+                      Reveal
                     </button>
                   </div>
                 </div>
@@ -551,25 +549,25 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
         </div>
 
         {/* Modal Footer / Shortcuts guide */}
-        <div className="flex items-center justify-between px-4 py-2.5 text-xs text-neutral-400 border-t border-neutral-800 bg-neutral-900/80 select-none">
+        <div className="flex items-center justify-between px-4 py-2.5 text-xs text-on-surface-variant bg-surface-container select-none">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-300 font-mono text-[10px]">
+              <kbd className="px-1.5 py-0.5 rounded-m3-xs bg-surface-container-high text-on-surface font-mono text-[10px]">
                 ↑
               </kbd>
-              <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-300 font-mono text-[10px]">
+              <kbd className="px-1.5 py-0.5 rounded-m3-xs bg-surface-container-high text-on-surface font-mono text-[10px]">
                 ↓
               </kbd>
               <span className="ml-0.5">Navigate</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-300 font-mono text-[10px]">
+              <kbd className="px-1.5 py-0.5 rounded-m3-xs bg-surface-container-high text-on-surface font-mono text-[10px]">
                 ↵
               </kbd>
               <span className="ml-0.5">Open</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-300 font-mono text-[10px]">
+              <kbd className="px-1.5 py-0.5 rounded-m3-xs bg-surface-container-high text-on-surface font-mono text-[10px]">
                 Esc
               </kbd>
               <span className="ml-0.5">Close</span>
@@ -578,7 +576,7 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
 
           <div>
             {results.length > 0 && (
-              <span className="text-neutral-500 font-medium">
+              <span className="text-on-surface-variant font-medium">
                 {results.length} match{results.length === 1 ? "" : "es"}
               </span>
             )}

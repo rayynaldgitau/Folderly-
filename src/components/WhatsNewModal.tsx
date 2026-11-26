@@ -252,62 +252,63 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="whats-new-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in select-none"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-scrim backdrop-blur-sm select-none"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleDismiss();
       }}
     >
-      <div className="relative w-full max-w-2xl bg-card border border-neutral-800/80 rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-primary-color">
-        {/* Header Ribbon Banner */}
-        <div className="relative p-6 pb-5 border-b border-neutral-800/50 bg-gradient-to-r from-neutral-900/90 via-neutral-900/60 to-neutral-900/90">
+      <div className="relative w-full max-w-2xl bg-surface-container-high rounded-m3-xl shadow-m3-3 flex flex-col max-h-[90vh] overflow-hidden text-on-surface animate-m3-dialog">
+        {/* Header */}
+        <div className="relative p-6 pb-5 bg-surface-container">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3.5">
-              <div className="p-2.5 rounded-2xl bg-neutral-800/60 border border-neutral-700/40 shadow-inner flex items-center justify-center">
-                <FoldyLogo size={34} />
+              <div className="p-2 rounded-m3-md bg-surface-container-high flex items-center justify-center">
+                <FoldyLogo size={32} />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 id="whats-new-title" className="text-lg font-black tracking-tight text-primary-color">
-                    What's New in Foldy
+                  <h2 id="whats-new-title" className="text-lg font-semibold tracking-tight text-on-surface">
+                    What&apos;s New in Foldy
                   </h2>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#ff2d87]/20 text-[#ff2d87] border border-[#ff2d87]/30 tracking-wide uppercase">
+                  <span className="px-2.5 py-0.5 rounded-m3-full text-[11px] font-semibold bg-primary-container text-on-primary-container">
                     v{activeRelease.version}
                   </span>
                 </div>
-                <p className="text-xs text-muted-color mt-0.5">
+                <p className="text-xs text-on-surface-variant mt-0.5">
                   {activeRelease.title} • {activeRelease.date}
                 </p>
               </div>
             </div>
 
             <button
+              type="button"
               onClick={handleDismiss}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-muted-color hover:text-primary-color hover:bg-neutral-800/50 text-sm transition-all active:scale-95"
+              className="w-10 h-10 rounded-m3-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest text-sm m3-pressable"
               aria-label="Close What's New modal"
             >
               ✕
             </button>
           </div>
 
-          {/* Version Switcher Tabs */}
           {CHANGELOG_DATA.length > 1 && (
-            <div className="flex items-center gap-1.5 mt-4 pt-2 border-t border-neutral-800/30">
+            <div className="flex items-center gap-2 mt-4 pt-2">
               {CHANGELOG_DATA.map((rel) => {
                 const isSelected = rel.version === selectedVersion;
                 const isCurrent = rel.version === currentVersion;
                 return (
                   <button
                     key={rel.version}
+                    type="button"
                     onClick={() => setSelectedVersion(rel.version)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    className={`px-3.5 min-h-[36px] rounded-m3-full text-xs font-medium m3-pressable flex items-center gap-1.5 ${
                       isSelected
-                        ? "bg-[#ff2d87] text-white shadow-md shadow-[#ff2d87]/25"
-                        : "bg-neutral-800/40 text-muted-color hover:text-primary-color hover:bg-neutral-800/70"
+                        ? "bg-primary text-on-primary"
+                        : "bg-surface-container-high text-on-surface-variant hover:text-on-surface"
                     }`}
                   >
                     <span>v{rel.version}</span>
                     {isCurrent && (
-                      <span className="text-[9px] px-1 py-0.2 rounded-md bg-white/20 font-bold uppercase">
+                      <span className="text-[10px] opacity-80 font-semibold uppercase">
                         Current
                       </span>
                     )}
@@ -319,36 +320,28 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
         </div>
 
         {/* Feature Highlights List */}
-        <div className="p-6 overflow-y-auto space-y-3.5 max-h-[58vh]">
+        <div className="p-6 overflow-y-auto space-y-3 max-h-[58vh]">
           {activeRelease.highlights.map((item, idx) => (
             <div
               key={idx}
-              className="p-4 rounded-2xl bg-neutral-900/40 border border-neutral-800/60 hover:border-neutral-700/60 transition-all space-y-2 group"
+              className="p-4 rounded-m3-md bg-surface-container space-y-2"
             >
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-lg shrink-0 group-hover:scale-110 transition-transform">
-                    {item.icon}
-                  </span>
-                  <h3 className="text-xs font-bold text-primary-color">
-                    {item.title}
-                  </h3>
-                </div>
-                <span
-                  className={`text-[9px] font-bold px-2 py-0.5 rounded-md border tracking-wider uppercase shrink-0 ${item.tagColor}`}
-                >
+                <h3 className="text-xs font-semibold text-on-surface">
+                  {item.title}
+                </h3>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-m3-full bg-secondary-container text-on-secondary-container uppercase shrink-0">
                   {item.tag}
                 </span>
               </div>
 
-              <p className="text-xs text-muted-color leading-relaxed pl-7">
+              <p className="text-xs text-on-surface-variant leading-relaxed">
                 {item.description}
               </p>
 
               {item.tip && (
-                <div className="ml-7 mt-2 p-2 rounded-xl bg-neutral-950/60 border border-neutral-800/40 text-[11px] text-muted-color flex items-center gap-2">
-                  <span className="text-xs">💡</span>
-                  <span className="font-mono text-[10px] text-primary-color/90">{item.tip}</span>
+                <div className="mt-2 p-2.5 rounded-m3-sm bg-surface-container-low text-[11px] text-on-surface-variant font-mono">
+                  {item.tip}
                 </div>
               )}
             </div>
@@ -356,28 +349,28 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({
         </div>
 
         {/* Modal Footer Actions */}
-        <div className="p-4 px-6 border-t border-neutral-800/50 bg-neutral-900/60 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs text-muted-color">
-            <span>✨</span>
-            <span className="text-[11px]">Foldy for macOS and Windows</span>
-          </div>
+        <div className="p-4 px-6 bg-surface-container flex items-center justify-between gap-3">
+          <span className="text-xs text-on-surface-variant">
+            Foldy for macOS and Windows
+          </span>
 
           <div className="flex items-center gap-2">
             {onOpenTutorials && (
               <button
+                type="button"
                 onClick={handleOpenTour}
-                className="px-3.5 py-2 rounded-xl text-xs font-semibold text-muted-color hover:text-primary-color hover:bg-neutral-800/60 transition-all border border-neutral-800"
+                className="px-4 min-h-[40px] rounded-m3-full text-xs font-medium text-primary border border-outline hover:bg-primary/10 m3-pressable"
               >
-                🎓 View Guided Tour
+                View Guided Tour
               </button>
             )}
 
             <button
+              type="button"
               onClick={handleDismiss}
-              className="px-5 py-2 rounded-xl bg-[#ff2d87] hover:bg-[#e61b74] active:scale-95 text-white text-xs font-bold transition-all shadow-md shadow-[#ff2d87]/25 flex items-center gap-1.5"
+              className="px-5 min-h-[40px] rounded-m3-full bg-primary text-on-primary text-xs font-medium m3-pressable"
             >
-              <span>Explore Foldy</span>
-              <span>→</span>
+              Explore Foldy
             </button>
           </div>
         </div>

@@ -4,98 +4,62 @@ import { check, type Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import type { ThemeMode, SystemUserInfo } from "../types";
 import { FoldyLogo } from "./FoldyLogo";
+import {
+  Button,
+  IconAlert,
+  IconCheck,
+  IconClose,
+  IconHelp,
+  IconRefresh,
+  IconSparkles,
+  OutlinedTextField,
+} from "./ui";
 
 export interface SettingsModalProps {
-  /** Whether the settings modal is currently visible. */
   isOpen: boolean;
-  /** Callback fired to close the settings modal. */
   onClose: () => void;
-  /** Currently active theme identifier. */
   currentTheme: ThemeMode;
-  /** Callback fired when the user selects a different theme. */
   onThemeChange: (theme: ThemeMode) => void;
-  /** Microsoft/Windows account details detected from the OS. */
   detectedUser: SystemUserInfo | null;
-  /** Custom display name currently configured. */
   displayName: string;
-  /** Callback fired to update the custom display name. */
   onUpdateDisplayName: (name: string) => void;
-  /** Custom workspace name currently configured. */
   workspaceName: string;
-  /** Callback fired to update the workspace name. */
   onUpdateWorkspaceName: (ws: string) => void;
-  /** Optional tab to open when the modal becomes visible. */
   initialTab?: "appearance" | "profile" | "shortcuts" | "updates";
-  /** Opens the interactive onboarding and tutorial modal. */
   onOpenTutorials?: () => void;
-  /** Opens the release highlights and What's New modal. */
   onOpenWhatsNew?: () => void;
 }
 
-/** Theme metadata for the settings picker card list. */
 interface ThemeOption {
   id: ThemeMode;
   name: string;
   description: string;
-  accentColor: string;
-  bgColor: string;
-  textColor: string;
+  previewSurface: string;
+  previewAccent: string;
   tag: string;
 }
 
 const THEME_OPTIONS: ThemeOption[] = [
   {
-    id: "pink",
-    name: "Midnight Sakura (OLED)",
-    description: "Deep OLED obsidian black illuminated by electric neon rose highlights",
-    accentColor: "#ff2d87",
-    bgColor: "#120e12",
-    textColor: "#ffffff",
-    tag: "OLED Dark",
+    id: "material",
+    name: "Material 3 Dark",
+    description: "Neutral dark tonal surfaces with slate-blue primary accents",
+    previewSurface: "#111318",
+    previewAccent: "#a4c9ff",
+    tag: "Dark",
   },
   {
     id: "pink_light",
-    name: "Blush Cotton Candy",
-    description: "Soft pastel cashmere velvet canvas paired with sweet strawberry accents",
-    accentColor: "#ff2d87",
-    bgColor: "#fceef2",
-    textColor: "#2d1a24",
-    tag: "Sweet Pastel",
-  },
-  {
-    id: "material",
-    name: "Google Pixel Horizon",
-    description: "Authentic Google Material You design with signature Google Blue & Android Emerald",
-    accentColor: "#1a73e8",
-    bgColor: "#131314",
-    textColor: "#f1f3f4",
-    tag: "Material 3",
-  },
-  {
-    id: "apple",
-    name: "Cupertino Silver & Multicolor",
-    description: "Classic brushed aluminum silver system backdrop with Apple Multicolor radiance",
-    accentColor: "#e5e7eb",
-    bgColor: "#24262b",
-    textColor: "#f5f5f7",
-    tag: "Apple macOS",
-  },
-  {
-    id: "dark",
-    name: "Solar Sunset (Matte Orange)",
-    description: "Deep obsidian matte black ignited by warm, glowing sunset amber accents",
-    accentColor: "#ea580c",
-    bgColor: "#0c0c0e",
-    textColor: "#f4f4f5",
-    tag: "Matte Glow",
+    name: "Material 3 Light",
+    description: "Clean light tonal surfaces with slate-blue primary accents",
+    previewSurface: "#f9f9fc",
+    previewAccent: "#2b5b8f",
+    tag: "Light",
   },
 ];
 
 /**
- * Settings and Preferences Modal.
- *
- * Allows configuring the active theme, viewing the detected Microsoft/Windows user,
- * and customizing the display name and workspace label with persistence.
+ * Settings and Preferences Modal built on borderless Material 3 tonal surfaces.
  */
 const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
@@ -113,10 +77,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const [localName, setLocalName] = useState(displayName);
   const [localWorkspace, setLocalWorkspace] = useState(workspaceName);
-  const [activeTab, setActiveTab] = useState<"appearance" | "profile" | "shortcuts" | "updates">(initialTab);
+  const [activeTab, setActiveTab] = useState<
+    "appearance" | "profile" | "shortcuts" | "updates"
+  >(initialTab);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Auto-updater state
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<Update | null>(null);
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
@@ -124,14 +89,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [isDownloading, setIsDownloading] = useState(false);
   const [isUpdateInstalled, setIsUpdateInstalled] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
-  const [currentAppVersion, setCurrentAppVersion] = useState("0.1.0");
+  const [currentAppVersion, setCurrentAppVersion] = useState("0.1.5");
 
-  // Query actual installed app version dynamically from Tauri
   useEffect(() => {
     getVersion().then(setCurrentAppVersion).catch(() => {});
   }, []);
 
-  // Sync internal state when parent props change or modal opens
   useEffect(() => {
     if (isOpen) {
       setLocalName(displayName);
@@ -143,7 +106,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   }, [isOpen, displayName, workspaceName, initialTab]);
 
-  // Handle escape key to close modal
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -157,11 +119,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   if (!isOpen) return null;
 
-  /**
-   * Checks GitHub Releases via Tauri's Updater for a new version.
-   *
-   * @returns Promise resolving when update check completes.
-   */
   const handleCheckForUpdates = async () => {
     setIsCheckingUpdate(true);
     setUpdateStatus("Connecting to update server...");
@@ -170,7 +127,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       const update = await check();
       if (update) {
         setUpdateInfo(update);
-        setUpdateStatus(`Version v${update.version} is available!`);
+        setUpdateStatus(`Version v${update.version} is available.`);
       } else {
         setUpdateInfo(null);
         setUpdateStatus(`Foldy is up to date (v${currentAppVersion}).`);
@@ -179,7 +136,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       const message = err instanceof Error ? err.message : String(err);
       console.warn("Failed to check for updates:", message);
       setUpdateError(
-        message || "Could not check for updates. Make sure you are connected to the internet."
+        message ||
+          "Could not check for updates. Make sure you are connected to the internet."
       );
       setUpdateStatus(null);
     } finally {
@@ -187,11 +145,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
-  /**
-   * Downloads and installs the pending update.
-   *
-   * @returns Promise resolving when installation completes.
-   */
   const handleInstallUpdate = async () => {
     if (!updateInfo) return;
     setIsDownloading(true);
@@ -213,7 +166,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             setDownloadProgress(pct);
             setUpdateStatus(`Downloading update (${pct}%)...`);
           } else {
-            setUpdateStatus(`Downloading: ${(downloaded / (1024 * 1024)).toFixed(1)} MB`);
+            setUpdateStatus(
+              `Downloading: ${(downloaded / (1024 * 1024)).toFixed(1)} MB`
+            );
           }
         } else if (event.event === "Finished") {
           setUpdateStatus("Update installed! Restart to apply.");
@@ -232,11 +187,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
-  /**
-   * Restarts Foldy to launch the newly installed version.
-   *
-   * @returns Promise resolving when relaunch command is sent.
-   */
   const handleRestartApp = async () => {
     try {
       await relaunch();
@@ -245,7 +195,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
-  /** Saves updated profile information to local state and persistence. */
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanName = localName.trim() || detectedUser?.display_name || "User";
@@ -256,9 +205,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     setTimeout(() => setSaveSuccess(false), 2500);
   };
 
-  /** Resets custom username to the detected Microsoft / OS username. */
   const handleResetToSystem = () => {
-    const sysName = detectedUser?.display_name || detectedUser?.username || "User";
+    const sysName =
+      detectedUser?.display_name || detectedUser?.username || "User";
     setLocalName(sysName);
     onUpdateDisplayName(sysName);
     setSaveSuccess(true);
@@ -274,32 +223,38 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl bg-surface-container-high border border-outline-variant rounded-m3-xl shadow-m3-3 flex flex-col overflow-hidden text-on-surface select-none animate-m3-dialog"
+        className="w-full max-w-xl bg-surface-container-high rounded-m3-xl shadow-m3-3 flex flex-col overflow-hidden text-on-surface select-none animate-m3-dialog"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant bg-surface-container">
+        <div className="flex items-center justify-between px-6 py-4 bg-surface-container">
           <div className="flex items-center gap-3">
             <FoldyLogo size={32} interactive={true} />
             <div>
               <h2 className="text-base font-semibold text-on-surface">
                 Foldy Preferences
               </h2>
-              <p className="text-xs text-on-surface-variant">Configure theme, account, and workspace</p>
+              <p className="text-xs text-on-surface-variant">
+                Configure theme, account, and workspace
+              </p>
             </div>
           </div>
           <button
             type="button"
             aria-label="Close preferences"
             onClick={onClose}
-            className="w-10 h-10 rounded-m3-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest text-sm m3-pressable"
+            className="w-10 h-10 rounded-m3-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest m3-pressable"
           >
-            ✕
+            <IconClose size={18} />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div role="tablist" aria-label="Settings sections" className="flex items-center gap-1 px-6 pt-2 border-b border-outline-variant text-xs overflow-x-auto">
+        <div
+          role="tablist"
+          aria-label="Settings sections"
+          className="flex items-center gap-1 px-6 pt-2 bg-surface-container text-xs overflow-x-auto"
+        >
           {(
             [
               { id: "appearance", label: "Appearance" },
@@ -329,361 +284,317 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto max-h-[65vh] space-y-4">
-          {/* TAB 1: APPEARANCE */}
+        <div className="p-6 overflow-y-auto max-h-[65vh] space-y-5">
           {activeTab === "appearance" && (
             <div className="space-y-4">
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-color mb-1">
-                  Select Theme
+                <h3 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+                  Color Scheme
                 </h3>
-                <p className="text-xs text-muted-color mb-3">
-                  Choose your preferred color palette. Changes are saved instantly.
+                <p className="text-xs text-on-surface-variant">
+                  Choose Light or Dark Material 3 tonal surfaces.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-2.5">
+              <div className="grid grid-cols-1 gap-3">
                 {THEME_OPTIONS.map((theme) => {
-                  const isSelected = currentTheme === theme.id;
+                  const isSelected =
+                    theme.id === "pink_light"
+                      ? currentTheme === "pink_light"
+                      : currentTheme !== "pink_light";
 
                   return (
-                    <div
+                    <button
                       key={theme.id}
+                      type="button"
                       onClick={() => onThemeChange(theme.id)}
-                      className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
+                      className={`w-full flex items-center justify-between p-3.5 rounded-m3-md text-left m3-state-surface m3-pressable ${
                         isSelected
-                          ? "border-[#ff2d87] bg-[#ff2d87]/10 ring-1 ring-[#ff2d87]"
-                          : "border-neutral-800/40 hover:border-neutral-700 bg-sidebar/30"
+                          ? "bg-primary-container text-on-primary-container"
+                          : "bg-surface-container text-on-surface"
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        {/* Swatch Preview Box */}
                         <div
-                          className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center shadow-sm border border-neutral-700/30"
-                          style={{ backgroundColor: theme.bgColor }}
+                          className="w-9 h-9 rounded-m3-sm shrink-0 flex items-center justify-center"
+                          style={{ backgroundColor: theme.previewSurface }}
                         >
                           <div
-                            className="w-3.5 h-3.5 rounded-full"
-                            style={{ backgroundColor: theme.accentColor }}
+                            className="w-3.5 h-3.5 rounded-m3-full"
+                            style={{ backgroundColor: theme.previewAccent }}
                           />
                         </div>
 
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-primary-color">
+                            <span className="text-xs font-semibold">
                               {theme.name}
                             </span>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-800/50 text-muted-color font-medium">
+                            <span className="text-[11px] px-2 py-0.5 rounded-m3-full bg-surface-container-highest text-on-surface-variant font-medium">
                               {theme.tag}
                             </span>
                           </div>
-                          <p className="text-[11px] text-muted-color mt-0.5">
+                          <p className="text-xs opacity-80 mt-0.5">
                             {theme.description}
                           </p>
                         </div>
                       </div>
 
-                      <div className="shrink-0 ml-3">
-                        {isSelected ? (
-                          <span className="w-6 h-6 rounded-full bg-[#ff2d87] text-white flex items-center justify-center text-xs font-bold shadow-sm">
-                            ✓
-                          </span>
-                        ) : (
-                          <div className="w-6 h-6 rounded-full border border-neutral-700/60" />
-                        )}
-                      </div>
-                    </div>
+                      {isSelected && (
+                        <span className="w-6 h-6 rounded-m3-full bg-primary text-on-primary flex items-center justify-center shrink-0 ml-3">
+                          <IconCheck size={14} />
+                        </span>
+                      )}
+                    </button>
                   );
                 })}
               </div>
             </div>
           )}
 
-          {/* TAB 2: PROFILE */}
           {activeTab === "profile" && (
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-color mb-1">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
                   User Workspace Profile
                 </h3>
-                <p className="text-xs text-muted-color mb-3">
-                  Foldy automatically reads your signed-in Windows / Microsoft account. You can also customize your display name.
+                <p className="text-xs text-on-surface-variant">
+                  Foldy reads your signed-in OS account. Customize your display
+                  and workspace labels below.
                 </p>
               </div>
 
-              {/* Detected System Info Card */}
               {detectedUser && (
-                <div className="p-3.5 rounded-2xl bg-sidebar/50 border border-neutral-800/40 space-y-1.5">
+                <div className="p-3.5 rounded-m3-md bg-surface-container space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-muted-color">
-                      Detected System Account:
+                    <span className="text-[11px] font-medium text-on-surface-variant">
+                      Detected System Account
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
-                      Connected
-                    </span>
+                    <span className="badge badge-green">Connected</span>
                   </div>
-                  <p className="text-xs font-bold text-primary-color">
+                  <p className="text-xs font-semibold text-on-surface">
                     {detectedUser.display_name}
                   </p>
-                  <p className="text-[10px] text-muted-color">
-                    Windows username: <code className="text-[#ff2d87]">{detectedUser.username}</code>
+                  <p className="text-[11px] text-on-surface-variant">
+                    Username:{" "}
+                    <code className="text-primary font-mono">
+                      {detectedUser.username}
+                    </code>
                   </p>
                 </div>
               )}
 
-              {/* Custom Display Name Input */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-primary-color">Display Name</label>
-                <input
-                  type="text"
-                  value={localName}
-                  onChange={(e) => setLocalName(e.target.value)}
-                  placeholder="e.g. Alex"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-sidebar border border-neutral-800/40 text-xs text-primary-color placeholder-muted-color outline-none focus:border-[#ff2d87] transition-colors"
-                />
-              </div>
+              <OutlinedTextField
+                label="Display Name"
+                value={localName}
+                onChange={setLocalName}
+                placeholder="e.g. Alex"
+              />
 
-              {/* Custom Workspace Label Input */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-primary-color">Workspace Title</label>
-                <input
-                  type="text"
-                  value={localWorkspace}
-                  onChange={(e) => setLocalWorkspace(e.target.value)}
-                  placeholder="e.g. Personal workspace"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-sidebar border border-neutral-800/40 text-xs text-primary-color placeholder-muted-color outline-none focus:border-[#ff2d87] transition-colors"
-                />
-              </div>
+              <OutlinedTextField
+                label="Workspace Title"
+                value={localWorkspace}
+                onChange={setLocalWorkspace}
+                placeholder="e.g. Personal workspace"
+              />
 
               {saveSuccess && (
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium text-center animate-fade-in">
-                  Profile updated successfully!
+                <div className="p-3 rounded-m3-sm bg-success-container text-on-success-container text-xs font-medium text-center">
+                  Profile updated successfully.
                 </div>
               )}
 
               <div className="flex items-center justify-between pt-2">
-                <button
+                <Button
                   type="button"
+                  variant="text"
                   onClick={handleResetToSystem}
-                  className="px-3.5 py-2 rounded-xl text-xs font-medium text-muted-color hover:text-primary-color hover:bg-neutral-800/40 transition-colors"
                 >
                   Reset to OS Name
-                </button>
-
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#ff2d87] hover:bg-[#e61b74] text-white text-xs font-bold shadow-md shadow-[#ff2d87]/20 transition-all active:scale-[0.98]"
-                >
+                </Button>
+                <Button type="submit" variant="filled">
                   Save Profile
-                </button>
+                </Button>
               </div>
             </form>
           )}
 
-          {/* TAB 3: SHORTCUTS */}
           {activeTab === "shortcuts" && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-color mb-1">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
                   Keyboard Shortcuts
                 </h3>
-                <p className="text-xs text-muted-color mb-3">
-                  Quick keys to navigate and manage files efficiently.
+                <p className="text-xs text-on-surface-variant">
+                  Quick keys to navigate and manage files.
                 </p>
               </div>
 
               <div className="space-y-2 text-xs">
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-sidebar/40 border border-neutral-800/30">
-                  <span className="text-muted-color">Universal Laptop Search</span>
-                  <kbd className="px-2 py-1 rounded bg-neutral-800 text-primary-color text-[11px] font-mono border border-neutral-700/50">
-                    Ctrl + K
-                  </kbd>
-                </div>
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-sidebar/40 border border-neutral-800/30">
-                  <span className="text-muted-color">Open Folder / Launch File</span>
-                  <span className="text-primary-color font-medium">Double-click</span>
-                </div>
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-sidebar/40 border border-neutral-800/30">
-                  <span className="text-muted-color">Context Menu</span>
-                  <span className="text-primary-color font-medium">Right-click</span>
-                </div>
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-sidebar/40 border border-neutral-800/30">
-                  <span className="text-muted-color">Close Modal / Drawer</span>
-                  <kbd className="px-2 py-1 rounded bg-neutral-800 text-primary-color text-[11px] font-mono border border-neutral-700/50">
-                    Esc
-                  </kbd>
-                </div>
+                {[
+                  { label: "Universal Laptop Search", key: "Ctrl + K" },
+                  { label: "Open Folder / Launch File", key: "Double-click" },
+                  { label: "Quick Look Preview", key: "Space / P" },
+                  { label: "Close Modal / Drawer", key: "Esc" },
+                ].map((row) => (
+                  <div
+                    key={row.label}
+                    className="flex items-center justify-between p-3 rounded-m3-md bg-surface-container"
+                  >
+                    <span className="text-on-surface-variant">{row.label}</span>
+                    <kbd className="px-2 py-1 rounded-m3-xs bg-surface-container-highest text-on-surface text-[11px] font-mono">
+                      {row.key}
+                    </kbd>
+                  </div>
+                ))}
               </div>
 
               {onOpenTutorials && (
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      onOpenTutorials();
-                    }}
-                    className="w-full py-2.5 px-4 rounded-xl bg-card border border-neutral-700/50 hover:border-neutral-500 text-xs font-semibold text-primary-color flex items-center justify-center gap-2 transition-all shadow-sm"
-                  >
-                    <span>🎓</span>
-                    <span>Open Interactive Tutorials & Guide</span>
-                  </button>
-                </div>
+                <Button
+                  type="button"
+                  variant="tonal"
+                  size="md"
+                  className="w-full"
+                  leadingIcon={<IconHelp size={16} />}
+                  onClick={() => {
+                    onClose();
+                    onOpenTutorials();
+                  }}
+                >
+                  Open Interactive Tutorials & Guide
+                </Button>
               )}
             </div>
           )}
 
-          {/* TAB 4: UPDATES */}
           {activeTab === "updates" && (
             <div className="space-y-4">
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-color mb-1">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
                   Software Updates
                 </h3>
-                <p className="text-xs text-muted-color">
-                  Foldy checks GitHub Releases for verified new versions and delivers live automatic updates.
+                <p className="text-xs text-on-surface-variant">
+                  Foldy checks GitHub Releases for signed desktop updates.
                 </p>
               </div>
 
-              {/* Version Info Card */}
-              <div className="p-4 rounded-2xl bg-sidebar/50 border border-neutral-800/40 flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              <div className="p-4 rounded-m3-md bg-surface-container flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <FoldyLogo size={36} interactive={false} />
-                  <div>
-                    <div className="text-sm font-bold text-primary-color flex items-center gap-2">
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-on-surface flex items-center gap-2">
                       Foldy
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-red-500/10 text-red-500 border border-red-500/20">
+                      <span className="px-2 py-0.5 rounded-m3-full text-[11px] font-mono bg-secondary-container text-on-secondary-container">
                         v{currentAppVersion}
                       </span>
                     </div>
-                    <p className="text-[11px] text-muted-color">
+                    <p className="text-xs text-on-surface-variant">
                       Current installed desktop version
                     </p>
                   </div>
                 </div>
 
                 {!isUpdateInstalled && !updateInfo && (
-                  <button
+                  <Button
+                    variant="filled"
                     onClick={handleCheckForUpdates}
                     disabled={isCheckingUpdate}
-                    className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-all shadow-md shadow-red-600/20 active:scale-[0.98] disabled:opacity-50 flex items-center gap-1.5"
+                    leadingIcon={
+                      <IconRefresh
+                        size={15}
+                        className={isCheckingUpdate ? "animate-spin" : ""}
+                      />
+                    }
                   >
-                    {isCheckingUpdate ? (
-                      <>
-                        <span className="animate-spin text-xs">⏳</span>
-                        Checking...
-                      </>
-                    ) : (
-                      <>
-                        <span>🔄</span>
-                        Check for Updates
-                      </>
-                    )}
-                  </button>
+                    {isCheckingUpdate ? "Checking..." : "Check for Updates"}
+                  </Button>
                 )}
               </div>
 
-              {/* Status Message or Error */}
               {updateStatus && (
-                <div className="p-3 rounded-xl bg-neutral-800/40 border border-neutral-700/40 text-xs text-primary-color flex items-center gap-2">
-                  <span>ℹ️</span>
-                  <span>{updateStatus}</span>
+                <div className="p-3 rounded-m3-md bg-surface-container text-xs text-on-surface">
+                  {updateStatus}
                 </div>
               )}
 
               {updateError && (
-                <div className="p-3 rounded-xl bg-red-950/40 border border-red-800/40 text-xs text-red-300 flex items-start gap-2">
-                  <span className="shrink-0">⚠️</span>
+                <div className="p-3 rounded-m3-md bg-error-container text-on-error-container text-xs flex items-start gap-2">
+                  <IconAlert size={16} className="shrink-0 mt-0.5" />
                   <div>
                     <p className="font-semibold">Update check notice</p>
-                    <p className="text-[11px] text-red-400 mt-0.5">{updateError}</p>
+                    <p className="text-[11px] opacity-90 mt-0.5">{updateError}</p>
                   </div>
                 </div>
               )}
 
-              {/* Update Available Action Card */}
               {updateInfo && !isUpdateInstalled && (
-                <div className="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-800/40 space-y-3">
-                  <div className="flex items-center justify-between">
+                <div className="p-4 rounded-m3-md bg-success-container text-on-success-container space-y-3">
+                  <div className="flex items-center justify-between gap-3">
                     <div>
-                      <h4 className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                        <span>🚀</span> New Update Available: v{updateInfo.version}
+                      <h4 className="text-xs font-bold">
+                        New Update Available: v{updateInfo.version}
                       </h4>
                       {updateInfo.date && (
-                        <p className="text-[10px] text-muted-color mt-0.5">
-                          Released {new Date(updateInfo.date).toLocaleDateString()}
+                        <p className="text-[11px] opacity-80 mt-0.5">
+                          Released{" "}
+                          {new Date(updateInfo.date).toLocaleDateString()}
                         </p>
                       )}
                     </div>
-                    <button
+                    <Button
+                      variant="filled"
                       onClick={handleInstallUpdate}
                       disabled={isDownloading}
-                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 active:scale-[0.98] disabled:opacity-50"
                     >
-                      {isDownloading ? "Downloading..." : "Download & Install Now"}
-                    </button>
+                      {isDownloading ? "Downloading..." : "Download & Install"}
+                    </Button>
                   </div>
 
                   {downloadProgress !== null && (
-                    <div className="w-full bg-neutral-800 rounded-full h-2 overflow-hidden">
+                    <div className="w-full bg-surface-container-highest rounded-m3-full h-2 overflow-hidden">
                       <div
-                        className="bg-emerald-500 h-full transition-all duration-300"
+                        className="bg-primary h-full transition-all duration-300"
                         style={{ width: `${downloadProgress}%` }}
                       />
                     </div>
                   )}
 
                   {updateInfo.body && (
-                    <div className="p-3 rounded-xl bg-black/40 border border-neutral-800 text-[11px] text-muted-color whitespace-pre-wrap max-h-32 overflow-y-auto">
+                    <div className="p-3 rounded-m3-sm bg-surface-container text-on-surface text-[11px] whitespace-pre-wrap max-h-32 overflow-y-auto">
                       {updateInfo.body}
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Ready to Restart Card */}
               {isUpdateInstalled && (
-                <div className="p-4 rounded-2xl bg-emerald-950/30 border border-emerald-600/50 flex items-center justify-between">
+                <div className="p-4 rounded-m3-md bg-success-container text-on-success-container flex items-center justify-between gap-3">
                   <div>
-                    <h4 className="text-xs font-bold text-emerald-400">
-                      🎉 Update Installed Successfully!
-                    </h4>
-                    <p className="text-[11px] text-muted-color">
-                      Restart Foldy now to launch the new version.
+                    <h4 className="text-xs font-bold">Update Installed</h4>
+                    <p className="text-[11px] opacity-85">
+                      Restart Foldy to launch the new version.
                     </p>
                   </div>
-                  <button
-                    onClick={handleRestartApp}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 active:scale-[0.98]"
-                  >
+                  <Button variant="filled" onClick={handleRestartApp}>
                     Restart Foldy
-                  </button>
+                  </Button>
                 </div>
               )}
 
-              <div className="p-3 rounded-xl bg-neutral-900/40 border border-neutral-800/40 text-[11px] text-muted-color leading-relaxed">
-                💡 <strong>How live updates work:</strong> When you push an update to GitHub, GitHub Actions packages and signs the release. Foldy automatically downloads the signed update without needing to manually run installers again.
-              </div>
-
-              {/* What's New Feature Highlights Trigger */}
               {onOpenWhatsNew && (
-                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-neutral-900/40 border border-neutral-800/60">
+                <div className="flex items-center justify-between p-3.5 rounded-m3-md bg-surface-container gap-3">
                   <div>
-                    <h4 className="text-xs font-bold text-primary-color flex items-center gap-1.5">
-                      <span>✨</span> Release Highlights & What's New
+                    <h4 className="text-xs font-semibold text-on-surface flex items-center gap-1.5">
+                      <IconSparkles size={15} className="text-primary" />
+                      <span>Release Highlights</span>
                     </h4>
-                    <p className="text-[11px] text-muted-color mt-0.5">
-                      View recent features, performance boosts, and safety updates added to Foldy.
+                    <p className="text-xs text-on-surface-variant mt-0.5">
+                      View recent features and improvements added to Foldy.
                     </p>
                   </div>
-                  <button
-                    onClick={() => {
-                      onOpenWhatsNew();
-                    }}
-                    className="px-3.5 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-xs font-semibold text-primary-color transition-all border border-neutral-700/50 shrink-0 ml-2"
-                  >
-                    View What's New
-                  </button>
+                  <Button variant="tonal" onClick={onOpenWhatsNew}>
+                    What&apos;s New
+                  </Button>
                 </div>
               )}
             </div>

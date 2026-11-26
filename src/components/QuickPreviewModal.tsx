@@ -440,17 +440,19 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in select-none"
+      role="dialog"
+      aria-modal="true"
+      aria-label={item.name}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-scrim backdrop-blur-sm select-none"
       onClick={onClose}
     >
       {/* Modal Dialog Card */}
       <div
-        className="relative flex flex-col w-full max-w-5xl h-[88vh] max-h-[920px] rounded-2xl border shadow-2xl overflow-hidden bg-card border-neutral-700/60"
+        className="relative flex flex-col w-full max-w-5xl h-[88vh] max-h-[920px] rounded-m3-xl shadow-m3-3 overflow-hidden bg-surface-container-high text-on-surface animate-m3-dialog"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── Top Header Toolbar ── */}
-        <div className="flex items-center justify-between px-5 py-3.5 bg-sidebar border-b border-neutral-700/50 flex-shrink-0">
-          {/* File identity and path */}
+        {/* Top Header Toolbar */}
+        <div className="flex items-center justify-between px-5 py-3.5 bg-surface-container flex-shrink-0">
           <div className="flex items-center gap-3 min-w-0 mr-4">
             <div className="flex-shrink-0">
               {isFolder ? (
@@ -461,36 +463,34 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold text-primary-color truncate" title={item.name}>
+                <h2 className="text-sm font-semibold text-on-surface truncate" title={item.name}>
                   {item.name}
                 </h2>
                 {extension && !isFolder && (
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-neutral-800/80 text-muted-color border border-neutral-700/50">
+                  <span className="text-[10px] uppercase font-semibold tracking-wider px-2 py-0.5 rounded-m3-full bg-secondary-container text-on-secondary-container">
                     {extension}
                   </span>
                 )}
                 {isFolder && (
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-[#ff2d87]/20 text-[#ff85b8] border border-[#ff2d87]/30">
+                  <span className="text-[10px] uppercase font-semibold tracking-wider px-2 py-0.5 rounded-m3-full bg-primary-container text-on-primary-container">
                     Folder
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-muted-color truncate font-mono" title={item.path}>
+              <p className="text-[11px] text-on-surface-variant truncate font-mono" title={item.path}>
                 {item.path}
               </p>
             </div>
           </div>
 
-          {/* Action buttons and controls */}
           <div className="flex items-center gap-2 flex-shrink-0">
             {item.size != null && !isFolder && (
-              <span className="hidden sm:inline-block text-xs font-medium text-muted-color px-2.5 py-1 rounded-lg bg-neutral-800/60 border border-neutral-700/40">
+              <span className="hidden sm:inline-block text-xs font-medium text-on-surface-variant px-2.5 py-1 rounded-m3-full bg-surface-container-high">
                 {formatFileSize(item.size)}
               </span>
             )}
 
-            {/* Cycle navigation buttons */}
-            <div className="flex items-center rounded-xl bg-neutral-800/80 border border-neutral-700/50 p-0.5">
+            <div className="flex items-center rounded-m3-full bg-surface-container-high p-0.5">
               <button
                 type="button"
                 onClick={onPrevItem}
@@ -707,7 +707,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
                 {Array.from({ length: 24 }).map((_, i) => (
                   <div
                     key={i}
-                    className="w-1.5 bg-[#ff2d87] rounded-full animate-pulse"
+                    className="w-1.5 bg-primary rounded-m3-full animate-pulse"
                     style={{
                       height: `${Math.sin(i * 0.4) * 35 + 40}px`,
                       animationDuration: `${0.6 + (i % 5) * 0.2}s`,
@@ -802,7 +802,7 @@ export const QuickPreviewModal: React.FC<QuickPreviewModalProps> = ({
               <div className="flex-1 min-h-0 overflow-auto font-mono text-xs leading-relaxed p-4 select-text">
                 {textLoading && (
                   <div className="flex items-center justify-center h-full text-muted-color gap-2">
-                    <div className="w-4 h-4 border-2 border-[#ff2d87] border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-m3-full animate-spin" />
                     <span>Loading file preview...</span>
                   </div>
                 )}

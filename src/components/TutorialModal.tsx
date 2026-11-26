@@ -210,58 +210,61 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-scrim backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="tutorial-dialog-title"
     >
-      <div className="relative w-full max-w-3xl rounded-3xl bg-card border border-neutral-800 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="relative w-full max-w-3xl rounded-m3-xl bg-surface-container-high text-on-surface shadow-m3-3 flex flex-col max-h-[90vh] overflow-hidden animate-m3-dialog">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-3.5 border-b border-neutral-800/60 bg-sidebar/60">
+        <div className="flex items-center justify-between px-6 py-4 bg-surface-container">
           <div className="flex items-center gap-3">
             <FoldyLogo size={32} interactive={true} />
             <div>
               <h2
                 id="tutorial-dialog-title"
-                className="text-sm font-bold text-primary-color flex items-center gap-2"
+                className="text-base font-semibold text-on-surface flex items-center gap-2"
               >
                 Foldy Guide &amp; Onboarding
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#ff2d87]/15 text-[#ff2d87] border border-[#ff2d87]/30">
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-m3-full bg-primary-container text-on-primary-container">
                   Step {currentStep + 1} of {TOTAL_STEPS}
                 </span>
               </h2>
-              <p className="text-[11px] text-muted-color">
+              <p className="text-xs text-on-surface-variant">
                 Interactive walkthrough of tools, safety assurances, and keyboard workflows
               </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close tutorial"
-            className="w-8 h-8 rounded-full flex items-center justify-center text-muted-color hover:text-primary-color hover:bg-neutral-800/60 text-sm transition-colors"
+            className="w-10 h-10 rounded-m3-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest text-sm m3-pressable"
           >
             ✕
           </button>
         </div>
 
         {/* Top Category Navigation Pills */}
-        <div className="flex items-center gap-2 px-6 py-2.5 border-b border-neutral-800/40 bg-sidebar/30 text-xs overflow-x-auto">
+        <div className="flex items-center gap-2 px-6 py-2.5 bg-surface-container text-xs overflow-x-auto">
           <button
+            type="button"
             onClick={() => handleSelectCategory("quick_tour")}
-            className={`px-3 py-1 rounded-full font-medium transition-all ${
+            className={`px-3.5 min-h-[34px] rounded-m3-full font-medium m3-pressable ${
               activeCategory === "quick_tour"
-                ? "bg-[#ff2d87] text-white shadow-sm shadow-[#ff2d87]/30"
-                : "text-muted-color hover:text-primary-color hover:bg-neutral-800/40"
+                ? "bg-primary text-on-primary"
+                : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
             }`}
           >
-            🚀 Quick Tour (Steps 1–3)
+            Quick Tour (Steps 1–3)
           </button>
           <button
+            type="button"
             onClick={() => handleSelectCategory("renamer_rules")}
-            className={`px-3 py-1 rounded-full font-medium transition-all ${
+            className={`px-3.5 min-h-[34px] rounded-m3-full font-medium m3-pressable ${
               activeCategory === "renamer_rules"
-                ? "bg-[#ff2d87] text-white shadow-sm shadow-[#ff2d87]/30"
-                : "text-muted-color hover:text-primary-color hover:bg-neutral-800/40"
+                ? "bg-primary text-on-primary"
+                : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
             }`}
           >
             ✏️ Safe Bulk Renaming (Step 4)
