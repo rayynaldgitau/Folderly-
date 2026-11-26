@@ -1531,7 +1531,6 @@ const App: React.FC = () => {
           onRenameSelected={handleRenameSelected}
           onDeleteSelected={handleDeleteSelected}
           onMoveSelected={handleMoveSelected}
-          onOpenUniversalSearch={() => setIsUniversalSearchOpen(true)}
           onNewFolder={handleNewFolder}
           sortField={sortField}
           onSortChange={setSortField}

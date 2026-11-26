@@ -55,7 +55,6 @@ export interface NavigationBarProps {
   onRenameSelected: () => void;
   onDeleteSelected: () => void;
   onMoveSelected: () => void;
-  onOpenUniversalSearch: () => void;
   onNewFolder?: () => void;
   sortField?: SortField;
   onSortChange?: (field: SortField) => void;
@@ -154,7 +153,6 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
   onRenameSelected,
   onDeleteSelected,
   onMoveSelected,
-  onOpenUniversalSearch,
   onNewFolder,
   sortField = "name",
   onSortChange,
@@ -611,7 +609,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
             </div>
           </div>
 
-          {/* Single Search Field */}
+          {/* Folder Search Field */}
           <div className="relative flex items-center w-48 sm:w-64 shrink-0">
             <IconSearch
               size={15}
@@ -619,33 +617,22 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
             />
             <input
               type="text"
-              aria-label="Search files"
+              aria-label={`Search in ${currentFolderName}`}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search files…"
-              className="w-full min-h-[38px] bg-surface-container hover:bg-surface-container-high focus:bg-surface-container-high rounded-m3-full pl-9 pr-16 text-xs text-on-surface placeholder:text-on-surface-variant/70 outline-none transition-colors"
+              placeholder={`Search in ${currentFolderName}`}
+              className="w-full min-h-[38px] bg-surface-container hover:bg-surface-container-high focus:bg-surface-container-high rounded-m3-full pl-9 pr-9 text-xs text-on-surface placeholder:text-on-surface-variant/70 outline-none transition-colors"
             />
-            <div className="absolute right-2 flex items-center gap-1">
-              {searchQuery && (
-                <button
-                  type="button"
-                  aria-label="Clear search"
-                  onClick={() => onSearchChange("")}
-                  className="w-6 h-6 flex items-center justify-center rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest"
-                >
-                  <IconClose size={13} />
-                </button>
-              )}
+            {searchQuery && (
               <button
                 type="button"
-                onClick={onOpenUniversalSearch}
-                title="Search across laptop (Ctrl+K)"
-                aria-label="Search across laptop (Ctrl+K)"
-                className="text-[10px] font-mono px-1.5 py-0.5 rounded-m3-xs bg-surface-container-highest text-on-surface-variant hover:text-on-surface m3-pressable"
+                aria-label="Clear search"
+                onClick={() => onSearchChange("")}
+                className="absolute right-2 w-6 h-6 flex items-center justify-center rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest m3-pressable"
               >
-                Ctrl+K
+                <IconClose size={13} />
               </button>
-            </div>
+            )}
           </div>
         </div>
       )}
