@@ -341,32 +341,34 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
    */
   const renderSortIndicator = (column: SortColumn): React.ReactNode => {
     if (sortColumn !== column) return null;
-    return <span className="ml-1 text-violet-400 font-bold">{sortDirection === "asc" ? "▲" : "▼"}</span>;
+    return (
+      <span className="ml-1 text-primary font-bold">
+        {sortDirection === "asc" ? "▲" : "▼"}
+      </span>
+    );
   };
 
   return (
-    <div className="flex flex-col h-full w-full select-none overflow-hidden bg-neutral-950 text-neutral-200">
+    <div className="flex flex-col h-full w-full select-none overflow-hidden bg-surface text-on-surface">
       <div className="flex-1 overflow-x-auto overflow-y-auto">
         <table className="w-full border-collapse text-left text-xs">
-          {/* ── Table Header ── */}
-          <thead className="sticky top-0 z-10 bg-neutral-900 border-b border-neutral-800 text-neutral-400 select-none shadow-sm">
+          {/* Table Header */}
+          <thead className="sticky top-0 z-10 bg-surface-container border-b border-outline-variant text-on-surface-variant select-none">
             <tr>
-              {/* Checkbox Master */}
-              <th className="w-10 px-3 py-2.5 text-center">
+              <th className="w-12 px-3 py-3 text-center">
                 <input
                   ref={masterCheckboxRef}
                   type="checkbox"
                   checked={allSelected}
                   onChange={onToggleSelectAll}
                   aria-label="Select all files and folders"
-                  className="accent-violet-500 w-4 h-4 cursor-pointer rounded"
+                  className="accent-primary w-4 h-4 cursor-pointer rounded"
                 />
               </th>
 
-              {/* Name */}
               <th
                 onClick={() => handleColumnHeaderClick("name")}
-                className="px-3 py-2.5 font-semibold cursor-pointer hover:text-white transition-colors min-w-[200px]"
+                className="px-3 py-3 font-semibold cursor-pointer hover:text-on-surface transition-colors min-w-[200px]"
               >
                 <div className="flex items-center">
                   <span>Name</span>
@@ -374,10 +376,9 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
                 </div>
               </th>
 
-              {/* Date Modified */}
               <th
                 onClick={() => handleColumnHeaderClick("date")}
-                className="px-3 py-2.5 font-semibold cursor-pointer hover:text-white transition-colors w-44"
+                className="px-3 py-3 font-semibold cursor-pointer hover:text-on-surface transition-colors w-44"
               >
                 <div className="flex items-center">
                   <span>Date Modified</span>
@@ -385,10 +386,9 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
                 </div>
               </th>
 
-              {/* Type */}
               <th
                 onClick={() => handleColumnHeaderClick("type")}
-                className="px-3 py-2.5 font-semibold cursor-pointer hover:text-white transition-colors w-32"
+                className="px-3 py-3 font-semibold cursor-pointer hover:text-on-surface transition-colors w-32"
               >
                 <div className="flex items-center">
                   <span>Type</span>
@@ -396,10 +396,9 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
                 </div>
               </th>
 
-              {/* Size */}
               <th
                 onClick={() => handleColumnHeaderClick("size")}
-                className="px-3 py-2.5 font-semibold cursor-pointer hover:text-white transition-colors w-28 text-right"
+                className="px-3 py-3 font-semibold cursor-pointer hover:text-on-surface transition-colors w-28 text-right"
               >
                 <div className="flex items-center justify-end">
                   <span>Size</span>
@@ -407,18 +406,17 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
                 </div>
               </th>
 
-              {/* Actions */}
-              <th className="w-12 px-2 py-2.5 text-center font-semibold text-neutral-500">
-                ⋮
+              <th className="w-12 px-2 py-3 text-center font-semibold text-on-surface-variant">
+                <span className="sr-only">Actions</span>
               </th>
             </tr>
           </thead>
 
-          {/* ── Table Body ── */}
-          <tbody className="divide-y divide-neutral-800/60 font-sans">
+          {/* Table Body */}
+          <tbody className="divide-y divide-outline-variant/50 font-sans">
             {sortedItems.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-12 text-center text-neutral-500 italic">
+                <td colSpan={6} className="py-16 text-center text-on-surface-variant">
                   {emptyMessage || "This folder is empty."}
                 </td>
               </tr>
@@ -433,9 +431,10 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
                     draggable={true}
                     onDragStart={(e) => {
                       const isTargetSelected = selectedPaths.has(item.path);
-                      const pathsToDrag = isTargetSelected && selectedPaths.size > 1
-                        ? Array.from(selectedPaths)
-                        : [item.path];
+                      const pathsToDrag =
+                        isTargetSelected && selectedPaths.size > 1
+                          ? Array.from(selectedPaths)
+                          : [item.path];
                       e.dataTransfer.setData("application/foldy-path", item.path);
                       e.dataTransfer.setData("application/foldy-paths", JSON.stringify(pathsToDrag));
                       e.dataTransfer.setData("application/folderly-path", item.path);
@@ -463,8 +462,8 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
                           ? JSON.parse(pathsJson)
                           : [
                               e.dataTransfer.getData("application/foldy-path") ||
-                              e.dataTransfer.getData("application/folderly-path") ||
-                              e.dataTransfer.getData("text/plain")
+                                e.dataTransfer.getData("application/folderly-path") ||
+                                e.dataTransfer.getData("text/plain"),
                             ].filter(Boolean);
 
                         if (onMoveItem) {
@@ -479,34 +478,26 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
                     onClick={() => handleRowClick(item.path)}
                     onDoubleClick={() => handleRowDoubleClick(item)}
                     onContextMenu={(e) => handleRowContextMenu(e, item)}
-                    className={`
-                      cursor-grab active:cursor-grabbing transition-colors border-y
-                      ${
-                        isOver
-                          ? "bg-[#ff2d87]/20 border-y-[#ff2d87] text-white font-bold"
-                          : isSelected
-                          ? "bg-violet-950/40 border-violet-500/60 text-white font-medium shadow-sm"
-                          : "border-transparent hover:bg-neutral-800 text-neutral-300"
-                      }
-                    `}
+                    className={`cursor-grab active:cursor-grabbing transition-colors border-y min-h-[44px] ${
+                      isOver
+                        ? "bg-primary-container border-y-primary text-on-primary-container font-semibold"
+                        : isSelected
+                        ? "bg-secondary-container/70 border-primary/40 text-on-surface font-medium"
+                        : "border-transparent hover:bg-surface-container-high text-on-surface"
+                    }`}
                   >
-                    {/* Row Checkbox */}
-                    <td
-                      className="px-3 py-2 text-center"
-                      onClick={handleStopPropagation}
-                    >
+                    <td className="px-3 py-2.5 text-center" onClick={handleStopPropagation}>
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => handleCheckboxToggle(item.path)}
                         aria-label={`Select ${item.name}`}
-                        className="accent-violet-500 w-4 h-4 cursor-pointer rounded"
+                        className="accent-primary w-4 h-4 cursor-pointer rounded"
                       />
                     </td>
 
-                    {/* Name + Icon */}
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-2 max-w-full">
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-2.5 max-w-full">
                         <span className="shrink-0 select-none flex items-center justify-center">
                           {item.isFolder ? (
                             <MacFolderIcon size={20} />
@@ -514,36 +505,29 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
                             <MacFileIcon extension={item.extension} size={20} />
                           )}
                         </span>
-                        <span className="truncate" title={item.name}>
+                        <span className="truncate font-medium" title={item.name}>
                           {item.name}
                         </span>
                       </div>
                     </td>
 
-                    {/* Date Modified */}
-                    <td className="px-3 py-2 text-neutral-400 truncate whitespace-nowrap">
+                    <td className="px-3 py-2.5 text-on-surface-variant truncate whitespace-nowrap">
                       {formatDate(item.modified_at)}
                     </td>
 
-                    {/* Type */}
-                    <td className="px-3 py-2 text-neutral-400 truncate whitespace-nowrap">
+                    <td className="px-3 py-2.5 text-on-surface-variant truncate whitespace-nowrap">
                       {item.type}
                     </td>
 
-                    {/* Size */}
-                    <td className="px-3 py-2 text-neutral-400 text-right whitespace-nowrap">
+                    <td className="px-3 py-2.5 text-on-surface-variant text-right whitespace-nowrap font-mono">
                       {item.formattedSize}
                     </td>
 
-                    {/* Actions Button */}
-                    <td
-                      className="px-2 py-2 text-center"
-                      onClick={handleStopPropagation}
-                    >
+                    <td className="px-2 py-2.5 text-center" onClick={handleStopPropagation}>
                       <button
                         type="button"
                         onClick={(e) => handleActionButtonClick(e, item)}
-                        className="p-1 rounded text-neutral-400 hover:text-white hover:bg-neutral-700/60 transition-colors focus:outline-none"
+                        className="inline-flex items-center justify-center w-9 h-9 rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest m3-pressable"
                         title="Actions"
                         aria-label={`Actions for ${item.name}`}
                       >

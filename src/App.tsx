@@ -17,6 +17,17 @@ import TutorialModal from "./components/TutorialModal";
 import QuickPreviewModal, { type QuickPreviewItem } from "./components/QuickPreviewModal";
 import { WhatsNewModal, WHATS_NEW_LAST_VERSION_KEY, APP_CURRENT_VERSION } from "./components/WhatsNewModal";
 import { THEMES } from "./themes";
+import {
+  Button,
+  IconCheck,
+  IconClose,
+  IconSearch,
+  IconSliders,
+  IconUndo,
+  LinearProgress,
+  Snackbar,
+  StateView,
+} from "./components/ui";
 
 import type {
   FileEntry,
@@ -69,20 +80,13 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-card rounded-2xl m-4 border border-neutral-800">
-          <span className="text-4xl mb-3">⚠️</span>
-          <h2 className="text-base font-bold text-primary-color mb-1">
-            Display Error Recovered
-          </h2>
-          <p className="text-xs text-muted-color mb-4 max-w-md">
-            {this.state.error || "An unexpected error occurred while rendering items."}
-          </p>
-          <button
-            onClick={() => this.setState({ hasError: false, error: null })}
-            className="px-4 py-2 rounded-xl bg-[#ff2d87] hover:bg-[#e61b74] text-white text-xs font-bold transition-all shadow-md shadow-[#ff2d87]/20"
-          >
-            Retry View
-          </button>
+        <div className="flex-1 flex flex-col items-center justify-center p-8 m-4 bg-surface-container rounded-m3-lg border border-outline-variant">
+          <StateView
+            kind="error"
+            title="Display Error Recovered"
+            description={this.state.error || "An unexpected error occurred while rendering items."}
+            onRetry={() => this.setState({ hasError: false, error: null })}
+          />
         </div>
       );
     }
@@ -1309,59 +1313,70 @@ const App: React.FC = () => {
   // ── Renamer Drawer Render Helper ─────────────────────────────────────────
 
   const renderRenamerDrawer = () => (
-    <aside className="w-full sm:w-[380px] max-w-full shrink-0 border-x border-neutral-800 flex flex-col bg-neutral-900/95 overflow-hidden shadow-2xl z-20">
-      <div className="p-3 border-b border-neutral-800 bg-neutral-900 flex items-center justify-between">
-        <div>
-          <h2 className="text-xs font-bold text-violet-400 uppercase tracking-wider flex items-center gap-1.5">
-            <span>⚡</span>
+    <aside
+      aria-label="Bulk Renamer Drawer"
+      className="w-full sm:w-[380px] max-w-full shrink-0 border-x border-outline-variant flex flex-col bg-surface-container-low overflow-hidden shadow-m3-2 z-20"
+    >
+      <div className="p-3.5 border-b border-outline-variant bg-surface-container flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+            <IconSliders size={15} />
             <span>Bulk Renamer</span>
           </h2>
-          <p className="text-[10px] text-neutral-500">
+          <p className="text-[11px] text-on-surface-variant mt-0.5">
             {selectedPaths.size > 0
               ? `${selectedPaths.size} file(s) selected`
               : `All ${files.length} file(s)`}
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <button
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Button
+            variant="tonal"
+            size="sm"
             onClick={handlePreview}
             disabled={loading || files.length === 0}
-            className="btn btn-secondary text-xs px-2.5 py-1"
             title="Generate preview without modifying disk"
+            leadingIcon={<IconSearch size={14} />}
           >
-            🔍 Preview
-          </button>
+            Preview
+          </Button>
 
-          <button
+          <Button
+            variant="filled"
+            size="sm"
             onClick={handleCommit}
             disabled={loading || previews.length === 0}
-            className="btn btn-primary text-xs px-2.5 py-1"
             title="Execute rename operations safely"
+            leadingIcon={<IconCheck size={14} />}
           >
-            ✅ Commit
-          </button>
+            Commit
+          </Button>
 
-          <button
+          <Button
+            variant="danger"
+            size="sm"
             onClick={handleUndo}
             disabled={loading || undoCount === 0}
-            className="btn btn-danger text-xs px-2 py-1"
             title={`${undoCount} undo batch(es) available`}
+            leadingIcon={<IconUndo size={14} />}
           >
-            ↩ {undoCount > 0 ? `(${undoCount})` : ""}
-          </button>
+            {undoCount > 0 ? `(${undoCount})` : ""}
+          </Button>
 
           <button
+            type="button"
+            aria-label="Close renamer drawer"
             onClick={() => setIsRenamerOpen(false)}
-            className="text-neutral-500 hover:text-white p-1 rounded-md text-xs hover:bg-neutral-800 transition-colors ml-1"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest m3-pressable"
             title="Close renamer drawer"
           >
-            ✕
+            <IconClose size={16} />
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto divide-y divide-neutral-800">
+      <div className="flex-1 overflow-y-auto divide-y divide-outline-variant">
         <RuleBuilder rules={rules} onChange={setRules} />
         {previews.length > 0 && <PreviewPanel previews={previews} />}
       </div>
@@ -1506,9 +1521,21 @@ const App: React.FC = () => {
           }}
           className="flex flex-1 min-h-0 overflow-hidden relative"
         >
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto flex flex-col">
+            {loading && <LinearProgress label="Loading folder contents" />}
             <ErrorBoundary>
-              {viewMode === "details" ? (
+              {loading && filteredFolders.length === 0 && filteredFiles.length === 0 ? (
+                <StateView kind="loading" title="Loading folder contents" />
+              ) : status.type === "error" &&
+                filteredFolders.length === 0 &&
+                filteredFiles.length === 0 ? (
+                <StateView
+                  kind="error"
+                  title="Unable to load folder"
+                  description={status.msg}
+                  onRetry={handleRefresh}
+                />
+              ) : viewMode === "details" ? (
                 <FileTableView
                   folders={filteredFolders}
                   files={filteredFiles}
@@ -1644,36 +1671,18 @@ const App: React.FC = () => {
         hasPrev={hasPrevPreviewItem}
       />
 
-      {/* Floating Live Update Notification Banner */}
-      {pendingUpdateVersion && (
-        <aside
-          role="region"
-          aria-label="Application update announcement"
-          className="fixed bottom-10 right-5 z-40 flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-[#ff2d87] text-white shadow-2xl text-xs backdrop-blur-md border border-white/20 select-none animate-fade-in"
-        >
-          <span className="text-base shrink-0 animate-bounce">🚀</span>
-          <div className="leading-tight min-w-0">
-            <p className="font-bold truncate">Foldy v{pendingUpdateVersion} is ready!</p>
-            <p className="text-[10px] text-white/80 truncate">A new version is available to install.</p>
-          </div>
-          <button
-            onClick={() => {
-              setSettingsTab("updates");
-              setIsSettingsOpen(true);
-            }}
-            className="px-3 py-1.5 bg-white text-[#ff2d87] font-bold rounded-xl text-xs hover:bg-neutral-100 active:scale-95 transition-all shadow-sm ml-1 shrink-0"
-          >
-            Update Now
-          </button>
-          <button
-            onClick={() => setPendingUpdateVersion(null)}
-            className="text-white/70 hover:text-white p-1 text-xs shrink-0"
-            title="Dismiss"
-          >
-            ✕
-          </button>
-        </aside>
-      )}
+      {/* Floating Live Update Notification Snackbar */}
+      <Snackbar
+        open={Boolean(pendingUpdateVersion)}
+        title={`Foldy v${pendingUpdateVersion} is ready`}
+        description="A new version is available to install."
+        actionLabel="Update"
+        onAction={() => {
+          setSettingsTab("updates");
+          setIsSettingsOpen(true);
+        }}
+        onDismiss={() => setPendingUpdateVersion(null)}
+      />
     </div>
   );
 };

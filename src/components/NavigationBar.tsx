@@ -2,109 +2,83 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import type { ViewMode, DrawerPosition, SortField, TabItem } from "../types";
 import { MacFolderIcon } from "./MacIcons";
 import { FoldyLogo } from "./FoldyLogo";
+import {
+  Button,
+  Chip,
+  IconArrowLeft,
+  IconArrowRight,
+  IconArrowUp,
+  IconCheck,
+  IconChevronRight,
+  IconClock,
+  IconClose,
+  IconFolder,
+  IconFolderPlus,
+  IconGrid,
+  IconList,
+  IconPlus,
+  IconRefresh,
+  IconSearch,
+  IconSettings,
+  IconSidebar,
+  IconSliders,
+} from "./ui";
 
-/**
- * Properties for the NavigationBar component.
- */
 export interface NavigationBarProps {
-  /** The currently selected directory path on the filesystem. */
   currentPath: string | null;
-  /** Whether navigation history has an item to go back to. */
   canGoBack: boolean;
-  /** Whether navigation history has an item to go forward to. */
   canGoForward: boolean;
-  /** Whether navigating up to the parent directory is valid. */
   canGoUp: boolean;
-  /** Callback invoked when the user clicks the back button. */
   onGoBack: () => void;
-  /** Callback invoked when the user clicks the forward button. */
   onGoForward: () => void;
-  /** Callback invoked when the user clicks the up/parent directory button. */
   onGoUp: () => void;
-  /** Callback invoked when the user clicks the refresh button. */
   onRefresh: () => void;
-  /** Callback invoked when a breadcrumb segment or manually typed path is selected. */
   onNavigate: (path: string) => void;
-  /** Current live search filter query string. */
   searchQuery: string;
-  /** Callback invoked when the live search filter input changes. */
   onSearchChange: (q: string) => void;
-  /** Currently active file display mode (cards, details, or grid). */
   viewMode: ViewMode;
-  /** Callback invoked when the view mode is changed. */
   onViewModeChange: (mode: ViewMode) => void;
-  /** Whether directory scanning is recursive through subdirectories. */
   isRecursive: boolean;
-  /** Callback invoked to toggle recursive scanning mode. */
   onToggleRecursive: () => void;
-  /** Whether the left quick access sidebar is open and visible. */
   isSidebarOpen: boolean;
-  /** Callback invoked to toggle the left sidebar visibility. */
   onToggleSidebar: () => void;
-  /** Whether the bulk renamer drawer panel is open. */
   isRenamerOpen: boolean;
-  /** Callback invoked to toggle the bulk renamer drawer panel. */
   onToggleRenamer: () => void;
-  /** Position of the renamer drawer (left or right). */
   renamerPosition: DrawerPosition;
-  /** Callback invoked to toggle the renamer drawer dock position. */
   onToggleRenamerPosition: () => void;
-  /** Whether folder items are displayed before file items. */
   foldersFirst: boolean;
-  /** Callback invoked to toggle folders-first sorting priority. */
   onToggleFoldersFirst: () => void;
-  /** Number of currently selected files or folders. */
   selectedCount: number;
-  /** Total count of files in the current folder. */
   totalCount: number;
-  /** Whether all files are selected. */
   allSelected: boolean;
-  /** Callback to toggle select all. */
   onToggleSelectAll: () => void;
-  /** Callback to trigger universal laptop search modal. */
   onOpenUniversalSearch: () => void;
-  /** Callback to trigger new folder creation. */
   onNewFolder?: () => void;
-  /** Current sort field. */
   sortField?: SortField;
-  /** Callback to change sort field. */
   onSortChange?: (field: SortField) => void;
-  /** Callback to open preferences and settings modal. */
   onOpenSettings?: () => void;
-  /** All currently open tabs. */
   tabs: TabItem[];
-  /** ID of the active tab. */
   activeTabId: string;
-  /** Callback invoked when switching active tabs. */
   onSelectTab: (tabId: string) => void;
-  /** Callback invoked to open a new tab. */
   onNewTab: (initialPath?: string) => void;
-  /** Callback invoked to close a tab by id. */
   onCloseTab: (tabId: string) => void;
-  /** Callback fired to rearrange tabs by dragging. */
   onReorderTabs?: (fromTabId: string, toTabId: string) => void;
-  /** Callback fired when an item is dropped onto a tab destination. */
   onMoveItem?: (sourcePath: string, destDir: string) => void;
 }
 
-/** Represents a single clickable breadcrumb segment. */
 interface PathSegment {
   name: string;
   fullPath: string;
 }
 
-/** Parses a filesystem path into breadcrumb segments. */
 function parsePathSegments(path: string | null): PathSegment[] {
   if (!path) return [];
-
   if (path === "recents") {
-    return [{ name: "🕒 Recent Files", fullPath: "recents" }];
+    return [{ name: "Recent Files", fullPath: "recents" }];
   }
-
   if (path === "/" || path === "\\") {
     return [{ name: path, fullPath: path }];
   }
-
   if (/^[a-zA-Z]:[\\/]?$/i.test(path)) {
     const drive = path.slice(0, 2).toUpperCase();
     return [{ name: drive, fullPath: `${drive}\\` }];
@@ -114,11 +88,9 @@ function parsePathSegments(path: string | null): PathSegment[] {
   if (rawParts.length === 0) return [];
 
   const segments: PathSegment[] = [];
-
   if (/^[a-zA-Z]:$/i.test(rawParts[0]) || /^[a-zA-Z]:/i.test(rawParts[0])) {
     const drive = rawParts[0].slice(0, 2).toUpperCase();
     segments.push({ name: drive, fullPath: `${drive}\\` });
-
     let runningPath = `${drive}\\`;
     for (let i = 1; i < rawParts.length; i++) {
       const part = rawParts[i];
@@ -137,12 +109,10 @@ function parsePathSegments(path: string | null): PathSegment[] {
 }
 
 /**
- * NavigationBar matching the user's reference layout:
- * - Top bar with Foldy brand logo and tabs
- * - Row 1: Sidebar button, history buttons, breadcrumbs address bar, Search Laptop pill
- * - Row 2: Large Folder Title, View mode pills (Cards, Table, Grid), Folders First, Subfolders, + New folder
- * - Row 3: Theme pills (OLED Pink, Light Pink, Material, macOS, Dark), Filter input, Type/Name/Date/Size sort, More options
- * - Row 4: Select all checkbox and helpful usage tips
+ * Material 3 Top App Bar & Explorer Chrome:
+ * - Tab strip with drag-and-drop reordering and drop-to-move
+ * - History controls, editable breadcrumb bar, and universal search
+ * - Folder title, segmented view switcher, filter/sort controls, and Bulk Renamer trigger
  */
 export const NavigationBar: React.FC<NavigationBarProps> = ({
   currentPath,
@@ -193,7 +163,6 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const isCancelledRef = useRef(false);
 
-  // Extract folder name for large title
   const currentFolderName =
     currentPath === "recents"
       ? "Recent Files"
@@ -222,11 +191,16 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
         setIsSortMenuOpen(false);
       }
     };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsSortMenuOpen(false);
+    };
     if (isSortMenuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isSortMenuOpen]);
 
@@ -256,23 +230,32 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
     }
   };
 
+  const sortLabels: Record<SortField, string> = {
+    type: "File Type",
+    name: "Name",
+    date: "Date Modified",
+    size: "Size",
+  };
+
   return (
-    <header className="flex flex-col select-none shrink-0 border-b border-neutral-800/40">
-      {/* ── Top Browser / Explorer Tab Bar Strip ── */}
-      <div className="flex items-center justify-between px-3 py-1.5 text-xs border-b border-neutral-800/30 bg-sidebar/50 backdrop-blur-sm gap-2">
+    <header className="flex flex-col select-none shrink-0 bg-surface border-b border-outline-variant">
+      {/* Top Tab Strip */}
+      <div
+        role="tablist"
+        aria-label="Open folder tabs"
+        className="flex items-center justify-between px-3 py-1.5 text-xs border-b border-outline-variant bg-surface-container-low gap-2"
+      >
         <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar py-0.5">
-          {/* Cute Foldy Brand Pill */}
           <div
-            className="flex items-center gap-2 px-2.5 py-1 shrink-0 font-bold text-xs select-none group rounded-xl hover:bg-card/40 transition-colors"
+            className="flex items-center gap-2 px-2.5 py-1 shrink-0 font-semibold text-xs rounded-m3-md"
             title="Foldy – Visual File Organizer"
           >
-            <FoldyLogo size={22} interactive={true} className="group-hover:rotate-6 transition-transform" />
-            <span className="hidden sm:inline font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-500 to-red-600 text-[13px]">
+            <FoldyLogo size={20} interactive={true} />
+            <span className="hidden sm:inline font-bold tracking-tight text-on-surface text-[13px]">
               Foldy
             </span>
           </div>
 
-          {/* Active & Inactive Tabs */}
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;
             const isOver = dragOverTabId === tab.id;
@@ -281,7 +264,16 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
             return (
               <div
                 key={tab.id}
+                role="tab"
+                aria-selected={isActive}
+                tabIndex={0}
                 draggable={true}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelectTab(tab.id);
+                  }
+                }}
                 onDragStart={(e) => {
                   e.dataTransfer.setData("application/foldy-tab-id", tab.id);
                   e.dataTransfer.setData("text/plain", tab.path || tab.title);
@@ -296,13 +288,10 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                 onDragOver={(e) => {
                   e.preventDefault();
                   e.dataTransfer.dropEffect = "move";
-                  if (dragOverTabId !== tab.id) {
-                    setDragOverTabId(tab.id);
-                  }
+                  if (dragOverTabId !== tab.id) setDragOverTabId(tab.id);
                 }}
                 onDragEnter={() => {
                   setDragOverTabId(tab.id);
-                  // Hovering over an inactive tab for 350ms automatically activates it so user sees the folder
                   if (!tabHoverTimerRef.current && tab.id !== activeTabId) {
                     tabHoverTimerRef.current = setTimeout(() => {
                       onSelectTab(tab.id);
@@ -312,9 +301,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                 }}
                 onDragLeave={(e) => {
                   if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                    if (dragOverTabId === tab.id) {
-                      setDragOverTabId(null);
-                    }
+                    if (dragOverTabId === tab.id) setDragOverTabId(null);
                   }
                   if (tabHoverTimerRef.current) {
                     clearTimeout(tabHoverTimerRef.current);
@@ -344,51 +331,50 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                     onMoveItem(src, tab.path);
                   }
                 }}
-                className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs max-w-[200px] min-w-[110px] shrink-0 cursor-grab active:cursor-grabbing transition-all select-none border ${
+                className={`group flex items-center gap-2 px-3 min-h-[36px] rounded-m3-md text-xs max-w-[200px] min-w-[110px] shrink-0 cursor-grab active:cursor-grabbing border m3-pressable ${
                   isDragging ? "opacity-40" : ""
                 } ${
                   isOver
-                    ? "ring-2 ring-[#ff2d87] border-[#ff2d87] bg-[#ff2d87]/20 text-[#ff2d87] font-bold scale-[1.03] shadow-md"
+                    ? "ring-2 ring-primary border-primary bg-primary-container text-on-primary-container font-semibold"
                     : isActive
-                    ? "bg-card border-neutral-700/60 text-primary-color font-semibold shadow-sm ring-1 ring-[#ff2d87]/40"
-                    : "bg-transparent border-transparent text-muted-color hover:text-primary-color hover:bg-card/40"
+                    ? "bg-surface-container-high border-outline-variant text-on-surface font-semibold shadow-m3-0"
+                    : "bg-transparent border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
                 }`}
-                title={
-                  tab.path
-                    ? `${tab.path}\nDrag to reorder tabs, or drop items here to move into this folder`
-                    : tab.title
-                }
+                title={tab.path || tab.title}
               >
                 <span className="shrink-0 flex items-center pointer-events-none">
                   {tab.path === "recents" ? (
-                    <span>🕒</span>
+                    <IconClock size={14} />
                   ) : !tab.path ? (
-                    <span>🏠</span>
+                    <IconFolder size={14} />
                   ) : (
                     <MacFolderIcon size={14} />
                   )}
                 </span>
-                <span className="truncate flex-1 text-[11px] font-medium pointer-events-none">
+                <span className="truncate flex-1 text-xs pointer-events-none">
                   {tab.title}
                 </span>
                 {tabs.length > 1 && (
                   <button
+                    type="button"
+                    aria-label={`Close ${tab.title} tab`}
                     onClick={(e) => {
                       e.stopPropagation();
                       onCloseTab(tab.id);
                     }}
-                    className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] text-muted-color hover:text-white hover:bg-[#ff2d87] transition-all opacity-0 group-hover:opacity-100"
+                    className="w-6 h-6 rounded-m3-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest opacity-0 group-hover:opacity-100 focus:opacity-100"
                     title="Close Tab (Ctrl+W)"
                   >
-                    ✕
+                    <IconClose size={12} />
                   </button>
                 )}
               </div>
             );
           })}
 
-          {/* + New Tab Button (also supports dropping a folder/file to open it in a new tab) */}
           <button
+            type="button"
+            aria-label="Open new tab"
             onClick={() => onNewTab()}
             onDragOver={(e) => {
               e.preventDefault();
@@ -400,92 +386,92 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                 e.dataTransfer.getData("application/foldy-path") ||
                 e.dataTransfer.getData("application/folderly-path") ||
                 e.dataTransfer.getData("text/plain");
-              if (src) {
-                onNewTab(src);
-              }
+              if (src) onNewTab(src);
             }}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-card/60 hover:bg-card border border-neutral-800/40 hover:border-[#ff2d87]/40 text-muted-color hover:text-[#ff2d87] text-xs font-semibold shrink-0 transition-all shadow-sm group"
-            title="Open a new tab (Ctrl+T) or drag a folder/file here"
+            className="inline-flex items-center justify-center min-w-[36px] min-h-[36px] rounded-m3-full bg-surface-container hover:bg-surface-container-high border border-outline-variant text-on-surface-variant hover:text-primary shrink-0 m3-pressable"
+            title="New tab (Ctrl+T)"
           >
-            <span className="font-bold text-sm leading-none group-hover:scale-110 transition-transform">+</span>
+            <IconPlus size={16} />
           </button>
         </div>
 
-        {/* Right side helper shortcut indicator */}
-        <div className="hidden md:flex items-center gap-2 text-muted-color text-[11px] shrink-0 pr-1">
-          <kbd className="bg-neutral-800/40 border border-neutral-800/60 px-1.5 py-0.5 rounded text-[10px] text-neutral-400">
+        <div className="hidden md:flex items-center gap-2 text-on-surface-variant text-[11px] shrink-0 pr-1">
+          <kbd className="bg-surface-container border border-outline-variant px-1.5 py-0.5 rounded-m3-xs text-[10px] font-mono">
             Ctrl+T
           </kbd>
-          <span className="text-[10px]">New Tab</span>
+          <span>New Tab</span>
         </div>
       </div>
 
-      {/* ── Row 1: Sidebar Toggle, Navigation Arrows, Breadcrumbs, Search Laptop ── */}
-      <div className="flex items-center justify-between gap-3 px-6 py-3">
-        {/* Left: Sidebar + Arrows + Breadcrumbs */}
-        <div className="flex items-center gap-2.5 flex-1 min-w-0">
-          {/* Sidebar Toggle Button */}
-          <button
+      {/* Row 1: Navigation, Breadcrumbs & Universal Search */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 px-4 sm:px-6 py-2.5">
+        <div className="flex items-center gap-2 flex-1 min-w-[240px]">
+          <Button
+            variant={isSidebarOpen ? "tonal" : "outlined"}
+            size="sm"
             onClick={onToggleSidebar}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-              isSidebarOpen
-                ? "bg-card text-primary-color border border-neutral-800/40"
-                : "bg-card text-muted-color hover:text-primary-color"
-            }`}
+            aria-pressed={isSidebarOpen}
+            aria-label="Toggle navigation sidebar"
+            leadingIcon={<IconSidebar size={16} />}
           >
-            <span>◧</span>
-            <span>Sidebar</span>
-          </button>
+            <span className="hidden sm:inline">Sidebar</span>
+          </Button>
 
-          {/* Navigation Arrows */}
           <div className="flex items-center gap-1">
             <button
+              type="button"
+              aria-label="Go back"
               onClick={onGoBack}
               disabled={!canGoBack}
-              className="p-1.5 px-2 rounded-xl bg-card border border-neutral-800/40 text-xs text-primary-color disabled:opacity-30 disabled:cursor-not-allowed hover:bg-neutral-800/40"
+              className="inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-m3-full bg-surface-container border border-outline-variant/60 text-on-surface disabled:opacity-35 disabled:cursor-not-allowed hover:bg-surface-container-high m3-pressable"
             >
-              ←
+              <IconArrowLeft size={16} />
             </button>
             <button
+              type="button"
+              aria-label="Go forward"
               onClick={onGoForward}
               disabled={!canGoForward}
-              className="p-1.5 px-2 rounded-xl bg-card border border-neutral-800/40 text-xs text-primary-color disabled:opacity-30 disabled:cursor-not-allowed hover:bg-neutral-800/40"
+              className="inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-m3-full bg-surface-container border border-outline-variant/60 text-on-surface disabled:opacity-35 disabled:cursor-not-allowed hover:bg-surface-container-high m3-pressable"
             >
-              →
+              <IconArrowRight size={16} />
             </button>
             <button
+              type="button"
+              aria-label="Go to parent folder"
               onClick={onGoUp}
               disabled={!canGoUp}
-              className="p-1.5 px-2 rounded-xl bg-card border border-neutral-800/40 text-xs text-primary-color disabled:opacity-30 disabled:cursor-not-allowed hover:bg-neutral-800/40"
+              className="inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-m3-full bg-surface-container border border-outline-variant/60 text-on-surface disabled:opacity-35 disabled:cursor-not-allowed hover:bg-surface-container-high m3-pressable"
             >
-              ↑
+              <IconArrowUp size={16} />
             </button>
           </div>
 
-          {/* Breadcrumbs Address Bar with Pencil */}
           <div className="flex-1 min-w-0 max-w-2xl">
             {isEditingPath ? (
               <input
                 ref={inputRef}
                 type="text"
+                aria-label="Folder path"
                 value={editPathValue}
                 onChange={(e) => setEditPathValue(e.target.value)}
                 onKeyDown={handlePathKeyDown}
                 onBlur={() => {
                   if (!isCancelledRef.current) handleSubmitPath();
                 }}
-                className="w-full bg-input border border-[#ff2d87] rounded-xl px-3 py-1.5 text-xs text-primary-color outline-none shadow-inner"
+                className="w-full min-h-[40px] bg-surface-container-lowest border border-primary rounded-m3-sm px-3.5 text-xs text-on-surface outline-none"
               />
             ) : (
-              <div
+              <nav
+                aria-label="Breadcrumb"
                 onClick={handleStartEditing}
-                className="flex items-center justify-between bg-card border border-neutral-800/30 rounded-xl px-3 py-1.5 min-h-[34px] cursor-text hover:border-neutral-700/60 transition-colors"
+                className="flex items-center justify-between bg-surface-container border border-outline-variant/60 rounded-m3-full px-3.5 min-h-[40px] cursor-text hover:border-outline transition-colors"
               >
-                <div className="flex items-center gap-1.5 text-xs text-primary-color truncate">
-                  <span className="text-muted-color">💾</span>
+                <div className="flex items-center gap-1 text-xs text-on-surface truncate">
                   {segments.map((seg, idx) => (
                     <React.Fragment key={seg.fullPath}>
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           onNavigate(seg.fullPath);
@@ -504,298 +490,225 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                             onMoveItem(src, seg.fullPath);
                           }
                         }}
-                        className="hover:text-[#ff2d87] transition-colors truncate font-medium hover:underline"
-                        title={`Click to navigate to ${seg.name}, or drop items here to move`}
+                        className="hover:text-primary transition-colors truncate font-medium px-1 py-0.5 rounded-m3-xs hover:bg-surface-container-high"
+                        title={`Navigate to ${seg.name}`}
                       >
                         {seg.name}
                       </button>
                       {idx < segments.length - 1 && (
-                        <span className="text-muted-color text-[10px]">›</span>
+                        <IconChevronRight
+                          size={14}
+                          className="text-on-surface-variant shrink-0"
+                        />
                       )}
                     </React.Fragment>
                   ))}
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleStartEditing();
-                  }}
-                  className="text-muted-color hover:text-primary-color text-xs ml-2"
-                >
-                  ✏️
-                </button>
-              </div>
+              </nav>
             )}
           </div>
         </div>
 
-        {/* Right: Search Laptop Pill */}
         <button
+          type="button"
           onClick={onOpenUniversalSearch}
-          className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card border border-neutral-800/40 hover:border-[#ff2d87]/40 text-muted-color hover:text-primary-color text-xs transition-all shadow-sm"
+          aria-label="Search across laptop (Ctrl+K)"
+          className="flex items-center gap-3 px-4 min-h-[40px] rounded-m3-full bg-surface-container-high border border-outline-variant/60 hover:border-outline text-on-surface-variant hover:text-on-surface text-xs font-medium m3-pressable"
         >
-          <div className="flex items-center gap-2">
-            <span>🔍</span>
-            <span>Search Laptop</span>
-          </div>
-          <kbd className="text-[10px] bg-neutral-800/40 px-1.5 py-0.5 rounded text-muted-color">
+          <span className="flex items-center gap-2">
+            <IconSearch size={15} className="text-primary" />
+            <span className="hidden sm:inline">Search Laptop</span>
+          </span>
+          <kbd className="hidden md:inline text-[10px] bg-surface-container-lowest border border-outline-variant px-1.5 py-0.5 rounded-m3-xs font-mono">
             Ctrl+K
           </kbd>
         </button>
       </div>
 
-      {/* ── Row 2: Large Title ("Downloads") + Action Controls on Right ── */}
-      <div className="flex items-center justify-between px-6 pt-1 pb-3">
-        {/* Large Folder Title */}
-        <h1 className="text-2xl font-bold text-primary-color tracking-tight">
+      {/* Row 2: Page Title & Primary Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 pt-1 pb-2.5">
+        <h1 className="text-xl sm:text-2xl font-bold text-on-surface tracking-tight truncate">
           {currentFolderName}
         </h1>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2 text-xs">
-          {/* View Mode Switcher Pills */}
-          <div className="flex items-center bg-card rounded-xl p-1 border border-neutral-800/30">
-            <button
-              onClick={() => onViewModeChange("cards")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all ${
-                viewMode === "cards"
-                  ? "bg-[#ff2d87] text-white shadow-sm"
-                  : "text-muted-color hover:text-primary-color"
-              }`}
-            >
-              <span>🗂️</span>
-              <span>Cards</span>
-            </button>
-            <button
-              onClick={() => onViewModeChange("details")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all ${
-                viewMode === "details"
-                  ? "bg-[#ff2d87] text-white shadow-sm"
-                  : "text-muted-color hover:text-primary-color"
-              }`}
-            >
-              <span>📋</span>
-              <span>Table</span>
-            </button>
-            <button
-              onClick={() => onViewModeChange("grid")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all ${
-                viewMode === "grid"
-                  ? "bg-[#ff2d87] text-white shadow-sm"
-                  : "text-muted-color hover:text-primary-color"
-              }`}
-            >
-              <span>▦</span>
-              <span>Grid</span>
-            </button>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          {/* M3 Segmented View Switcher */}
+          <div
+            role="group"
+            aria-label="View mode"
+            className="inline-flex items-center bg-surface-container rounded-m3-full p-1 border border-outline-variant/60"
+          >
+            {(
+              [
+                { mode: "cards", label: "Cards", icon: <IconFolder size={14} /> },
+                { mode: "details", label: "Table", icon: <IconList size={14} /> },
+                { mode: "grid", label: "Grid", icon: <IconGrid size={14} /> },
+              ] as const
+            ).map(({ mode, label, icon }) => {
+              const active = viewMode === mode;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => onViewModeChange(mode)}
+                  className={`flex items-center gap-1.5 px-3 min-h-[32px] rounded-m3-full font-semibold m3-pressable ${
+                    active
+                      ? "bg-primary-container text-on-primary-container"
+                      : "text-on-surface-variant hover:text-on-surface"
+                  }`}
+                >
+                  {icon}
+                  <span>{label}</span>
+                </button>
+              );
+            })}
           </div>
 
-          {/* Folders First Toggle Pill */}
-          <button
+          <Chip
+            selected={foldersFirst}
             onClick={onToggleFoldersFirst}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all ${
-              foldersFirst
-                ? "bg-card text-primary-color border-neutral-800/60"
-                : "bg-card text-muted-color border-neutral-800/30 hover:text-primary-color"
-            }`}
+            leadingIcon={<IconFolder size={14} />}
           >
-            <span>📁</span>
-            <span>Folders First</span>
-          </button>
+            Folders First
+          </Chip>
 
-          {/* Subfolders Toggle Pill */}
-          <button
+          <Chip
+            selected={isRecursive}
             onClick={onToggleRecursive}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all ${
-              isRecursive
-                ? "bg-[#ff2d87] text-white border-[#ff2d87]"
-                : "bg-card text-muted-color border-neutral-800/30 hover:text-primary-color"
-            }`}
+            leadingIcon={<IconRefresh size={14} />}
           >
-            <span>🔄</span>
-            <span>Subfolders</span>
-          </button>
+            Subfolders
+          </Chip>
 
-          {/* + New Folder Hot Pink Button */}
-          <button
-            onClick={onNewFolder}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#ff2d87] hover:bg-[#e61b74] text-white font-bold shadow-md shadow-[#ff2d87]/20 transition-all active:scale-[0.98]"
-          >
-            <span>+</span>
-            <span>New folder</span>
-          </button>
+          {onNewFolder && (
+            <Button
+              variant="filled"
+              size="sm"
+              onClick={onNewFolder}
+              leadingIcon={<IconFolderPlus size={16} />}
+            >
+              New folder
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* ── Row 3: Theme & Settings Trigger + Live Filter + Sort + Options ── */}
-      <div className="flex items-center justify-between px-6 pb-3 text-xs">
-        {/* Left: Settings Trigger Button */}
-        <button
+      {/* Row 3: Settings, Live Filter, Sort & Bulk Renamer */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 pb-2.5 text-xs">
+        <Button
+          variant="tonal"
+          size="sm"
           onClick={onOpenSettings}
-          className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-card border border-neutral-800/30 text-muted-color hover:text-primary-color hover:border-[#ff2d87]/40 text-xs font-semibold transition-all shadow-sm group"
-          title="Open Settings to customize theme and account profile"
+          leadingIcon={<IconSettings size={15} />}
         >
-          <span className="group-hover:rotate-45 transition-transform">⚙️</span>
-          <span>Theme & Settings</span>
-        </button>
+          Theme & Settings
+        </Button>
 
-        {/* Right: Filter search, Sort, More Options (Renamer Drawer) */}
-        <div className="flex items-center gap-2">
-          {/* Filter Search Input */}
-          <div className="relative flex items-center w-52">
-            <span className="absolute left-3 text-muted-color text-xs pointer-events-none">
-              🔍
-            </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex items-center w-48 sm:w-56">
+            <IconSearch
+              size={14}
+              className="absolute left-3 text-on-surface-variant pointer-events-none"
+            />
             <input
               type="text"
+              aria-label="Filter files in current folder"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Filter files in folder"
-              className="w-full bg-card border border-neutral-800/30 rounded-xl pl-8 pr-7 py-1.5 text-xs text-primary-color placeholder-muted-color outline-none focus:border-[#ff2d87] transition-colors"
+              className="w-full min-h-[38px] bg-surface-container-lowest border border-outline-variant rounded-m3-full pl-9 pr-8 text-xs text-on-surface placeholder:text-on-surface-variant/70 outline-none focus:border-primary transition-colors"
             />
             {searchQuery && (
               <button
+                type="button"
+                aria-label="Clear folder filter"
                 onClick={() => onSearchChange("")}
-                className="absolute right-2.5 text-muted-color hover:text-primary-color text-xs"
+                className="absolute right-2 w-6 h-6 flex items-center justify-center rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
               >
-                ✕
+                <IconClose size={13} />
               </button>
             )}
           </div>
 
-          {/* Sort Selector Dropdown */}
           <div className="relative" ref={sortMenuRef}>
-            <button
+            <Button
+              variant="outlined"
+              size="sm"
+              aria-haspopup="menu"
+              aria-expanded={isSortMenuOpen}
               onClick={() => setIsSortMenuOpen((prev) => !prev)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card border text-xs font-semibold transition-all ${
-                sortField === "type"
-                  ? "border-[#ff2d87] text-[#ff2d87]"
-                  : "border-neutral-800/30 text-primary-color hover:border-[#ff2d87]/40"
-              }`}
-              title="Change sort order (Type, Name, Date, Size)"
             >
-              <span>⇅</span>
-              <span>
-                Sort:{" "}
-                {sortField === "type"
-                  ? "Type"
-                  : sortField === "name"
-                  ? "Name"
-                  : sortField === "date"
-                  ? "Date"
-                  : "Size"}
-              </span>
-              <span className="text-[10px] text-muted-color">▾</span>
-            </button>
+              Sort: {sortLabels[sortField]}
+            </Button>
 
             {isSortMenuOpen && (
-              <div className="absolute right-0 mt-1 w-44 bg-card border border-neutral-800/60 rounded-xl shadow-2xl py-1.5 z-50 text-xs backdrop-blur-md">
-                <div className="px-3 py-1 text-[10px] uppercase font-bold text-muted-color tracking-wider">
+              <div
+                role="menu"
+                aria-label="Sort files by"
+                className="absolute right-0 mt-1.5 w-48 bg-surface-container-high border border-outline-variant rounded-m3-md shadow-m3-2 py-1.5 px-1.5 z-50 text-xs animate-m3-popover"
+                style={{ "--transform-origin": "top right" } as React.CSSProperties}
+              >
+                <div className="px-2.5 py-1 text-[11px] font-semibold text-on-surface-variant">
                   Sort Files By
                 </div>
-                <button
-                  onClick={() => {
-                    onSortChange?.("type");
-                    setIsSortMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-1.5 text-left hover:bg-neutral-800/40 transition-colors ${
-                    sortField === "type" ? "text-[#ff2d87] font-bold" : "text-primary-color"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span>🏷️</span>
-                    <span>File Type</span>
-                  </span>
-                  {sortField === "type" && <span>✓</span>}
-                </button>
-                <button
-                  onClick={() => {
-                    onSortChange?.("name");
-                    setIsSortMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-1.5 text-left hover:bg-neutral-800/40 transition-colors ${
-                    sortField === "name" ? "text-[#ff2d87] font-bold" : "text-primary-color"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span>🔤</span>
-                    <span>Name</span>
-                  </span>
-                  {sortField === "name" && <span>✓</span>}
-                </button>
-                <button
-                  onClick={() => {
-                    onSortChange?.("date");
-                    setIsSortMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-1.5 text-left hover:bg-neutral-800/40 transition-colors ${
-                    sortField === "date" ? "text-[#ff2d87] font-bold" : "text-primary-color"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span>📅</span>
-                    <span>Date Modified</span>
-                  </span>
-                  {sortField === "date" && <span>✓</span>}
-                </button>
-                <button
-                  onClick={() => {
-                    onSortChange?.("size");
-                    setIsSortMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-1.5 text-left hover:bg-neutral-800/40 transition-colors ${
-                    sortField === "size" ? "text-[#ff2d87] font-bold" : "text-primary-color"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span>⚖️</span>
-                    <span>Size</span>
-                  </span>
-                  {sortField === "size" && <span>✓</span>}
-                </button>
+                {(["type", "name", "date", "size"] as SortField[]).map((field) => (
+                  <button
+                    key={field}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={sortField === field}
+                    onClick={() => {
+                      onSortChange?.(field);
+                      setIsSortMenuOpen(false);
+                    }}
+                    className={`w-full min-h-[36px] flex items-center justify-between px-2.5 py-1.5 rounded-m3-sm text-left m3-pressable ${
+                      sortField === field
+                        ? "bg-secondary-container text-on-secondary-container font-semibold"
+                        : "text-on-surface hover:bg-surface-container-highest"
+                    }`}
+                  >
+                    <span>{sortLabels[field]}</span>
+                    {sortField === field && <IconCheck size={14} />}
+                  </button>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Renamer Drawer Trigger (···) */}
-          <button
+          <Button
+            variant={isRenamerOpen ? "filled" : "tonal"}
+            size="sm"
+            aria-pressed={isRenamerOpen}
             onClick={onToggleRenamer}
-            className={`px-3 py-1.5 rounded-xl border font-bold transition-all ${
-              isRenamerOpen
-                ? "bg-[#ff2d87] text-white border-[#ff2d87]"
-                : "bg-card border-neutral-800/30 text-muted-color hover:text-primary-color"
-            }`}
-            title="Bulk Renamer Drawer"
+            leadingIcon={<IconSliders size={15} />}
           >
-            ···
-          </button>
+            Bulk Renamer
+          </Button>
         </div>
       </div>
 
-      {/* ── Row 4: Select All Checkbox + Double-Click Tip ── */}
-      <div className="flex items-center justify-between px-6 pb-2 text-xs text-muted-color">
-        <label className="flex items-center gap-2 cursor-pointer select-none">
+      {/* Row 4: Select All + Keyboard/Pointer Hint */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 pb-2.5 text-xs text-on-surface-variant">
+        <label className="flex items-center gap-2 cursor-pointer select-none min-h-[32px]">
           <input
             type="checkbox"
             checked={allSelected}
             onChange={onToggleSelectAll}
-            className="accent-[#ff2d87] w-4 h-4 rounded cursor-pointer"
+            className="w-4 h-4 rounded cursor-pointer accent-primary"
           />
-          <span className="text-muted-color">
+          <span>
             Select all ({totalCount} files)
             {selectedCount > 0 && selectedCount !== totalCount && (
-              <span className="text-[#ff2d87] font-semibold ml-1">
+              <span className="text-primary font-semibold ml-1.5">
                 ({selectedCount} selected)
               </span>
             )}
           </span>
         </label>
 
-        <span className="text-[11px] text-muted-color/80 flex items-center gap-1">
-          <span>💡</span>
-          <span>
-            Double-click folder to open • Double-click file to launch • Right-click for more
-          </span>
+        <span className="text-[11px] text-on-surface-variant hidden lg:inline">
+          Double-click to open • Space or P for Quick Look • Right-click for actions
         </span>
       </div>
     </header>

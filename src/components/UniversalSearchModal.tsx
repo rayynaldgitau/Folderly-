@@ -309,17 +309,16 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="universal-search-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
-        className="max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col rounded-2xl shadow-2xl border border-neutral-700/60 bg-neutral-900/95 overflow-hidden backdrop-blur-md transition-all"
+        className="max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col rounded-m3-xl shadow-m3-3 border border-outline-variant bg-surface-container-high text-on-surface overflow-hidden animate-m3-dialog"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-neutral-800 bg-neutral-900/50">
-          {/* Search Icon */}
-          <div className="text-neutral-400 shrink-0 select-none">
+        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-outline-variant bg-surface-container">
+          <div className="text-on-surface-variant shrink-0 select-none">
             <svg
               className="w-5 h-5"
               fill="none"
@@ -336,7 +335,6 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
             </svg>
           </div>
 
-          {/* Search Input Field */}
           <input
             ref={inputRef}
             id="universal-search-title"
@@ -345,15 +343,14 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search files, folders across your laptop... (e.g. resume, invoice, .png)"
-            className="flex-1 bg-transparent text-neutral-100 placeholder-neutral-500 text-sm md:text-base outline-none border-none focus:ring-0"
+            className="flex-1 bg-transparent text-on-surface placeholder:text-on-surface-variant/70 text-sm md:text-base outline-none border-none focus:ring-0"
             autoComplete="off"
             spellCheck={false}
           />
 
-          {/* Loading Indicator Spinner */}
           {isLoading && (
             <div
-              className="text-pink-400 shrink-0 animate-spin"
+              className="text-primary shrink-0 animate-spin"
               title="Searching laptop files..."
             >
               <svg
@@ -379,7 +376,6 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
             </div>
           )}
 
-          {/* Clear Button (✕) */}
           {query.length > 0 && (
             <button
               type="button"
@@ -387,7 +383,7 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
                 setQuery("");
                 inputRef.current?.focus();
               }}
-              className="p-1 text-neutral-400 hover:text-neutral-200 rounded-lg hover:bg-neutral-800 transition-colors"
+              className="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded-m3-full hover:bg-surface-container-highest m3-pressable"
               title="Clear search"
               aria-label="Clear search query"
             >
@@ -408,11 +404,10 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
             </button>
           )}
 
-          {/* Close Button (Esc) */}
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center gap-1 px-2 py-1 text-xs text-neutral-400 hover:text-neutral-200 bg-neutral-800/80 hover:bg-neutral-800 rounded border border-neutral-700/60 transition-colors"
+            className="flex items-center gap-1 px-2.5 min-h-[32px] text-xs text-on-surface-variant hover:text-on-surface bg-surface-container-highest rounded-m3-xs border border-outline-variant m3-pressable"
             title="Close modal (Esc)"
             aria-label="Close search modal"
           >
@@ -423,31 +418,23 @@ export const UniversalSearchModal: React.FC<UniversalSearchModalProps> = ({
         {/* Results Container */}
         <div
           ref={listRef}
-          className="flex-1 overflow-y-auto max-h-[60vh] p-2 space-y-1 divide-y divide-neutral-800/40"
+          className="flex-1 overflow-y-auto max-h-[60vh] p-2 space-y-1 divide-y divide-outline-variant/40"
         >
-          {/* Empty State: Initial Prompt */}
           {!query.trim() && (
-            <div className="flex flex-col items-center justify-center py-12 text-center text-neutral-400">
-              <div className="w-12 h-12 mb-3 rounded-full bg-neutral-800/80 flex items-center justify-center text-xl text-neutral-300">
-                🔍
-              </div>
-              <p className="text-sm font-medium text-neutral-300">
+            <div className="flex flex-col items-center justify-center py-12 text-center text-on-surface-variant">
+              <p className="text-sm font-medium text-on-surface">
                 Type a keyword to search your whole laptop
               </p>
-              <p className="text-xs text-neutral-500 mt-1 max-w-sm">
+              <p className="text-xs text-on-surface-variant mt-1 max-w-sm">
                 Instant search across your Desktop, Documents, Downloads, and internal drives.
               </p>
             </div>
           )}
 
-          {/* Empty State: No Matches Found */}
           {query.trim().length > 0 && !isLoading && results.length === 0 && hasSearched && (
-            <div className="flex flex-col items-center justify-center py-12 text-center text-neutral-400">
-              <div className="w-12 h-12 mb-3 rounded-full bg-neutral-800/80 flex items-center justify-center text-xl text-neutral-400">
-                📂
-              </div>
-              <p className="text-sm font-medium text-neutral-300">No matches found</p>
-              <p className="text-xs text-neutral-500 mt-1 max-w-xs truncate">
+            <div className="flex flex-col items-center justify-center py-12 text-center text-on-surface-variant">
+              <p className="text-sm font-medium text-on-surface">No matches found</p>
+              <p className="text-xs text-on-surface-variant mt-1 max-w-xs truncate">
                 No files or directories matching &ldquo;{query}&rdquo;
               </p>
             </div>

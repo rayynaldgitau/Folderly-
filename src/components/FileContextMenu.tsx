@@ -1,4 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
+import {
+  IconExternalLink,
+  IconEye,
+  IconFile,
+  IconFolder,
+  IconPin,
+  IconPlus,
+  IconTrash,
+} from "./ui";
 
 /**
  * Props accepted by the {@link FileContextMenu} component.
@@ -31,10 +40,8 @@ export interface FileContextMenuProps {
 }
 
 /**
- * Floating context menu component for file and folder actions.
- *
- * Appears at specified screen coordinates with dark theme styling.
- * Automatically closes on outside click or Escape key press.
+ * Material 3 floating context menu for file and folder actions.
+ * Appears at pointer coordinates with origin-aware entrance and Escape/outside-click dismissal.
  */
 export const FileContextMenu: React.FC<FileContextMenuProps> = ({
   isOpen,
@@ -51,48 +58,39 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onPreview,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<{ x: number; y: number }>({ x, y });
+  const [position, setPosition] = useState<{ x: number; y: number; origin: string }>({
+    x,
+    y,
+    origin: "top left",
+  });
 
-  // Calculate boundary-constrained position to keep the menu inside the viewport
   useEffect(() => {
     if (!isOpen) return;
 
-    const estimatedWidth = 220;
-    const estimatedHeight = 180;
+    const estimatedWidth = 236;
+    const estimatedHeight = 260;
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
-    let posX = x;
-    let posY = y;
+    const flipX = x + estimatedWidth > viewportWidth;
+    const flipY = y + estimatedHeight > viewportHeight;
 
-    if (posX + estimatedWidth > viewportWidth) {
-      posX = Math.max(8, viewportWidth - estimatedWidth - 8);
-    }
-    if (posY + estimatedHeight > viewportHeight) {
-      posY = Math.max(8, viewportHeight - estimatedHeight - 8);
-    }
+    const posX = flipX ? Math.max(8, viewportWidth - estimatedWidth - 8) : x;
+    const posY = flipY ? Math.max(8, viewportHeight - estimatedHeight - 8) : y;
+    const origin = `${flipY ? "bottom" : "top"} ${flipX ? "right" : "left"}`;
 
-    setPosition({ x: posX, y: posY });
+    setPosition({ x: posX, y: posY, origin });
   }, [isOpen, x, y]);
 
-  // Handle outside clicks and keyboard escape dismissal
   useEffect(() => {
     if (!isOpen) return;
 
-    /**
-     * Closes the context menu if a mouse click occurs outside of the menu container.
-     * @param event - The mouse event triggered on the document.
-     */
     const handleDocumentMouseDown = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         onClose();
       }
     };
 
-    /**
-     * Closes the context menu when the Escape key is pressed.
-     * @param event - The keyboard event triggered on the document.
-     */
     const handleDocumentKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onClose();
@@ -112,25 +110,6 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
     return null;
   }
 
-  /**
-   * Handles opening the target file or directory.
-   */
-  const handleOpenAction = () => {
-    onOpen(targetPath);
-    onClose();
-  };
-
-  /**
-   * Handles opening the item's parent directory in Windows Explorer.
-   */
-  const handleShowInFileManagerAction = () => {
-    onShowInFileManager(targetPath);
-    onClose();
-  };
-
-  /**
-   * Copies the full target path to the system clipboard.
-   */
   const handleCopyPathAction = async () => {
     try {
       await navigator.clipboard.writeText(targetPath);
@@ -140,61 +119,46 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
     onClose();
   };
 
-  /**
-   * Handles initiating deletion for the target item.
-   */
-  const handleDeleteAction = () => {
-    onDelete(targetPath);
-    onClose();
-  };
+  const itemClass =
+    "w-full min-h-[40px] flex items-center gap-3 px-3 py-2 rounded-m3-sm text-left text-sm text-on-surface hover:bg-surface-container-highest m3-pressable cursor-pointer";
 
   return (
     <div
       ref={menuRef}
       role="menu"
+      aria-label="File actions"
       aria-orientation="vertical"
-      className="fixed z-50 min-w-[210px] bg-neutral-900 border border-neutral-700 shadow-2xl rounded-xl py-1.5 px-1 text-sm text-neutral-200 select-none animate-in fade-in zoom-in-95 duration-100"
-      style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-      }}
+      className="fixed z-50 min-w-[232px] bg-surface-container-high border border-outline-variant shadow-m3-3 rounded-m3-md py-1.5 px-1.5 text-on-surface select-none animate-m3-popover"
+      style={
+        {
+          left: `${position.x}px`,
+          top: `${position.y}px`,
+          "--transform-origin": position.origin,
+        } as React.CSSProperties
+      }
       onClick={(e) => e.stopPropagation()}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {/* Open action */}
       <button
         type="button"
         role="menuitem"
-        onClick={handleOpenAction}
-        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-neutral-200 hover:bg-neutral-800 hover:text-white transition-colors duration-150 cursor-pointer"
+        onClick={() => {
+          onOpen(targetPath);
+          onClose();
+        }}
+        className={itemClass}
       >
-        <svg
-          className="w-4 h-4 text-neutral-400 shrink-0"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          {isFolder ? (
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-            />
-          ) : (
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-            />
-          )}
-        </svg>
-        <span className="font-medium truncate">{isFolder ? "Open Folder" : "Open"}</span>
+        {isFolder ? (
+          <IconFolder size={16} className="text-on-surface-variant shrink-0" />
+        ) : (
+          <IconExternalLink size={16} className="text-on-surface-variant shrink-0" />
+        )}
+        <span className="font-medium truncate">
+          {isFolder ? "Open Folder" : "Open"}
+        </span>
       </button>
 
-      {/* Quick Look Preview action */}
-      {onPreview && targetPath && (
+      {onPreview && (
         <button
           type="button"
           role="menuitem"
@@ -202,19 +166,18 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
             onPreview(targetPath, isFolder);
             onClose();
           }}
-          className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-neutral-200 hover:bg-neutral-800 hover:text-white transition-colors duration-150 cursor-pointer"
+          className={`${itemClass} justify-between`}
         >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className="w-4 h-4 text-neutral-400 shrink-0 text-center text-xs">👁</span>
+          <span className="flex items-center gap-3 min-w-0">
+            <IconEye size={16} className="text-on-surface-variant shrink-0" />
             <span className="font-medium truncate">Quick Look Preview</span>
-          </div>
-          <kbd className="px-1.5 py-0.5 text-[10px] rounded bg-neutral-800 text-neutral-400 font-mono border border-neutral-700">
+          </span>
+          <kbd className="px-1.5 py-0.5 text-[10px] rounded-m3-xs bg-surface-container text-on-surface-variant font-mono border border-outline-variant">
             P
           </kbd>
         </button>
       )}
 
-      {/* Open in New Tab (Folders only) */}
       {isFolder && onOpenInNewTab && (
         <button
           type="button"
@@ -223,14 +186,13 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
             onOpenInNewTab(targetPath);
             onClose();
           }}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-neutral-200 hover:bg-neutral-800 hover:text-white transition-colors duration-150 cursor-pointer"
+          className={itemClass}
         >
-          <span className="w-4 h-4 text-neutral-400 shrink-0 text-center text-xs">⊞</span>
+          <IconPlus size={16} className="text-on-surface-variant shrink-0" />
           <span className="font-medium truncate">Open in New Tab</span>
         </button>
       )}
 
-      {/* Pin to Sidebar (Folders only) */}
       {isFolder && onPinFolder && (
         <button
           type="button"
@@ -239,90 +201,48 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
             onPinFolder(targetPath);
             onClose();
           }}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-neutral-200 hover:bg-neutral-800 hover:text-white transition-colors duration-150 cursor-pointer"
+          className={itemClass}
         >
-          <span className="w-4 h-4 text-neutral-400 shrink-0 text-center text-xs">📌</span>
+          <IconPin size={16} className="text-on-surface-variant shrink-0" />
           <span className="font-medium truncate">Pin to Sidebar</span>
         </button>
       )}
 
-      {/* Show in Windows Explorer */}
       <button
         type="button"
         role="menuitem"
-        onClick={handleShowInFileManagerAction}
-        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-neutral-200 hover:bg-neutral-800 hover:text-white transition-colors duration-150 cursor-pointer"
+        onClick={() => {
+          onShowInFileManager(targetPath);
+          onClose();
+        }}
+        className={itemClass}
       >
-        <svg
-          className="w-4 h-4 text-neutral-400 shrink-0"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 11h.01M16 11h.01M8 11h.01"
-          />
-        </svg>
-        <span className="font-medium truncate">Show in Windows Explorer</span>
+        <IconFolder size={16} className="text-on-surface-variant shrink-0" />
+        <span className="font-medium truncate">Show in File Manager</span>
       </button>
 
-      {/* Copy Path to clipboard */}
       <button
         type="button"
         role="menuitem"
         onClick={handleCopyPathAction}
-        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-neutral-200 hover:bg-neutral-800 hover:text-white transition-colors duration-150 cursor-pointer"
+        className={itemClass}
       >
-        <svg
-          className="w-4 h-4 text-neutral-400 shrink-0"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-          />
-        </svg>
+        <IconFile size={16} className="text-on-surface-variant shrink-0" />
         <span className="font-medium truncate">Copy Path</span>
       </button>
 
-      {/* Divider */}
-      <div className="my-1 border-t border-neutral-800" role="separator" />
+      <div className="my-1.5 border-t border-outline-variant" role="separator" />
 
-      {/* Delete */}
       <button
         type="button"
         role="menuitem"
-        onClick={handleDeleteAction}
-        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-red-400 hover:bg-red-950/60 hover:text-red-300 transition-colors duration-150 cursor-pointer"
+        onClick={() => {
+          onDelete(targetPath);
+          onClose();
+        }}
+        className="w-full min-h-[40px] flex items-center gap-3 px-3 py-2 rounded-m3-sm text-left text-sm text-error hover:bg-error-container/50 m3-pressable cursor-pointer"
       >
-        <svg
-          className="w-4 h-4 text-red-400 shrink-0"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-          />
-        </svg>
+        <IconTrash size={16} className="shrink-0" />
         <span className="font-medium truncate">Delete</span>
       </button>
     </div>

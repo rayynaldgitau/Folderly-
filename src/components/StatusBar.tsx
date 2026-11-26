@@ -1,4 +1,5 @@
 import React from "react";
+import { IconAlert, IconCheck, IconFolder } from "./ui";
 
 interface Props {
   message?: string;
@@ -9,9 +10,7 @@ interface Props {
 }
 
 /**
- * Modern Footer Status Bar matching the mockup:
- * - Left: 📁 Browsing: C:\Users\ryan\Downloads (or status message)
- * - Right: 30 items • 22 folders • 8 files
+ * Footer Status Bar displaying current directory / status message and item counts.
  */
 const StatusBar: React.FC<Props> = ({
   message,
@@ -23,31 +22,45 @@ const StatusBar: React.FC<Props> = ({
   const totalItems = folderCount + fileCount;
 
   return (
-    <footer className="shrink-0 flex items-center justify-between px-6 py-2 border-t border-neutral-800/30 text-xs text-muted-color z-10 transition-colors">
+    <footer
+      role="status"
+      aria-live="polite"
+      className="shrink-0 flex items-center justify-between px-4 sm:px-6 py-2 border-t border-outline-variant bg-surface-container-low text-xs text-on-surface-variant z-10"
+    >
       {/* Left: Current Directory or Status Message */}
       <div className="flex items-center gap-2 truncate max-w-xl">
-        <span className="text-[#ff2d87]">📁</span>
+        {message && type === "error" ? (
+          <IconAlert size={15} className="text-error shrink-0" />
+        ) : message && type === "success" ? (
+          <IconCheck size={15} className="text-success shrink-0" />
+        ) : (
+          <IconFolder size={15} className="text-primary shrink-0" />
+        )}
+
         {message && type !== "info" ? (
           <span
             className={`font-medium truncate ${
-              type === "error" ? "text-red-400" : "text-emerald-400"
+              type === "error" ? "text-error" : "text-success"
             }`}
           >
             {message}
           </span>
         ) : (
           <span className="truncate">
-            Browsing: <span className="text-primary-color font-medium">{currentPath || "No folder selected"}</span>
+            Browsing:{" "}
+            <span className="text-on-surface font-medium">
+              {currentPath || "No folder selected"}
+            </span>
           </span>
         )}
       </div>
 
       {/* Right: Item counts summary */}
-      <div className="text-[11px] text-muted-color shrink-0 ml-4">
+      <div className="text-[11px] text-on-surface-variant shrink-0 ml-4 hidden sm:flex items-center gap-1.5">
         <span>{totalItems} items</span>
-        <span className="mx-1.5">•</span>
+        <span aria-hidden="true">•</span>
         <span>{folderCount} folders</span>
-        <span className="mx-1.5">•</span>
+        <span aria-hidden="true">•</span>
         <span>{fileCount} files</span>
       </div>
     </footer>
