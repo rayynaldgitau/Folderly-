@@ -11,6 +11,7 @@ import FileContextMenu from "./components/FileContextMenu";
 import RuleBuilder from "./components/RuleBuilder";
 import PreviewPanel from "./components/PreviewPanel";
 import FilePreviewPane, { type PreviewPaneItem } from "./components/FilePreviewPane";
+import DetailsPane from "./components/DetailsPane";
 import StatusBar from "./components/StatusBar";
 import UniversalSearchModal from "./components/UniversalSearchModal";
 import SettingsModal from "./components/SettingsModal";
@@ -1758,6 +1759,20 @@ const App: React.FC = () => {
             onClose={() => setShowPreviewPane(false)}
             item={primaryPreviewPaneItem}
             selectedCount={selectedPaneItems.length}
+            onOpenFile={handleOpenFile}
+            onNavigateFolder={(path) => navigateTo(path)}
+            onOpenQuickLook={(path, isFolder) => handleOpenPreviewForItem(path, isFolder)}
+          />
+
+          {/* ── Right Details Pane ── */}
+          <DetailsPane
+            isOpen={showDetailsPane}
+            onClose={() => setShowDetailsPane(false)}
+            selectedItems={selectedPaneItems}
+            currentPath={currentPath}
+            folderCount={filteredFolders.length}
+            fileCount={filteredFiles.length}
+            totalFolderBytes={filteredFiles.reduce((sum, f) => sum + (f.size > 0 ? f.size : 0), 0)}
             onOpenFile={handleOpenFile}
             onNavigateFolder={(path) => navigateTo(path)}
             onOpenQuickLook={(path, isFolder) => handleOpenPreviewForItem(path, isFolder)}
