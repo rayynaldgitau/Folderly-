@@ -1,14 +1,14 @@
 import React, { useEffect } from "react";
-import { IconAlert, IconClose, IconFolder, IconRefresh } from "./Icons";
+import { IconAlert, IconFolder, IconRefresh, IconClose } from "./Icons";
 import { Button } from "./Button";
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "filled" | "outlined" | "elevated";
+  variant?: "filled" | "elevated";
   interactive?: boolean;
 }
 
 /**
- * Material 3 Card container (`filled`, `outlined`, or `elevated`).
+ * Material 3 Card container separated by tonal surface color rather than borders.
  */
 export const Card: React.FC<CardProps> = ({
   variant = "filled",
@@ -18,11 +18,9 @@ export const Card: React.FC<CardProps> = ({
   ...rest
 }) => {
   const variantClasses =
-    variant === "outlined"
-      ? "bg-surface border border-outline-variant"
-      : variant === "elevated"
-      ? "bg-surface-container-low shadow-m3-1 border border-outline-variant/50"
-      : "bg-surface-container border border-outline-variant/60";
+    variant === "elevated"
+      ? "bg-surface-container-low shadow-m3-1"
+      : "bg-surface-container";
 
   return (
     <div
@@ -42,7 +40,7 @@ export interface ChipProps extends React.ButtonHTMLAttributes<HTMLButtonElement>
 }
 
 /**
- * Material 3 Filter / Assist Chip with 32px visual pill and 40px+ hit area.
+ * Material 3 Filter / Assist Chip using tonal surface separation.
  */
 export const Chip: React.FC<ChipProps> = ({
   selected = false,
@@ -54,10 +52,10 @@ export const Chip: React.FC<ChipProps> = ({
   <button
     type="button"
     aria-pressed={selected}
-    className={`inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-m3-sm text-xs font-medium border m3-pressable select-none ${
+    className={`inline-flex items-center gap-1.5 min-h-[36px] px-3.5 rounded-m3-sm text-xs font-medium m3-pressable select-none ${
       selected
-        ? "bg-secondary-container text-on-secondary-container border-transparent"
-        : "bg-transparent text-on-surface-variant border-outline-variant hover:bg-surface-container-high"
+        ? "bg-secondary-container text-on-secondary-container"
+        : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
     } ${className}`}
     {...rest}
   >
@@ -76,7 +74,7 @@ export interface DialogProps {
 }
 
 /**
- * Material 3 Modal Dialog with scrim backdrop, Escape dismissal, and centered scale entrance.
+ * Material 3 Modal Dialog with scrim backdrop, tonal surface separation, and Escape dismissal.
  */
 export const Dialog: React.FC<DialogProps> = ({
   isOpen,
@@ -106,10 +104,10 @@ export const Dialog: React.FC<DialogProps> = ({
       onClick={onClose}
     >
       <div
-        className={`w-full ${maxWidthClass} max-h-[90vh] flex flex-col bg-surface-container-high text-on-surface rounded-m3-xl shadow-m3-3 border border-outline-variant overflow-hidden animate-m3-dialog`}
+        className={`w-full ${maxWidthClass} max-h-[90vh] flex flex-col bg-surface-container-high text-on-surface rounded-m3-xl shadow-m3-3 overflow-hidden animate-m3-dialog`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-outline-variant shrink-0">
+        <div className="flex items-center justify-between gap-4 px-6 pt-5 pb-4 bg-surface-container shrink-0">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold text-on-surface truncate">{title}</h2>
             {subtitle && (
@@ -141,7 +139,7 @@ export interface SnackbarProps {
 }
 
 /**
- * Material 3 Snackbar / Toast banner using inverse-surface tokens.
+ * Material 3 Snackbar using inverse-surface tokens.
  */
 export const Snackbar: React.FC<SnackbarProps> = ({
   open,
@@ -157,7 +155,7 @@ export const Snackbar: React.FC<SnackbarProps> = ({
     <aside
       role="status"
       aria-live="polite"
-      className="fixed bottom-12 right-5 z-40 flex items-center gap-3 px-4 py-3 rounded-m3-md bg-inverse-surface text-inverse-on-surface shadow-m3-3 max-w-sm animate-m3-toast"
+      className="fixed bottom-12 right-5 z-40 flex items-center gap-3 px-4 py-3 rounded-m3-md bg-inverse-surface text-inverse-on-surface shadow-m3-2 max-w-sm animate-m3-toast"
     >
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold truncate">{title}</p>
@@ -222,11 +220,11 @@ export const StateView: React.FC<StateViewProps> = ({
   if (kind === "loading") {
     return (
       <div className="p-6 space-y-4" aria-busy="true" aria-label={title}>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {Array.from({ length: 10 }).map((_, idx) => (
             <div
               key={idx}
-              className="h-24 rounded-m3-md bg-surface-container animate-pulse border border-outline-variant/40"
+              className="h-24 rounded-m3-md bg-surface-container animate-pulse"
             />
           ))}
         </div>

@@ -10,26 +10,20 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  filled:
-    "bg-primary text-on-primary shadow-m3-0 hover:shadow-m3-1",
-  tonal:
-    "bg-secondary-container text-on-secondary-container hover:bg-surface-container-highest",
-  outlined:
-    "bg-transparent text-primary border border-outline hover:bg-primary/10",
-  text:
-    "bg-transparent text-primary hover:bg-primary/10",
-  danger:
-    "bg-error-container text-on-error-container hover:brightness-105",
+  filled: "bg-primary text-on-primary hover:brightness-105",
+  tonal: "bg-secondary-container text-on-secondary-container hover:bg-surface-container-highest",
+  outlined: "bg-transparent text-primary border border-outline hover:bg-primary/10",
+  text: "bg-transparent text-primary hover:bg-primary/10",
+  danger: "bg-error-container text-on-error-container hover:brightness-105",
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
-  sm: "min-h-[40px] px-3.5 text-xs gap-1.5",
+  sm: "min-h-[40px] px-4 text-xs gap-2",
   md: "min-h-[48px] px-5 text-sm gap-2",
 };
 
 /**
- * Material 3 Button primitive with tactile press feedback (scale 0.97)
- * and accessible focus-visible ring.
+ * Material 3 Button primitive with tactile press feedback (scale 0.97).
  */
 export const Button: React.FC<ButtonProps> = ({
   variant = "filled",
@@ -40,7 +34,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...rest
 }) => (
   <button
-    className={`inline-flex items-center justify-center rounded-m3-full font-semibold m3-pressable select-none disabled:opacity-40 disabled:cursor-not-allowed ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className}`}
+    className={`inline-flex items-center justify-center rounded-m3-full font-medium m3-pressable select-none disabled:opacity-40 disabled:cursor-not-allowed ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className}`}
     {...rest}
   >
     {leadingIcon && <span className="shrink-0 flex items-center">{leadingIcon}</span>}
@@ -55,8 +49,7 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
 }
 
 /**
- * Material 3 IconButton enforcing a 48x48px minimum touch target
- * and mandatory accessible `aria-label`.
+ * Material 3 IconButton enforcing a 48x48px minimum touch target.
  */
 export const IconButton: React.FC<IconButtonProps> = ({
   label,
@@ -106,7 +99,7 @@ export const Fab: React.FC<FabProps> = ({
   <button
     type="button"
     aria-label={label}
-    className={`inline-flex items-center justify-center gap-2 bg-primary-container text-on-primary-container shadow-m3-2 hover:shadow-m3-3 rounded-m3-lg font-semibold text-sm m3-pressable select-none ${
+    className={`inline-flex items-center justify-center gap-2 bg-primary-container text-on-primary-container shadow-m3-2 hover:shadow-m3-3 rounded-m3-lg font-medium text-sm m3-pressable select-none ${
       extended ? "h-12 px-4" : "w-14 h-14"
     } ${className}`}
     {...rest}

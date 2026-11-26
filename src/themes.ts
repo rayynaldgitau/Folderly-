@@ -1,6 +1,6 @@
 import type { ThemeMode } from "./types";
 
-/** Metadata and token-backed styling presets for each supported application theme. */
+/** Metadata and token-backed styling presets for supported application schemes. */
 export interface ThemeConfig {
   id: ThemeMode;
   name: string;
@@ -13,61 +13,54 @@ export interface ThemeConfig {
   accentText: string;
 }
 
-/** Theme definitions backed by `--md-sys-*` CSS custom properties in `src/styles/tokens.css`. */
+const SHARED_DARK: Omit<ThemeConfig, "id" | "name" | "description"> = {
+  rootClass: "bg-surface text-on-surface selection:bg-primary/25",
+  badgeClass: "bg-secondary-container text-on-secondary-container rounded-m3-full",
+  buttonPrimary: "bg-primary text-on-primary font-medium rounded-m3-full",
+  buttonSecondary: "bg-transparent text-primary border border-outline rounded-m3-full",
+  activeTabClass: "bg-primary-container text-on-primary-container font-medium rounded-m3-md",
+  accentText: "text-primary",
+};
+
+const SHARED_LIGHT: Omit<ThemeConfig, "id" | "name" | "description"> = {
+  rootClass: "bg-surface text-on-surface selection:bg-primary/20",
+  badgeClass: "bg-secondary-container text-on-secondary-container rounded-m3-full",
+  buttonPrimary: "bg-primary text-on-primary font-medium rounded-m3-full",
+  buttonSecondary: "bg-transparent text-primary border border-outline rounded-m3-full",
+  activeTabClass: "bg-primary-container text-on-primary-container font-medium rounded-m3-md",
+  accentText: "text-primary",
+};
+
+/** All themes map to the single-seed M3 Light or Dark scheme in `src/styles/tokens.css`. */
 export const THEMES: Record<ThemeMode, ThemeConfig> = {
   material: {
     id: "material",
-    name: "Material You (Cobalt Dark)",
-    description: "Material Design 3 tonal surfaces generated from a Cobalt Blue seed",
-    rootClass: "bg-surface text-on-surface selection:bg-primary/30",
-    badgeClass: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
-    buttonPrimary: "bg-primary text-on-primary font-semibold rounded-m3-full",
-    buttonSecondary: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
-    activeTabClass: "bg-primary-container text-on-primary-container font-semibold rounded-m3-md",
-    accentText: "text-primary",
-  },
-  pink: {
-    id: "pink",
-    name: "Midnight Sakura (OLED)",
-    description: "Deep OLED obsidian surface paired with high-contrast sakura rose tokens",
-    rootClass: "bg-surface text-on-surface selection:bg-primary/30",
-    badgeClass: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
-    buttonPrimary: "bg-primary text-on-primary font-semibold rounded-m3-full",
-    buttonSecondary: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
-    activeTabClass: "bg-primary-container text-on-primary-container font-semibold rounded-m3-md",
-    accentText: "text-primary",
+    name: "Material 3 Dark",
+    description: "Neutral dark tonal surfaces with slate-blue primary accents",
+    ...SHARED_DARK,
   },
   pink_light: {
     id: "pink_light",
-    name: "Blush Cotton Candy (Light)",
-    description: "Warm light tonal surfaces paired with accessible berry rose accents",
-    rootClass: "bg-surface text-on-surface selection:bg-primary/20",
-    badgeClass: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
-    buttonPrimary: "bg-primary text-on-primary font-semibold rounded-m3-full",
-    buttonSecondary: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
-    activeTabClass: "bg-primary-container text-on-primary-container font-semibold rounded-m3-md",
-    accentText: "text-primary",
+    name: "Material 3 Light",
+    description: "Clean light tonal surfaces with slate-blue primary accents",
+    ...SHARED_LIGHT,
+  },
+  pink: {
+    id: "pink",
+    name: "Material 3 Dark",
+    description: "Neutral dark tonal surfaces with slate-blue primary accents",
+    ...SHARED_DARK,
   },
   apple: {
     id: "apple",
-    name: "Cupertino Silver",
-    description: "Neutral brushed slate surfaces with crisp cobalt and emerald accents",
-    rootClass: "bg-surface text-on-surface selection:bg-primary/25",
-    badgeClass: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
-    buttonPrimary: "bg-primary text-on-primary font-semibold rounded-m3-full",
-    buttonSecondary: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
-    activeTabClass: "bg-primary-container text-on-primary-container font-semibold rounded-m3-md",
-    accentText: "text-primary",
+    name: "Material 3 Dark",
+    description: "Neutral dark tonal surfaces with slate-blue primary accents",
+    ...SHARED_DARK,
   },
   dark: {
     id: "dark",
-    name: "Solar Sunset (Matte Amber)",
-    description: "Matte obsidian surfaces with warm amber-orange primary tokens",
-    rootClass: "bg-surface text-on-surface selection:bg-primary/30",
-    badgeClass: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
-    buttonPrimary: "bg-primary text-on-primary font-semibold rounded-m3-full",
-    buttonSecondary: "bg-secondary-container text-on-secondary-container border border-outline-variant rounded-m3-full",
-    activeTabClass: "bg-primary-container text-on-primary-container font-semibold rounded-m3-md",
-    accentText: "text-primary",
+    name: "Material 3 Dark",
+    description: "Neutral dark tonal surfaces with slate-blue primary accents",
+    ...SHARED_DARK,
   },
 };

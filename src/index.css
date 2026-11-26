@@ -29,7 +29,6 @@
     transition:
       transform var(--motion-duration-press) var(--ease-out),
       background-color var(--motion-duration-fast) ease,
-      border-color var(--motion-duration-fast) ease,
       color var(--motion-duration-fast) ease,
       box-shadow var(--motion-duration-fast) ease;
   }
@@ -38,12 +37,10 @@
     transform: scale(0.97);
   }
 
-  /* M3 state layer surface hover (gated for pointer devices) */
+  /* M3 tonal hover surface (gated for pointer devices) */
   .m3-state-surface {
-    position: relative;
     transition:
       background-color var(--motion-duration-fast) ease,
-      border-color var(--motion-duration-fast) ease,
       transform var(--motion-duration-press) var(--ease-out);
   }
 
@@ -56,7 +53,7 @@
   /* Token-backed button primitives */
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-m3-full px-4 min-h-[40px]
-           text-xs font-semibold m3-pressable
+           text-xs font-medium m3-pressable
            disabled:opacity-40 disabled:cursor-not-allowed select-none;
   }
 
@@ -65,87 +62,35 @@
     color: var(--md-sys-color-on-primary);
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .btn-primary:hover:not(:disabled) {
-      filter: brightness(1.06);
-      box-shadow: var(--md-sys-elevation-1);
-    }
-  }
-
   .btn-secondary {
-    background-color: var(--md-sys-color-secondary-container);
-    color: var(--md-sys-color-on-secondary-container);
-    border: 1px solid var(--md-sys-color-outline-variant);
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .btn-secondary:hover:not(:disabled) {
-      background-color: var(--md-sys-color-surface-container-highest);
-    }
+    background-color: transparent;
+    color: var(--md-sys-color-primary);
+    border: 1px solid var(--md-sys-color-outline);
   }
 
   .btn-danger {
     background-color: var(--md-sys-color-error-container);
     color: var(--md-sys-color-on-error-container);
-    border: 1px solid transparent;
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .btn-danger:hover:not(:disabled) {
-      filter: brightness(1.05);
-    }
-  }
-
-  /* Token-backed badges */
+  /* Borderless tonal badges */
   .badge {
-    @apply text-[11px] font-semibold tracking-wide px-2.5 py-0.5 rounded-m3-full border;
+    @apply text-[11px] font-medium tracking-wide px-2.5 py-0.5 rounded-m3-full;
   }
 
   .badge-green {
     background-color: var(--md-sys-color-success-container);
     color: var(--md-sys-color-on-success-container);
-    border-color: transparent;
   }
 
   .badge-yellow {
     background-color: var(--md-sys-color-warning-container);
     color: var(--md-sys-color-on-warning-container);
-    border-color: transparent;
   }
 
   .badge-red {
     background-color: var(--md-sys-color-error-container);
     color: var(--md-sys-color-on-error-container);
-    border-color: transparent;
-  }
-
-  /* Legacy semantic surface aliases (token-backed during gradual refactor) */
-  .bg-main {
-    background-color: var(--md-sys-color-surface);
-  }
-  .bg-sidebar {
-    background-color: var(--md-sys-color-surface-container-low);
-    border-color: var(--md-sys-color-outline-variant);
-  }
-  .bg-card {
-    background-color: var(--md-sys-color-surface-container);
-    border-color: var(--md-sys-color-outline-variant);
-  }
-  .bg-input {
-    background-color: var(--md-sys-color-surface-container-lowest);
-    border-color: var(--md-sys-color-outline-variant);
-    color: var(--md-sys-color-on-surface);
-  }
-  .text-primary-color {
-    color: var(--md-sys-color-on-surface);
-  }
-  .text-muted-color {
-    color: var(--md-sys-color-on-surface-variant);
-  }
-  .badge-count {
-    background-color: var(--md-sys-color-secondary-container);
-    color: var(--md-sys-color-on-secondary-container);
-    border: 1px solid var(--md-sys-color-outline-variant);
   }
 }
 
@@ -229,7 +174,7 @@
   background: var(--md-sys-color-outline);
 }
 
-/* ── Reduced Motion Support (opacity-only, no transform movement) ── */
+/* ── Reduced Motion Support ── */
 @media (prefers-reduced-motion: reduce) {
   .animate-m3-dialog,
   .animate-m3-popover,
