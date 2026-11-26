@@ -87,6 +87,15 @@ export const CHANGELOG_DATA: ReleaseVersion[] = [
         description:
           "Single-click to open folders or select files with multi-select support, sort with a persistent Date added index, and track Recent Files live with automatic missing-file pruning and Clear recents.",
       },
+      {
+        icon: "🔐",
+        title: "macOS Folder Permissions & Full Disk Access Guidance",
+        tag: "FIX & IMPROVEMENT",
+        tagColor: "bg-tertiary-container text-on-tertiary-container border-outline-variant",
+        description:
+          "Added macOS Info.plist folder and volume usage descriptions, stopped startup scanning of protected folders (Desktop, Documents, Downloads, Pictures), added stable APPLE_SIGNING_IDENTITY code-signing support, and introduced a non-blocking Full Disk Access banner with direct System Settings shortcuts when access is denied.",
+        tip: "On macOS, grant Full Disk Access once in System Settings → Privacy & Security → Full Disk Access to avoid repeated folder prompts.",
+      },
     ],
   },
   {
