@@ -37,7 +37,7 @@ export interface QuickAccessItem {
 }
 
 /** Supported visual display modes in the main workspace. */
-export type ViewMode = "cards" | "details" | "grid";
+export type ViewMode = "list" | "grid";
 
 /** Supported visual themes including dark OLED pink and light pink. */
 export type ThemeMode = "pink" | "pink_light" | "material" | "apple" | "dark";

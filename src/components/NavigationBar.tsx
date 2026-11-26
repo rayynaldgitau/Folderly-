@@ -4,24 +4,28 @@ import { MacFolderIcon } from "./MacIcons";
 import { FoldyLogo } from "./FoldyLogo";
 import {
   Button,
-  Chip,
   IconArrowLeft,
   IconArrowRight,
   IconArrowUp,
   IconCheck,
+  IconChevronDown,
   IconChevronRight,
   IconClock,
   IconClose,
   IconFolder,
+  IconFolderMove,
   IconFolderPlus,
   IconGrid,
+  IconHardDrive,
   IconList,
+  IconMoreVert,
+  IconPencil,
   IconPlus,
   IconRefresh,
   IconSearch,
-  IconSettings,
   IconSidebar,
   IconSliders,
+  IconTrash,
 } from "./ui";
 
 export interface NavigationBarProps {
@@ -38,25 +42,23 @@ export interface NavigationBarProps {
   onSearchChange: (q: string) => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
-  isRecursive: boolean;
-  onToggleRecursive: () => void;
   isSidebarOpen: boolean;
   onToggleSidebar: () => void;
   isRenamerOpen: boolean;
   onToggleRenamer: () => void;
   renamerPosition: DrawerPosition;
   onToggleRenamerPosition: () => void;
-  foldersFirst: boolean;
-  onToggleFoldersFirst: () => void;
   selectedCount: number;
-  totalCount: number;
-  allSelected: boolean;
-  onToggleSelectAll: () => void;
+  folderCount: number;
+  fileCount: number;
+  onClearSelection: () => void;
+  onRenameSelected: () => void;
+  onDeleteSelected: () => void;
+  onMoveSelected: () => void;
   onOpenUniversalSearch: () => void;
   onNewFolder?: () => void;
   sortField?: SortField;
   onSortChange?: (field: SortField) => void;
-  onOpenSettings?: () => void;
   tabs: TabItem[];
   activeTabId: string;
   onSelectTab: (tabId: string) => void;
@@ -69,6 +71,7 @@ export interface NavigationBarProps {
 interface PathSegment {
   name: string;
   fullPath: string;
+  isDrive?: boolean;
 }
 
 function parsePathSegments(path: string | null): PathSegment[] {
@@ -77,11 +80,11 @@ function parsePathSegments(path: string | null): PathSegment[] {
     return [{ name: "Recent Files", fullPath: "recents" }];
   }
   if (path === "/" || path === "\\") {
-    return [{ name: path, fullPath: path }];
+    return [{ name: path, fullPath: path, isDrive: true }];
   }
   if (/^[a-zA-Z]:[\\/]?$/i.test(path)) {
     const drive = path.slice(0, 2).toUpperCase();
-    return [{ name: drive, fullPath: `${drive}\\` }];
+    return [{ name: drive, fullPath: `${drive}\\`, isDrive: true }];
   }
 
   const rawParts = path.split(/[\\/]/).filter(Boolean);
@@ -90,7 +93,7 @@ function parsePathSegments(path: string | null): PathSegment[] {
   const segments: PathSegment[] = [];
   if (/^[a-zA-Z]:$/i.test(rawParts[0]) || /^[a-zA-Z]:/i.test(rawParts[0])) {
     const drive = rawParts[0].slice(0, 2).toUpperCase();
-    segments.push({ name: drive, fullPath: `${drive}\\` });
+    segments.push({ name: drive, fullPath: `${drive}\\`, isDrive: true });
     let runningPath = `${drive}\\`;
     for (let i = 1; i < rawParts.length; i++) {
       const part = rawParts[i];
@@ -108,11 +111,21 @@ function parsePathSegments(path: string | null): PathSegment[] {
   return segments;
 }
 
+function formatSubtitleCount(folderCount: number, fileCount: number): string {
+  if (folderCount === 0 && fileCount === 0) return "Empty folder";
+  const parts: string[] = [];
+  if (folderCount > 0) {
+    parts.push(`${folderCount} ${folderCount === 1 ? "folder" : "folders"}`);
+  }
+  if (fileCount > 0) {
+    parts.push(`${fileCount} ${fileCount === 1 ? "file" : "files"}`);
+  }
+  return parts.join(", ");
+}
+
 /**
- * Material 3 Top App Bar & Explorer Chrome:
- * - Tab strip with drag-and-drop reordering and drop-to-move
- * - History controls, editable breadcrumb bar, and universal search
- * - Folder title, segmented view switcher, filter/sort controls, and Bulk Renamer trigger
+ * Calm Material 3 Top App Bar, Page Header, and Slim Controls Row.
+ * Replaces top bar with a contextual selection bar when items are selected.
  */
 export const NavigationBar: React.FC<NavigationBarProps> = ({
   currentPath,
@@ -122,28 +135,29 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
   onGoBack,
   onGoForward,
   onGoUp,
+  onRefresh,
   onNavigate,
   searchQuery,
   onSearchChange,
   viewMode,
   onViewModeChange,
-  isRecursive,
-  onToggleRecursive,
   isSidebarOpen,
   onToggleSidebar,
   isRenamerOpen,
   onToggleRenamer,
-  foldersFirst,
-  onToggleFoldersFirst,
+  renamerPosition,
+  onToggleRenamerPosition,
   selectedCount,
-  totalCount,
-  allSelected,
-  onToggleSelectAll,
+  folderCount,
+  fileCount,
+  onClearSelection,
+  onRenameSelected,
+  onDeleteSelected,
+  onMoveSelected,
   onOpenUniversalSearch,
   onNewFolder,
   sortField = "name",
   onSortChange,
-  onOpenSettings,
   tabs = [],
   activeTabId,
   onSelectTab,
@@ -158,7 +172,9 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
   const [isEditingPath, setIsEditingPath] = useState(false);
   const [editPathValue, setEditPathValue] = useState("");
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const [isOverflowOpen, setIsOverflowOpen] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement>(null);
+  const overflowMenuRef = useRef<HTMLDivElement>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const isCancelledRef = useRef(false);
@@ -171,6 +187,19 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
       : "Downloads";
 
   const segments = useMemo(() => parsePathSegments(currentPath), [currentPath]);
+
+  // Truncate middle breadcrumb segments with an ellipsis when path is deep
+  const displaySegments = useMemo(() => {
+    if (segments.length <= 4) {
+      return segments.map((seg) => ({ ...seg, isEllipsis: false }));
+    }
+    return [
+      { ...segments[0], isEllipsis: false },
+      { name: "…", fullPath: segments[segments.length - 3].fullPath, isEllipsis: true },
+      { ...segments[segments.length - 2], isEllipsis: false },
+      { ...segments[segments.length - 1], isEllipsis: false },
+    ];
+  }, [segments]);
 
   useEffect(() => {
     if (!isEditingPath) {
@@ -190,11 +219,17 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
       if (sortMenuRef.current && !sortMenuRef.current.contains(e.target as Node)) {
         setIsSortMenuOpen(false);
       }
+      if (overflowMenuRef.current && !overflowMenuRef.current.contains(e.target as Node)) {
+        setIsOverflowOpen(false);
+      }
     };
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsSortMenuOpen(false);
+      if (e.key === "Escape") {
+        setIsSortMenuOpen(false);
+        setIsOverflowOpen(false);
+      }
     };
-    if (isSortMenuOpen) {
+    if (isSortMenuOpen || isOverflowOpen) {
       document.addEventListener("mousedown", handleClickOutside);
       document.addEventListener("keydown", handleKeyDown);
     }
@@ -202,7 +237,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isSortMenuOpen]);
+  }, [isSortMenuOpen, isOverflowOpen]);
 
   const handleStartEditing = () => {
     isCancelledRef.current = false;
@@ -231,10 +266,10 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
   };
 
   const sortLabels: Record<SortField, string> = {
-    type: "File Type",
     name: "Name",
     date: "Date Modified",
     size: "Size",
+    type: "File Type",
   };
 
   return (
@@ -403,187 +438,233 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
         </div>
       </div>
 
-      {/* Row 1: Navigation, Breadcrumbs & Universal Search */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 px-4 sm:px-6 py-2.5">
-        <div className="flex items-center gap-2 flex-1 min-w-[240px]">
-          <Button
-            variant={isSidebarOpen ? "tonal" : "outlined"}
-            size="sm"
-            onClick={onToggleSidebar}
-            aria-pressed={isSidebarOpen}
-            aria-label="Toggle navigation sidebar"
-            leadingIcon={<IconSidebar size={16} />}
-          >
-            <span className="hidden sm:inline">Sidebar</span>
-          </Button>
+      {/* Row 1: Top App Bar OR Contextual Selection Bar */}
+      {selectedCount > 0 ? (
+        <div
+          role="toolbar"
+          aria-label="Selection actions"
+          className="flex items-center justify-between gap-3 mx-4 sm:mx-6 my-2 px-3 min-h-[44px] rounded-m3-full bg-primary-container text-on-primary-container animate-m3-selection-bar"
+        >
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClearSelection}
+              aria-label="Clear selection"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-m3-full hover:bg-on-primary-container/10 m3-pressable"
+            >
+              <IconClose size={18} />
+            </button>
+            <span className="text-xs font-semibold">
+              {selectedCount} selected
+            </span>
+          </div>
 
           <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onRenameSelected}
+              className="inline-flex items-center gap-1.5 px-3 min-h-[34px] rounded-m3-full text-xs font-medium hover:bg-on-primary-container/10 m3-pressable"
+            >
+              <IconPencil size={15} />
+              <span>Rename</span>
+            </button>
+            <button
+              type="button"
+              onClick={onMoveSelected}
+              className="inline-flex items-center gap-1.5 px-3 min-h-[34px] rounded-m3-full text-xs font-medium hover:bg-on-primary-container/10 m3-pressable"
+            >
+              <IconFolderMove size={15} />
+              <span>Move</span>
+            </button>
+            <button
+              type="button"
+              onClick={onDeleteSelected}
+              className="inline-flex items-center gap-1.5 px-3 min-h-[34px] rounded-m3-full text-xs font-medium text-error hover:bg-error-container/60 m3-pressable"
+            >
+              <IconTrash size={15} />
+              <span>Delete</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-2">
+          <div className="flex items-center gap-1 flex-1 min-w-0">
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              aria-pressed={isSidebarOpen}
+              aria-label="Toggle navigation sidebar"
+              title="Toggle sidebar"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high m3-pressable shrink-0"
+            >
+              <IconSidebar size={18} />
+            </button>
+
             <button
               type="button"
               aria-label="Go back"
               onClick={onGoBack}
               disabled={!canGoBack}
-              className="inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-m3-full bg-surface-container text-on-surface disabled:opacity-35 disabled:cursor-not-allowed hover:bg-surface-container-high m3-pressable"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high disabled:opacity-35 disabled:pointer-events-none m3-pressable shrink-0"
             >
-              <IconArrowLeft size={16} />
+              <IconArrowLeft size={18} />
             </button>
             <button
               type="button"
               aria-label="Go forward"
               onClick={onGoForward}
               disabled={!canGoForward}
-              className="inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-m3-full bg-surface-container text-on-surface disabled:opacity-35 disabled:cursor-not-allowed hover:bg-surface-container-high m3-pressable"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high disabled:opacity-35 disabled:pointer-events-none m3-pressable shrink-0"
             >
-              <IconArrowRight size={16} />
+              <IconArrowRight size={18} />
             </button>
             <button
               type="button"
               aria-label="Go to parent folder"
               onClick={onGoUp}
               disabled={!canGoUp}
-              className="inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-m3-full bg-surface-container text-on-surface disabled:opacity-35 disabled:cursor-not-allowed hover:bg-surface-container-high m3-pressable"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high disabled:opacity-35 disabled:pointer-events-none m3-pressable shrink-0"
             >
-              <IconArrowUp size={16} />
+              <IconArrowUp size={18} />
             </button>
+
+            <div className="flex-1 min-w-0 max-w-2xl ml-1">
+              {isEditingPath ? (
+                <input
+                  ref={inputRef}
+                  type="text"
+                  aria-label="Folder path"
+                  value={editPathValue}
+                  onChange={(e) => setEditPathValue(e.target.value)}
+                  onKeyDown={handlePathKeyDown}
+                  onBlur={() => {
+                    if (!isCancelledRef.current) handleSubmitPath();
+                  }}
+                  className="w-full min-h-[38px] bg-surface-container-high rounded-m3-full px-3.5 text-xs text-on-surface outline-none"
+                />
+              ) : (
+                <nav
+                  aria-label="Breadcrumb"
+                  onClick={handleStartEditing}
+                  className="flex items-center bg-surface-container rounded-m3-full px-3 min-h-[38px] cursor-text hover:bg-surface-container-high transition-colors min-w-0"
+                  title={currentPath || undefined}
+                >
+                  <div className="flex items-center gap-0.5 text-xs text-on-surface min-w-0 overflow-hidden">
+                    {displaySegments.map((seg, idx) => (
+                      <React.Fragment key={`${seg.fullPath}-${idx}`}>
+                        {seg.isEllipsis ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onNavigate(seg.fullPath);
+                            }}
+                            title={currentPath || "Show parent"}
+                            aria-label="Navigate to parent segment"
+                            className="px-1.5 py-0.5 rounded-m3-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest shrink-0"
+                          >
+                            …
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onNavigate(seg.fullPath);
+                            }}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.dataTransfer.dropEffect = "move";
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              const src =
+                                e.dataTransfer.getData("application/foldy-path") ||
+                                e.dataTransfer.getData("application/folderly-path") ||
+                                e.dataTransfer.getData("text/plain");
+                              if (src && seg.fullPath !== "recents" && onMoveItem) {
+                                onMoveItem(src, seg.fullPath);
+                              }
+                            }}
+                            className="inline-flex items-center gap-1 hover:text-primary transition-colors truncate font-medium px-1.5 py-1 rounded-m3-xs hover:bg-surface-container-highest max-w-[160px]"
+                            title={`Navigate to ${seg.name}`}
+                            aria-label={seg.isDrive ? `Drive ${seg.name}` : seg.name}
+                          >
+                            {seg.isDrive ? (
+                              <IconHardDrive size={15} className="text-on-surface-variant shrink-0" />
+                            ) : (
+                              <span className="truncate">{seg.name}</span>
+                            )}
+                          </button>
+                        )}
+                        {idx < displaySegments.length - 1 && (
+                          <IconChevronRight
+                            size={14}
+                            className="text-on-surface-variant/60 shrink-0"
+                          />
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </nav>
+              )}
+            </div>
           </div>
 
-          <div className="flex-1 min-w-0 max-w-2xl">
-            {isEditingPath ? (
-              <input
-                ref={inputRef}
-                type="text"
-                aria-label="Folder path"
-                value={editPathValue}
-                onChange={(e) => setEditPathValue(e.target.value)}
-                onKeyDown={handlePathKeyDown}
-                onBlur={() => {
-                  if (!isCancelledRef.current) handleSubmitPath();
-                }}
-                className="w-full min-h-[40px] bg-surface-container-lowest border border-primary rounded-m3-sm px-3.5 text-xs text-on-surface outline-none"
-              />
-            ) : (
-              <nav
-                aria-label="Breadcrumb"
-                onClick={handleStartEditing}
-                className="flex items-center justify-between bg-surface-container rounded-m3-full px-3.5 min-h-[40px] cursor-text hover:bg-surface-container-high transition-colors"
+          {/* Single Search Field */}
+          <div className="relative flex items-center w-48 sm:w-64 shrink-0">
+            <IconSearch
+              size={15}
+              className="absolute left-3.5 text-on-surface-variant pointer-events-none"
+            />
+            <input
+              type="text"
+              aria-label="Search files"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Search files…"
+              className="w-full min-h-[38px] bg-surface-container hover:bg-surface-container-high focus:bg-surface-container-high rounded-m3-full pl-9 pr-16 text-xs text-on-surface placeholder:text-on-surface-variant/70 outline-none transition-colors"
+            />
+            <div className="absolute right-2 flex items-center gap-1">
+              {searchQuery && (
+                <button
+                  type="button"
+                  aria-label="Clear search"
+                  onClick={() => onSearchChange("")}
+                  className="w-6 h-6 flex items-center justify-center rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest"
+                >
+                  <IconClose size={13} />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onOpenUniversalSearch}
+                title="Search across laptop (Ctrl+K)"
+                aria-label="Search across laptop (Ctrl+K)"
+                className="text-[10px] font-mono px-1.5 py-0.5 rounded-m3-xs bg-surface-container-highest text-on-surface-variant hover:text-on-surface m3-pressable"
               >
-                <div className="flex items-center gap-1 text-xs text-on-surface truncate">
-                  {segments.map((seg, idx) => (
-                    <React.Fragment key={seg.fullPath}>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onNavigate(seg.fullPath);
-                        }}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          e.dataTransfer.dropEffect = "move";
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          const src =
-                            e.dataTransfer.getData("application/foldy-path") ||
-                            e.dataTransfer.getData("application/folderly-path") ||
-                            e.dataTransfer.getData("text/plain");
-                          if (src && seg.fullPath !== "recents" && onMoveItem) {
-                            onMoveItem(src, seg.fullPath);
-                          }
-                        }}
-                        className="hover:text-primary transition-colors truncate font-medium px-1 py-0.5 rounded-m3-xs hover:bg-surface-container-high"
-                        title={`Navigate to ${seg.name}`}
-                      >
-                        {seg.name}
-                      </button>
-                      {idx < segments.length - 1 && (
-                        <IconChevronRight
-                          size={14}
-                          className="text-on-surface-variant shrink-0"
-                        />
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
-              </nav>
-            )}
+                Ctrl+K
+              </button>
+            </div>
           </div>
         </div>
+      )}
 
-        <button
-          type="button"
-          onClick={onOpenUniversalSearch}
-          aria-label="Search across laptop (Ctrl+K)"
-          className="flex items-center gap-3 px-4 min-h-[40px] rounded-m3-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-on-surface text-xs font-medium m3-pressable"
-        >
-          <span className="flex items-center gap-2">
-            <IconSearch size={15} className="text-primary" />
-            <span className="hidden sm:inline">Search Laptop</span>
-          </span>
-          <kbd className="hidden md:inline text-[10px] bg-surface-container px-1.5 py-0.5 rounded-m3-xs font-mono">
-            Ctrl+K
-          </kbd>
-        </button>
-      </div>
+      {/* Row 2: Page Header */}
+      <div className="flex items-center justify-between gap-4 px-4 sm:px-6 pt-2 pb-1">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold text-on-surface tracking-tight truncate">
+            {currentFolderName}
+          </h1>
+          <p className="text-xs text-on-surface-variant mt-0.5">
+            {formatSubtitleCount(folderCount, fileCount)}
+          </p>
+        </div>
 
-      {/* Row 2: Page Title & Primary Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 pt-1 pb-2.5">
-        <h1 className="text-xl sm:text-2xl font-bold text-on-surface tracking-tight truncate">
-          {currentFolderName}
-        </h1>
-
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          {/* M3 Segmented View Switcher */}
-          <div
-            role="group"
-            aria-label="View mode"
-            className="inline-flex items-center bg-surface-container rounded-m3-full p-1"
-          >
-            {(
-              [
-                { mode: "cards", label: "Cards", icon: <IconFolder size={14} /> },
-                { mode: "details", label: "Table", icon: <IconList size={14} /> },
-                { mode: "grid", label: "Grid", icon: <IconGrid size={14} /> },
-              ] as const
-            ).map(({ mode, label, icon }) => {
-              const active = viewMode === mode;
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => onViewModeChange(mode)}
-                  className={`flex items-center gap-1.5 px-3 min-h-[32px] rounded-m3-full font-semibold m3-pressable ${
-                    active
-                      ? "bg-primary-container text-on-primary-container"
-                      : "text-on-surface-variant hover:text-on-surface"
-                  }`}
-                >
-                  {icon}
-                  <span>{label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <Chip
-            selected={foldersFirst}
-            onClick={onToggleFoldersFirst}
-            leadingIcon={<IconFolder size={14} />}
-          >
-            Folders First
-          </Chip>
-
-          <Chip
-            selected={isRecursive}
-            onClick={onToggleRecursive}
-            leadingIcon={<IconRefresh size={14} />}
-          >
-            Subfolders
-          </Chip>
-
+        <div className="flex items-center gap-1.5 shrink-0">
           {onNewFolder && (
             <Button
-              variant="filled"
+              variant="tonal"
               size="sm"
               onClick={onNewFolder}
               leadingIcon={<IconFolderPlus size={16} />}
@@ -591,125 +672,156 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
               New folder
             </Button>
           )}
-        </div>
-      </div>
 
-      {/* Row 3: Settings, Live Filter, Sort & Bulk Renamer */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 pb-2.5 text-xs">
-        <Button
-          variant="tonal"
-          size="sm"
-          onClick={onOpenSettings}
-          leadingIcon={<IconSettings size={15} />}
-        >
-          Theme & Settings
-        </Button>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex items-center w-48 sm:w-56">
-            <IconSearch
-              size={14}
-              className="absolute left-3 text-on-surface-variant pointer-events-none"
-            />
-            <input
-              type="text"
-              aria-label="Filter files in current folder"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Filter files in folder"
-              className="w-full min-h-[38px] bg-surface-container-lowest border border-outline-variant rounded-m3-full pl-9 pr-8 text-xs text-on-surface placeholder:text-on-surface-variant/70 outline-none focus:border-primary transition-colors"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                aria-label="Clear folder filter"
-                onClick={() => onSearchChange("")}
-                className="absolute right-2 w-6 h-6 flex items-center justify-center rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
-              >
-                <IconClose size={13} />
-              </button>
-            )}
-          </div>
-
-          <div className="relative" ref={sortMenuRef}>
-            <Button
-              variant="outlined"
-              size="sm"
+          <div className="relative" ref={overflowMenuRef}>
+            <button
+              type="button"
               aria-haspopup="menu"
-              aria-expanded={isSortMenuOpen}
-              onClick={() => setIsSortMenuOpen((prev) => !prev)}
+              aria-expanded={isOverflowOpen}
+              aria-label="More folder actions"
+              onClick={() => setIsOverflowOpen((prev) => !prev)}
+              className="inline-flex items-center justify-center w-9 h-9 rounded-m3-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high m3-pressable"
             >
-              Sort: {sortLabels[sortField]}
-            </Button>
+              <IconMoreVert size={18} />
+            </button>
 
-            {isSortMenuOpen && (
+            {isOverflowOpen && (
               <div
                 role="menu"
-                aria-label="Sort files by"
-                className="absolute right-0 mt-1.5 w-48 bg-surface-container-high rounded-m3-md shadow-m3-2 py-1.5 px-1.5 z-50 text-xs animate-m3-popover"
+                aria-label="Folder actions"
+                className="absolute right-0 mt-1.5 w-52 bg-surface-container-high rounded-m3-md shadow-m3-2 py-1.5 px-1.5 z-50 text-xs animate-m3-popover"
                 style={{ "--transform-origin": "top right" } as React.CSSProperties}
               >
-                <div className="px-2.5 py-1 text-[11px] font-semibold text-on-surface-variant">
-                  Sort Files By
-                </div>
-                {(["type", "name", "date", "size"] as SortField[]).map((field) => (
-                  <button
-                    key={field}
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={sortField === field}
-                    onClick={() => {
-                      onSortChange?.(field);
-                      setIsSortMenuOpen(false);
-                    }}
-                    className={`w-full min-h-[36px] flex items-center justify-between px-2.5 py-1.5 rounded-m3-sm text-left m3-pressable ${
-                      sortField === field
-                        ? "bg-secondary-container text-on-secondary-container font-semibold"
-                        : "text-on-surface hover:bg-surface-container-highest"
-                    }`}
-                  >
-                    <span>{sortLabels[field]}</span>
-                    {sortField === field && <IconCheck size={14} />}
-                  </button>
-                ))}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    onToggleRenamer();
+                    setIsOverflowOpen(false);
+                  }}
+                  className={`w-full min-h-[36px] flex items-center justify-between px-2.5 py-1.5 rounded-m3-sm text-left m3-pressable ${
+                    isRenamerOpen
+                      ? "bg-secondary-container text-on-secondary-container font-semibold"
+                      : "text-on-surface hover:bg-surface-container-highest"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <IconSliders size={15} />
+                    <span>Bulk Renamer</span>
+                  </span>
+                  {isRenamerOpen && <IconCheck size={14} />}
+                </button>
+
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    onRefresh();
+                    setIsOverflowOpen(false);
+                  }}
+                  className="w-full min-h-[36px] flex items-center gap-2 px-2.5 py-1.5 rounded-m3-sm text-left text-on-surface hover:bg-surface-container-highest m3-pressable"
+                >
+                  <IconRefresh size={15} />
+                  <span>Refresh folder</span>
+                </button>
+
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    onToggleRenamerPosition();
+                    setIsOverflowOpen(false);
+                  }}
+                  className="w-full min-h-[36px] flex items-center justify-between px-2.5 py-1.5 rounded-m3-sm text-left text-on-surface hover:bg-surface-container-highest m3-pressable"
+                >
+                  <span>Renamer side</span>
+                  <span className="text-[11px] text-on-surface-variant capitalize">
+                    {renamerPosition}
+                  </span>
+                </button>
               </div>
             )}
           </div>
-
-          <Button
-            variant={isRenamerOpen ? "filled" : "tonal"}
-            size="sm"
-            aria-pressed={isRenamerOpen}
-            onClick={onToggleRenamer}
-            leadingIcon={<IconSliders size={15} />}
-          >
-            Bulk Renamer
-          </Button>
         </div>
       </div>
 
-      {/* Row 4: Select All + Keyboard/Pointer Hint */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 pb-2.5 text-xs text-on-surface-variant">
-        <label className="flex items-center gap-2 cursor-pointer select-none min-h-[32px]">
-          <input
-            type="checkbox"
-            checked={allSelected}
-            onChange={onToggleSelectAll}
-            className="w-4 h-4 rounded cursor-pointer accent-primary"
-          />
-          <span>
-            Select all ({totalCount} files)
-            {selectedCount > 0 && selectedCount !== totalCount && (
-              <span className="text-primary font-semibold ml-1.5">
-                ({selectedCount} selected)
-              </span>
-            )}
-          </span>
-        </label>
+      {/* Row 3: Slim Controls Row */}
+      <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-2 text-xs">
+        <div className="relative" ref={sortMenuRef}>
+          <button
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={isSortMenuOpen}
+            onClick={() => setIsSortMenuOpen((prev) => !prev)}
+            className="inline-flex items-center gap-1.5 px-3 min-h-[32px] rounded-m3-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-medium m3-pressable"
+          >
+            <span>Sort: {sortLabels[sortField]}</span>
+            <IconChevronDown size={14} />
+          </button>
 
-        <span className="text-[11px] text-on-surface-variant hidden lg:inline">
-          Double-click to open • Space or P for Quick Look • Right-click for actions
-        </span>
+          {isSortMenuOpen && (
+            <div
+              role="menu"
+              aria-label="Sort files by"
+              className="absolute left-0 mt-1.5 w-44 bg-surface-container-high rounded-m3-md shadow-m3-2 py-1.5 px-1.5 z-50 text-xs animate-m3-popover"
+              style={{ "--transform-origin": "top left" } as React.CSSProperties}
+            >
+              {(["name", "date", "size", "type"] as SortField[]).map((field) => (
+                <button
+                  key={field}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={sortField === field}
+                  onClick={() => {
+                    onSortChange?.(field);
+                    setIsSortMenuOpen(false);
+                  }}
+                  className={`w-full min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-m3-sm text-left m3-pressable ${
+                    sortField === field
+                      ? "bg-secondary-container text-on-secondary-container font-semibold"
+                      : "text-on-surface hover:bg-surface-container-highest"
+                  }`}
+                >
+                  <span>{sortLabels[field]}</span>
+                  {sortField === field && <IconCheck size={14} />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Compact M3 Segmented View Switcher (List | Grid) */}
+        <div
+          role="group"
+          aria-label="View mode"
+          className="inline-flex items-center bg-surface-container rounded-m3-full p-0.5"
+        >
+          {(
+            [
+              { mode: "list", label: "List view", icon: <IconList size={15} /> },
+              { mode: "grid", label: "Grid view", icon: <IconGrid size={15} /> },
+            ] as const
+          ).map(({ mode, label, icon }) => {
+            const active = viewMode === mode;
+            return (
+              <button
+                key={mode}
+                type="button"
+                aria-pressed={active}
+                aria-label={label}
+                title={label}
+                onClick={() => onViewModeChange(mode)}
+                className={`inline-flex items-center justify-center w-8 h-7 rounded-m3-full m3-pressable ${
+                  active
+                    ? "bg-secondary-container text-on-secondary-container"
+                    : "text-on-surface-variant hover:text-on-surface"
+                }`}
+              >
+                {icon}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </header>
   );

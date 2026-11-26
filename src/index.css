@@ -138,6 +138,28 @@
   }
 }
 
+@keyframes m3-view-switch {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes m3-selection-bar {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .animate-m3-dialog {
   animation: m3-enter-scale var(--motion-duration-modal) var(--ease-out) both;
 }
@@ -149,6 +171,14 @@
 
 .animate-m3-toast {
   animation: m3-enter-slide-up var(--motion-duration-toast) var(--ease-out) both;
+}
+
+.animate-m3-view-switch {
+  animation: m3-view-switch var(--motion-duration-fast) var(--ease-out) both;
+}
+
+.animate-m3-selection-bar {
+  animation: m3-selection-bar var(--motion-duration-fast) var(--ease-out) both;
 }
 
 .animate-m3-progress {
@@ -178,7 +208,9 @@
 @media (prefers-reduced-motion: reduce) {
   .animate-m3-dialog,
   .animate-m3-popover,
-  .animate-m3-toast {
+  .animate-m3-toast,
+  .animate-m3-view-switch,
+  .animate-m3-selection-bar {
     animation: m3-fade-only var(--motion-duration-fast) ease both;
   }
 

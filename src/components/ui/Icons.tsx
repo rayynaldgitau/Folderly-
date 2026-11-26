@@ -192,3 +192,38 @@ export const IconClock: React.FC<IconProps> = ({ size = 18, ...props }) => (
     <path d="M12 7v5l3 2" />
   </svg>
 );
+
+export const IconMoreVert: React.FC<IconProps> = ({ size = 18, ...props }) => (
+  <svg {...baseProps(size)} {...props}>
+    <circle cx="12" cy="5" r="1.25" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.25" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="19" r="1.25" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const IconHardDrive: React.FC<IconProps> = ({ size = 18, ...props }) => (
+  <svg {...baseProps(size)} {...props}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="M3 14h18" />
+    <circle cx="7" cy="16.5" r="0.75" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const IconChevronDown: React.FC<IconProps> = ({ size = 16, ...props }) => (
+  <svg {...baseProps(size)} {...props}>
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
+
+export const IconPencil: React.FC<IconProps> = ({ size = 18, ...props }) => (
+  <svg {...baseProps(size)} {...props}>
+    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+  </svg>
+);
+
+export const IconFolderMove: React.FC<IconProps> = ({ size = 18, ...props }) => (
+  <svg {...baseProps(size)} {...props}>
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+    <path d="m10 13 4 0m-2-2 2 2-2 2" />
+  </svg>
+);

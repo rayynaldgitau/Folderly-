@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { check } from "@tauri-apps/plugin-updater";
 
 import NavigationBar from "./components/NavigationBar";
@@ -112,8 +113,13 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isRenamerOpen, setIsRenamerOpen] = useState<boolean>(false);
   const [renamerPosition, setRenamerPosition] = useState<DrawerPosition>("right");
-  const [foldersFirst, setFoldersFirst] = useState<boolean>(true);
-  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortField, setSortField] = useState<SortField>(() => {
+    const saved = localStorage.getItem("foldy_sort_field");
+    if (saved === "name" || saved === "date" || saved === "size" || saved === "type") {
+      return saved;
+    }
+    return "name";
+  });
   const [isUniversalSearchOpen, setIsUniversalSearchOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [settingsTab, setSettingsTab] = useState<"appearance" | "profile" | "shortcuts" | "updates">("appearance");
@@ -231,8 +237,28 @@ const App: React.FC = () => {
   const [quickAccess, setQuickAccess]     = useState<QuickAccessItem[]>([]);
   const [diskUsage, setDiskUsage]         = useState<DiskUsage | null>(null);
   const [searchQuery, setSearchQuery]     = useState<string>("");
-  const [viewMode, setViewMode]           = useState<ViewMode>("cards");
-  const [isRecursive, setIsRecursive]     = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem("foldy_view_mode");
+    if (saved === "list" || saved === "details") return "list";
+    if (saved === "grid" || saved === "cards") return "grid";
+    return "list";
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("foldy_view_mode", viewMode);
+    } catch {
+      // Ignore storage errors
+    }
+  }, [viewMode]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("foldy_sort_field", sortField);
+    } catch {
+      // Ignore storage errors
+    }
+  }, [sortField]);
 
   // ── Selection & Bulk Renaming State ──────────────────────────────────────
   const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());
@@ -395,25 +421,14 @@ const App: React.FC = () => {
 
       setStatus({ msg: `Loading "${path}"…`, type: "info" });
       try {
-        let finalPath = path;
-        if (isRecursive) {
-          const allFiles = await invoke<FileEntry[]>("scan_directory", { dirPath: path });
-          setFiles(allFiles);
-          setFolders([]);
-          setStatus({
-            msg: `Loaded ${allFiles.length} file(s) recursively from "${path}".`,
-            type: "success",
-          });
-        } else {
-          const contents = await invoke<DirContents>("read_folder_contents", { dirPath: path });
-          setFolders(contents.folders);
-          setFiles(contents.files);
-          finalPath = contents.current_path;
-          setStatus({
-            msg: `Browsing "${contents.current_path}" (${contents.folders.length} folders, ${contents.files.length} files).`,
-            type: "info",
-          });
-        }
+        const contents = await invoke<DirContents>("read_folder_contents", { dirPath: path });
+        setFolders(contents.folders);
+        setFiles(contents.files);
+        const finalPath = contents.current_path;
+        setStatus({
+          msg: `Browsing "${contents.current_path}" (${contents.folders.length} folders, ${contents.files.length} files).`,
+          type: "info",
+        });
 
         // Non-blockingly update disk usage metrics for the active drive/volume
         if (finalPath && finalPath !== "recents") {
@@ -463,7 +478,7 @@ const App: React.FC = () => {
         setLoading(false);
       }
     },
-    [isRecursive, historyIndex]
+    [historyIndex]
   );
 
   const handleGoBack = useCallback(() => {
@@ -1133,65 +1148,109 @@ const App: React.FC = () => {
     setPreviews([]);
   }, []);
 
-  /** Toggles selecting all currently displayed/filtered files. */
+  /** Toggles selecting all currently displayed/filtered folders and files. */
   const toggleSelectAll = useCallback(() => {
+    const allPaths = [
+      ...filteredFolders.map((f) => f.path),
+      ...filteredFiles.map((f) => f.path),
+    ];
     setSelectedPaths((prev) =>
-      prev.size === filteredFiles.length
+      prev.size === allPaths.length && allPaths.length > 0
         ? new Set()
-        : new Set(filteredFiles.map((f) => f.path))
+        : new Set(allPaths)
     );
     setPreviews([]);
-  }, [filteredFiles]);
+  }, [filteredFolders, filteredFiles]);
+
+  const clearSelection = useCallback(() => {
+    setSelectedPaths(new Set());
+    setPreviews([]);
+  }, []);
+
+  const handleRenameSelected = useCallback(() => {
+    setIsRenamerOpen(true);
+  }, []);
+
+  const handleDeleteSelected = useCallback(async () => {
+    const targets = Array.from(selectedPaths);
+    if (targets.length === 0) return;
+    const label =
+      targets.length === 1
+        ? `"${targets[0].split(/[\\/]/).pop()}"`
+        : `${targets.length} selected items`;
+    if (!window.confirm(`Are you sure you want to delete ${label}?`)) return;
+
+    try {
+      for (const path of targets) {
+        await invoke("delete_item", { path });
+      }
+      setSelectedPaths(new Set());
+      setStatus({ msg: `Deleted ${label}.`, type: "success" });
+      if (currentPath) {
+        navigateTo(currentPath, false);
+      }
+    } catch (err) {
+      setStatus({ msg: `Delete error: ${err}`, type: "error" });
+    }
+  }, [selectedPaths, currentPath, navigateTo]);
+
+  const handleMoveSelected = useCallback(async () => {
+    const targets = Array.from(selectedPaths);
+    if (targets.length === 0) return;
+    try {
+      const destDir = await openDialog({
+        directory: true,
+        multiple: false,
+        title: "Move selected items to folder",
+      });
+      if (!destDir || typeof destDir !== "string") return;
+
+      for (const sourcePath of targets) {
+        if (sourcePath.toLowerCase() !== destDir.toLowerCase()) {
+          await invoke("move_item", { sourcePath, destDir });
+        }
+      }
+      setSelectedPaths(new Set());
+      setStatus({
+        msg: `Moved ${targets.length} item(s) to "${destDir}".`,
+        type: "success",
+      });
+      if (currentPath) {
+        navigateTo(currentPath, false);
+      }
+    } catch (err) {
+      setStatus({ msg: `Move error: ${err}`, type: "error" });
+    }
+  }, [selectedPaths, currentPath, navigateTo]);
 
   // ── Quick Look Preview Handlers ──────────────────────────────────────────
 
   /**
    * Combined list of all visible directories and files in current display order.
-   * Enables seamless cycling forward and backward in the preview modal.
+   * Folders appear first by default, then files.
    */
   const allVisibleItems = useMemo<QuickPreviewItem[]>(() => {
     const list: QuickPreviewItem[] = [];
-    if (foldersFirst) {
-      for (const f of filteredFolders) {
-        list.push({
-          path: f.path,
-          name: f.name,
-          isFolder: true,
-          modified_at: f.modified_at,
-        });
-      }
-      for (const f of filteredFiles) {
-        list.push({
-          path: f.path,
-          name: f.name,
-          isFolder: false,
-          size: f.size,
-          extension: f.extension,
-          modified_at: f.modified_at,
-        });
-      }
-    } else {
-      for (const f of filteredFiles) {
-        list.push({
-          path: f.path,
-          name: f.name,
-          isFolder: false,
-          size: f.size,
-          extension: f.extension,
-          modified_at: f.modified_at,
-        });
-      }
-      for (const f of filteredFolders) {
-        list.push({
-          path: f.path,
-          name: f.name,
-          isFolder: true,
-          modified_at: f.modified_at,
-        });
-      }
+    for (const f of filteredFolders) {
+      list.push({
+        path: f.path,
+        name: f.name,
+        isFolder: true,
+        modified_at: f.modified_at,
+      });
+    }
+    for (const f of filteredFiles) {
+      list.push({
+        path: f.path,
+        name: f.name,
+        isFolder: false,
+        size: f.size,
+        extension: f.extension,
+        modified_at: f.modified_at,
+      });
     }
     return list;
-  }, [filteredFolders, filteredFiles, foldersFirst]);
+  }, [filteredFolders, filteredFiles]);
 
   /**
    * Determines index of currently previewed item within the visible items array.
@@ -1457,11 +1516,6 @@ const App: React.FC = () => {
           onSearchChange={setSearchQuery}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
-          isRecursive={isRecursive}
-          onToggleRecursive={() => {
-            setIsRecursive((prev) => !prev);
-            if (currentPath) navigateTo(currentPath, false);
-          }}
           isSidebarOpen={isSidebarOpen}
           onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
           isRenamerOpen={isRenamerOpen}
@@ -1470,20 +1524,17 @@ const App: React.FC = () => {
           onToggleRenamerPosition={() =>
             setRenamerPosition((prev) => (prev === "left" ? "right" : "left"))
           }
-          foldersFirst={foldersFirst}
-          onToggleFoldersFirst={() => setFoldersFirst((prev) => !prev)}
           selectedCount={selectedPaths.size}
-          totalCount={filteredFiles.length}
-          allSelected={selectedPaths.size === filteredFiles.length && filteredFiles.length > 0}
-          onToggleSelectAll={toggleSelectAll}
+          folderCount={filteredFolders.length}
+          fileCount={filteredFiles.length}
+          onClearSelection={clearSelection}
+          onRenameSelected={handleRenameSelected}
+          onDeleteSelected={handleDeleteSelected}
+          onMoveSelected={handleMoveSelected}
           onOpenUniversalSearch={() => setIsUniversalSearchOpen(true)}
           onNewFolder={handleNewFolder}
           sortField={sortField}
           onSortChange={setSortField}
-          onOpenSettings={() => {
-            setSettingsTab("appearance");
-            setIsSettingsOpen(true);
-          }}
           tabs={tabs}
           activeTabId={activeTabId}
           onSelectTab={handleSelectTab}
@@ -1535,17 +1586,17 @@ const App: React.FC = () => {
                   description={status.msg}
                   onRetry={handleRefresh}
                 />
-              ) : viewMode === "details" ? (
+              ) : viewMode === "list" ? (
                 <FileTableView
                   folders={filteredFolders}
                   files={filteredFiles}
                   selectedPaths={selectedPaths}
-                  foldersFirst={foldersFirst}
                   onToggleSelect={toggleSelect}
                   onToggleSelectAll={toggleSelectAll}
                   onNavigateFolder={(path) => navigateTo(path)}
                   onOpenFile={handleOpenFile}
                   onContextMenu={handleContextMenu}
+                  onNewFolder={currentPath && currentPath !== "recents" ? handleNewFolder : undefined}
                   onMoveItem={handleMoveItem}
                   emptyMessage={
                     currentPath === "recents"
@@ -1558,15 +1609,12 @@ const App: React.FC = () => {
                   folders={filteredFolders}
                   files={filteredFiles}
                   selectedPaths={selectedPaths}
-                  viewMode={viewMode}
-                  foldersFirst={foldersFirst}
                   onToggle={toggleSelect}
-                  onToggleAll={toggleSelectAll}
                   onNavigateFolder={(path) => navigateTo(path)}
                   onOpenFile={handleOpenFile}
                   onContextMenu={handleContextMenu}
+                  onNewFolder={currentPath && currentPath !== "recents" ? handleNewFolder : undefined}
                   onMoveItem={handleMoveItem}
-                  sortField={sortField}
                   emptyMessage={
                     currentPath === "recents"
                       ? "No recent files yet. Files you download or open in Foldy will appear here."
