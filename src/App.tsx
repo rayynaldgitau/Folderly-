@@ -129,11 +129,13 @@ class ErrorBoundary extends React.Component<
 const App: React.FC = () => {
   // ── Appearance & Layout State ────────────────────────────────────────────
   const [currentTheme, setCurrentTheme] = useState<ThemeMode>(() => {
-    return (
-      (localStorage.getItem("foldy_theme") as ThemeMode) ||
-      (localStorage.getItem("folderly_theme") as ThemeMode) ||
-      "pink"
-    );
+    const saved =
+      (localStorage.getItem("foldy_theme") as ThemeMode | null) ||
+      (localStorage.getItem("folderly_theme") as ThemeMode | null);
+    if (!saved || saved === "apple" || saved === "dark") {
+      return "material";
+    }
+    return saved;
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isRenamerOpen, setIsRenamerOpen] = useState<boolean>(false);
@@ -336,9 +338,18 @@ const App: React.FC = () => {
 
   // ── Theme & Profile Handlers ──────────────────────────────────────────────
 
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", currentTheme);
+  }, [currentTheme]);
+
   const handleThemeChange = useCallback((theme: ThemeMode) => {
+    const root = document.documentElement;
+    root.classList.add("theme-switching");
     setCurrentTheme(theme);
     localStorage.setItem("foldy_theme", theme);
+    window.setTimeout(() => {
+      root.classList.remove("theme-switching");
+    }, 220);
   }, []);
 
   const handleUpdateDisplayName = useCallback((name: string) => {
@@ -1584,7 +1595,7 @@ const App: React.FC = () => {
       {isSidebarOpen && (
         <>
           <div
-            className="fixed inset-0 bg-black/60 z-30 md:hidden backdrop-blur-sm"
+            className="fixed inset-0 bg-scrim z-30 md:hidden backdrop-blur-sm"
             onClick={() => setIsSidebarOpen(false)}
           />
           <div className="fixed md:static inset-y-0 left-0 z-40 flex shadow-2xl md:shadow-none">

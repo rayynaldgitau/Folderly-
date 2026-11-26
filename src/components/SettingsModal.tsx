@@ -35,6 +35,7 @@ interface ThemeOption {
   name: string;
   description: string;
   previewSurface: string;
+  previewContainer: string;
   previewAccent: string;
   tag: string;
 }
@@ -45,16 +46,45 @@ const THEME_OPTIONS: ThemeOption[] = [
     name: "Material 3 Dark",
     description: "Neutral dark tonal surfaces with slate-blue primary accents",
     previewSurface: "#111318",
+    previewContainer: "#282a2f",
     previewAccent: "#a4c9ff",
     tag: "Dark",
   },
   {
-    id: "pink_light",
+    id: "material_light",
     name: "Material 3 Light",
     description: "Clean light tonal surfaces with slate-blue primary accents",
     previewSurface: "#f9f9fc",
+    previewContainer: "#e7e8ed",
     previewAccent: "#2b5b8f",
     tag: "Light",
+  },
+  {
+    id: "pink_light",
+    name: "Pink Light",
+    description: "Bold rose-tinted surfaces with vivid magenta-pink primary accents",
+    previewSurface: "#fff0f7",
+    previewContainer: "#ffdbec",
+    previewAccent: "#b50777",
+    tag: "Light",
+  },
+  {
+    id: "pink",
+    name: "Pink Dark",
+    description: "Deep berry-plum surfaces with vibrant sakura-pink primary accents",
+    previewSurface: "#240a1a",
+    previewContainer: "#3d2132",
+    previewAccent: "#ff98ca",
+    tag: "Dark",
+  },
+  {
+    id: "black_orange",
+    name: "Black & Orange",
+    description: "Near-black surfaces with high-energy orange primary and accents",
+    previewSurface: "#151211",
+    previewContainer: "#2c2a28",
+    previewAccent: "#ffa36d",
+    tag: "Dark",
   },
 ];
 
@@ -292,37 +322,44 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   Color Scheme
                 </h3>
                 <p className="text-xs text-on-surface-variant">
-                  Choose Light or Dark Material 3 tonal surfaces.
+                  Choose a Material 3 tonal theme. Changes apply immediately and persist across sessions.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 gap-2.5">
                 {THEME_OPTIONS.map((theme) => {
-                  const isSelected =
-                    theme.id === "pink_light"
-                      ? currentTheme === "pink_light"
-                      : currentTheme !== "pink_light";
+                  const normalizedTheme =
+                    currentTheme === "apple" || currentTheme === "dark"
+                      ? "material"
+                      : currentTheme;
+                  const isSelected = normalizedTheme === theme.id;
 
                   return (
                     <button
                       key={theme.id}
                       type="button"
+                      aria-pressed={isSelected}
                       onClick={() => onThemeChange(theme.id)}
-                      className={`w-full flex items-center justify-between p-3.5 rounded-m3-md text-left m3-state-surface m3-pressable ${
+                      className={`w-full flex items-center justify-between p-3.5 rounded-m3-md text-left m3-state-surface m3-pressable border ${
                         isSelected
-                          ? "bg-primary-container text-on-primary-container"
-                          : "bg-surface-container text-on-surface"
+                          ? "bg-primary-container text-on-primary-container border-primary ring-1 ring-primary"
+                          : "bg-surface-container text-on-surface border-outline-variant/40"
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className="w-9 h-9 rounded-m3-sm shrink-0 flex items-center justify-center"
+                          className="w-10 h-10 rounded-m3-sm shrink-0 flex items-center justify-center border border-outline-variant/40"
                           style={{ backgroundColor: theme.previewSurface }}
                         >
                           <div
-                            className="w-3.5 h-3.5 rounded-m3-full"
-                            style={{ backgroundColor: theme.previewAccent }}
-                          />
+                            className="w-6 h-6 rounded-m3-xs flex items-center justify-center"
+                            style={{ backgroundColor: theme.previewContainer }}
+                          >
+                            <div
+                              className="w-3 h-3 rounded-m3-full"
+                              style={{ backgroundColor: theme.previewAccent }}
+                            />
+                          </div>
                         </div>
 
                         <div>

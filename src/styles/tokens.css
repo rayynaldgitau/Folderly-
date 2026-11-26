@@ -7,7 +7,7 @@
  */
 
 :root,
-[data-theme="pink_light"] {
+[data-theme="material_light"] {
   /* ── M3 Color Roles — Light Scheme (Seed: #3B6699) ── */
   --md-sys-color-primary: #2b5b8f;
   --md-sys-color-on-primary: #ffffff;
@@ -103,7 +103,6 @@
 
 /* ── M3 Dark Scheme (Seed: #3B6699) ── */
 [data-theme="material"],
-[data-theme="pink"],
 [data-theme="apple"],
 [data-theme="dark"] {
   --md-sys-color-primary: #a4c9ff;
@@ -155,4 +154,163 @@
   --md-sys-elevation-1: 0 1px 3px rgba(0, 0, 0, 0.32);
   --md-sys-elevation-2: 0 3px 8px rgba(0, 0, 0, 0.4);
   --md-sys-elevation-3: 0 8px 20px rgba(0, 0, 0, 0.48);
+}
+
+/* ── M3 Pink Light Scheme (Bold Rose/Magenta Seed, High-Chroma Pink Surfaces) ── */
+[data-theme="pink_light"] {
+  --md-sys-color-primary: #b50777;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #ffd9e9;
+  --md-sys-color-on-primary-container: #3d0025;
+
+  --md-sys-color-secondary: #8d4671;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #ffd8ec;
+  --md-sys-color-on-secondary-container: #3c0029;
+
+  --md-sys-color-tertiary: #a43949;
+  --md-sys-color-on-tertiary: #ffffff;
+  --md-sys-color-tertiary-container: #ffdadb;
+  --md-sys-color-on-tertiary-container: #40000e;
+
+  --md-sys-color-error: #bf001d;
+  --md-sys-color-on-error: #ffffff;
+  --md-sys-color-error-container: #ffdad7;
+  --md-sys-color-on-error-container: #400002;
+
+  --md-sys-color-surface: #fff0f7;
+  --md-sys-color-surface-dim: #f4d1e1;
+  --md-sys-color-surface-bright: #fff7fb;
+  --md-sys-color-surface-container-lowest: #fffcfd;
+  --md-sys-color-surface-container-low: #ffe8f2;
+  --md-sys-color-surface-container: #ffdbec;
+  --md-sys-color-surface-container-high: #f7d4e4;
+  --md-sys-color-surface-container-highest: #ecc8d9;
+
+  --md-sys-color-on-surface: #2c1421;
+  --md-sys-color-on-surface-variant: #653950;
+  --md-sys-color-outline: #996881;
+  --md-sys-color-outline-variant: #e7b2cc;
+
+  --md-sys-color-inverse-surface: #432936;
+  --md-sys-color-inverse-on-surface: #ffebf5;
+  --md-sys-color-inverse-primary: #ffafd5;
+  --md-sys-color-scrim: rgba(44, 20, 33, 0.48);
+
+  --md-sys-color-success: #006926;
+  --md-sys-color-success-container: #8dfa9f;
+  --md-sys-color-on-success-container: #002707;
+  --md-sys-color-warning: #8a5000;
+  --md-sys-color-warning-container: #ffdcbc;
+  --md-sys-color-on-warning-container: #331900;
+
+  --md-sys-elevation-1: 0 1px 2px rgba(61, 0, 37, 0.08);
+  --md-sys-elevation-2: 0 2px 6px rgba(61, 0, 37, 0.12);
+  --md-sys-elevation-3: 0 6px 16px rgba(61, 0, 37, 0.16);
+}
+
+/* ── M3 Pink Dark Scheme (Bold Berry/Sakura Seed, Pink-Tinted Dark Surfaces) ── */
+[data-theme="pink"] {
+  --md-sys-color-primary: #ff98ca;
+  --md-sys-color-on-primary: #500031;
+  --md-sys-color-primary-container: #8c005a;
+  --md-sys-color-on-primary-container: #ffd8e9;
+
+  --md-sys-color-secondary: #f9a8d6;
+  --md-sys-color-on-secondary: #530f3c;
+  --md-sys-color-secondary-container: #6d2953;
+  --md-sys-color-on-secondary-container: #ffd8ec;
+
+  --md-sys-color-tertiary: #ffaab0;
+  --md-sys-color-on-tertiary: #60001a;
+  --md-sys-color-tertiary-container: #832333;
+  --md-sys-color-on-tertiary-container: #ffdadb;
+
+  --md-sys-color-error: #ffb3ad;
+  --md-sys-color-on-error: #680009;
+  --md-sys-color-error-container: #920013;
+  --md-sys-color-on-error-container: #ffdad7;
+
+  --md-sys-color-surface: #240a1a;
+  --md-sys-color-surface-dim: #1e0515;
+  --md-sys-color-surface-bright: #4e3041;
+  --md-sys-color-surface-container-lowest: #1a0311;
+  --md-sys-color-surface-container-low: #2b1020;
+  --md-sys-color-surface-container: #321626;
+  --md-sys-color-surface-container-high: #3d2132;
+  --md-sys-color-surface-container-highest: #492c3c;
+
+  --md-sys-color-on-surface: #fed8ec;
+  --md-sys-color-on-surface-variant: #e3acca;
+  --md-sys-color-outline: #b6819e;
+  --md-sys-color-outline-variant: #663852;
+
+  --md-sys-color-inverse-surface: #fed8ec;
+  --md-sys-color-inverse-on-surface: #442838;
+  --md-sys-color-inverse-primary: #b11776;
+  --md-sys-color-scrim: rgba(18, 2, 12, 0.68);
+
+  --md-sys-color-success: #64d179;
+  --md-sys-color-success-container: #004917;
+  --md-sys-color-on-success-container: #8dfa9f;
+  --md-sys-color-warning: #ffb05f;
+  --md-sys-color-warning-container: #5c3400;
+  --md-sys-color-on-warning-container: #ffdcbc;
+
+  --md-sys-elevation-1: 0 1px 3px rgba(10, 0, 6, 0.36);
+  --md-sys-elevation-2: 0 3px 8px rgba(10, 0, 6, 0.44);
+  --md-sys-elevation-3: 0 8px 20px rgba(10, 0, 6, 0.52);
+}
+
+/* ── M3 Black & Orange Scheme (Near-Black Surfaces, Vivid Orange Seed) ── */
+[data-theme="black_orange"] {
+  --md-sys-color-primary: #ffa36d;
+  --md-sys-color-on-primary: #441800;
+  --md-sys-color-primary-container: #773300;
+  --md-sys-color-on-primary-container: #ffdbc8;
+
+  --md-sys-color-secondary: #ffad87;
+  --md-sys-color-on-secondary: #501b00;
+  --md-sys-color-secondary-container: #722d00;
+  --md-sys-color-on-secondary-container: #ffdbcb;
+
+  --md-sys-color-tertiary: #fab351;
+  --md-sys-color-on-tertiary: #422600;
+  --md-sys-color-tertiary-container: #643f00;
+  --md-sys-color-on-tertiary-container: #ffddb4;
+
+  --md-sys-color-error: #ffb3ad;
+  --md-sys-color-on-error: #680009;
+  --md-sys-color-error-container: #920013;
+  --md-sys-color-on-error-container: #ffdad7;
+
+  --md-sys-color-surface: #151211;
+  --md-sys-color-surface-dim: #100e0c;
+  --md-sys-color-surface-bright: #3c3937;
+  --md-sys-color-surface-container-lowest: #0d0b09;
+  --md-sys-color-surface-container-low: #1c1918;
+  --md-sys-color-surface-container: #211f1d;
+  --md-sys-color-surface-container-high: #2c2a28;
+  --md-sys-color-surface-container-highest: #373433;
+
+  --md-sys-color-on-surface: #e6e2e0;
+  --md-sys-color-on-surface-variant: #c5b9b4;
+  --md-sys-color-outline: #9a8e8a;
+  --md-sys-color-outline-variant: #4e4540;
+
+  --md-sys-color-inverse-surface: #e6e2e0;
+  --md-sys-color-inverse-on-surface: #332f2e;
+  --md-sys-color-inverse-primary: #9a4600;
+  --md-sys-color-scrim: rgba(4, 3, 2, 0.72);
+
+  --md-sys-color-success: #64d179;
+  --md-sys-color-success-container: #004917;
+  --md-sys-color-on-success-container: #8dfa9f;
+  --md-sys-color-warning: #ffb05f;
+  --md-sys-color-warning-container: #5c3400;
+  --md-sys-color-on-warning-container: #ffdcbc;
+
+  --md-sys-elevation-1: 0 1px 3px rgba(0, 0, 0, 0.42);
+  --md-sys-elevation-2: 0 3px 8px rgba(0, 0, 0, 0.50);
+  --md-sys-elevation-3: 0 8px 20px rgba(0, 0, 0, 0.58);
 }

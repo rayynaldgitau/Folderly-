@@ -50,8 +50,15 @@ export type ViewMode =
   | "tiles"
   | "content";
 
-/** Supported visual themes including dark OLED pink and light pink. */
-export type ThemeMode = "pink" | "pink_light" | "material" | "apple" | "dark";
+/** Supported visual themes including Material 3, Pink (Light & Dark), and Black & Orange. */
+export type ThemeMode =
+  | "material"
+  | "material_light"
+  | "pink_light"
+  | "pink"
+  | "black_orange"
+  | "apple"
+  | "dark";
 
 /** Side where the renamer drawer is positioned. */
 export type DrawerPosition = "left" | "right";

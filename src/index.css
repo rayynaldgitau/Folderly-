@@ -21,6 +21,15 @@
     outline: 2px solid var(--md-sys-color-primary);
     outline-offset: 2px;
   }
+
+  /* Short transition applied transiently when switching themes */
+  html.theme-switching,
+  html.theme-switching * {
+    transition:
+      background-color 180ms var(--ease-out),
+      color 180ms var(--ease-out),
+      border-color 180ms var(--ease-out) !important;
+  }
 }
 
 @layer components {
@@ -206,6 +215,11 @@
 
 /* ── Reduced Motion Support ── */
 @media (prefers-reduced-motion: reduce) {
+  html.theme-switching,
+  html.theme-switching * {
+    transition: none !important;
+  }
+
   .animate-m3-dialog,
   .animate-m3-popover,
   .animate-m3-toast,
