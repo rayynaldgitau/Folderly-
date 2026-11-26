@@ -56,6 +56,7 @@ export interface NavigationBarProps {
   onDeleteSelected: () => void;
   onMoveSelected: () => void;
   onNewFolder?: () => void;
+  onClearRecents?: () => void;
   sortField?: SortField;
   onSortChange?: (field: SortField) => void;
   tabs: TabItem[];
@@ -154,6 +155,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
   onDeleteSelected,
   onMoveSelected,
   onNewFolder,
+  onClearRecents,
   sortField = "name",
   onSortChange,
   tabs = [],
@@ -649,6 +651,16 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
+          {onClearRecents && (
+            <Button
+              variant="tonal"
+              size="sm"
+              onClick={onClearRecents}
+              leadingIcon={<IconTrash size={15} />}
+            >
+              Clear recents
+            </Button>
+          )}
           {onNewFolder && (
             <Button
               variant="tonal"

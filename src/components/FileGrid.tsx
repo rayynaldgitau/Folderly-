@@ -16,7 +16,9 @@ export interface FileGridProps {
   onNavigateFolder: (path: string) => void;
   onOpenFile: (path: string) => void;
   onContextMenu: (e: React.MouseEvent, path: string, isFolder: boolean) => void;
+  emptyTitle?: string;
   emptyMessage?: string;
+  emptyIcon?: React.ReactNode;
   onNewFolder?: () => void;
   onMoveItem?: (sourcePath: string, destDir: string) => void;
 }
@@ -40,7 +42,9 @@ const FileGrid: React.FC<FileGridProps> = ({
   onNavigateFolder,
   onOpenFile,
   onContextMenu,
+  emptyTitle,
   emptyMessage,
+  emptyIcon,
   onNewFolder,
   onMoveItem,
 }) => {
@@ -63,7 +67,14 @@ const FileGrid: React.FC<FileGridProps> = ({
   }, [folders, files]);
 
   if (items.length === 0) {
-    return <EmptyFolderState message={emptyMessage} onNewFolder={onNewFolder} />;
+    return (
+      <EmptyFolderState
+        title={emptyTitle}
+        message={emptyMessage}
+        icon={emptyIcon}
+        onNewFolder={onNewFolder}
+      />
+    );
   }
 
   const selectionActive = selectedPaths.size > 0;

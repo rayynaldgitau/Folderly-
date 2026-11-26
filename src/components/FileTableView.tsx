@@ -19,7 +19,9 @@ export interface FileTableViewProps {
   onNavigateFolder: (path: string) => void;
   onOpenFile: (path: string) => void;
   onContextMenu: (e: React.MouseEvent, path: string, isFolder: boolean) => void;
+  emptyTitle?: string;
   emptyMessage?: string;
+  emptyIcon?: React.ReactNode;
   onNewFolder?: () => void;
   onMoveItem?: (sourcePath: string, destDir: string) => void;
 }
@@ -46,7 +48,9 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
   onNavigateFolder,
   onOpenFile,
   onContextMenu,
+  emptyTitle,
   emptyMessage,
+  emptyIcon,
   onNewFolder,
   onMoveItem,
 }) => {
@@ -85,7 +89,14 @@ export const FileTableView: React.FC<FileTableViewProps> = ({
   }, [isIndeterminate]);
 
   if (totalCount === 0) {
-    return <EmptyFolderState message={emptyMessage} onNewFolder={onNewFolder} />;
+    return (
+      <EmptyFolderState
+        title={emptyTitle}
+        message={emptyMessage}
+        icon={emptyIcon}
+        onNewFolder={onNewFolder}
+      />
+    );
   }
 
   return (

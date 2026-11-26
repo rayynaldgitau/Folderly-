@@ -106,21 +106,30 @@ export const ItemCheckbox: React.FC<ItemCheckboxProps> = ({
 );
 
 export interface EmptyFolderStateProps {
+  title?: string;
   message?: string;
+  icon?: React.ReactNode;
   onNewFolder?: () => void;
 }
 
 /**
- * Friendly empty folder state with icon, one line of copy, and New folder action.
+ * Friendly empty state with icon, optional title, one line of copy, and optional New folder action.
  */
 export const EmptyFolderState: React.FC<EmptyFolderStateProps> = ({
+  title,
   message,
+  icon,
   onNewFolder,
 }) => (
   <div className="flex flex-col items-center justify-center py-20 px-6 text-center animate-m3-view-switch">
     <div className="w-14 h-14 rounded-m3-lg bg-surface-container flex items-center justify-center text-on-surface-variant mb-4">
-      <IconFolder size={26} />
+      {icon || <IconFolder size={26} />}
     </div>
+    {title && (
+      <h2 className="text-base font-medium text-on-surface mb-1">
+        {title}
+      </h2>
+    )}
     <p className="text-sm text-on-surface-variant max-w-sm mb-4">
       {message || "This folder is empty."}
     </p>

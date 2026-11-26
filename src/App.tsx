@@ -21,6 +21,7 @@ import { THEMES } from "./themes";
 import {
   Button,
   IconCheck,
+  IconClock,
   IconClose,
   IconSearch,
   IconSliders,
@@ -29,6 +30,14 @@ import {
   Snackbar,
   StateView,
 } from "./components/ui";
+import {
+  clearRecentFiles,
+  filterExistingRecentFiles,
+  readRecentFiles,
+  recentRecordsToFileEntries,
+  recordRecentFileEntry,
+  removeRecentFilePath,
+} from "./utils/recents";
 
 import type {
   FileEntry,
@@ -328,54 +337,31 @@ const App: React.FC = () => {
       setSelectedPaths(new Set());
       setPreviews([]);
 
-      // Special handling for the Recents view (recently downloaded & opened items)
+      // Special handling for the Recents view (recently opened files)
       if (path === "recents") {
-        setStatus({ msg: "Loading recent files across your system…", type: "info" });
+        setStatus({ msg: "Loading recent files…", type: "info" });
         setFolders([]);
 
         try {
-          // 1. Get recent opened files from localStorage
-          const rawOpened = localStorage.getItem("folderly_recent_opened");
-          const openedList: Array<{
-            path: string;
-            name: string;
-            extension: string;
-            size: number;
-            opened_at: string;
-          }> = rawOpened ? JSON.parse(rawOpened) : [];
+          const openedList = readRecentFiles();
+          let activeRecords = openedList;
+          let removedCount = 0;
 
-          // 2. Query system-wide recent files from backend (Downloads, Desktop, Documents, Pictures)
-          let recentFiles: FileEntry[] = [];
-          try {
-            recentFiles = await invoke<FileEntry[]>("get_recent_files");
-          } catch (e) {
-            console.error("Failed to read get_recent_files:", e);
+          if (openedList.length > 0) {
+            try {
+              const existsMask = await invoke<boolean[]>("check_files_exist", {
+                paths: openedList.map((item) => item.path),
+              });
+              const filtered = filterExistingRecentFiles(openedList, existsMask);
+              activeRecords = filtered.kept;
+              removedCount = filtered.removedCount;
+            } catch (e) {
+              console.error("Failed to verify recent file existence:", e);
+            }
           }
 
-          // Convert opened files to FileEntry format
-          const openedAsFiles: FileEntry[] = openedList.map((item) => ({
-            path: item.path,
-            name: item.name,
-            extension: item.extension,
-            size: item.size,
-            created_at: item.opened_at,
-            modified_at: item.opened_at,
-          }));
-
-          // Merge and deduplicate by lowercased path
-          const fileMap = new Map<string, FileEntry>();
-          for (const f of recentFiles) {
-            fileMap.set(f.path.toLowerCase(), f);
-          }
-          for (const f of openedAsFiles) {
-            fileMap.set(f.path.toLowerCase(), f);
-          }
-
-          const combined = Array.from(fileMap.values()).sort((a, b) =>
-            (b.modified_at || "").localeCompare(a.modified_at || "")
-          );
-
-          setFiles(combined);
+          const recentEntries = recentRecordsToFileEntries(activeRecords);
+          setFiles(recentEntries);
           if (effectiveTabId === activeTabIdRef.current) {
             setCurrentPath("recents");
             if (pushHistory) {
@@ -388,7 +374,10 @@ const App: React.FC = () => {
             }
           }
           setStatus({
-            msg: `Recents: showing ${combined.length} recent files across Downloads, Desktop, Documents, and Pictures.`,
+            msg:
+              removedCount > 0
+                ? `Recents: showing ${recentEntries.length} file(s) (removed ${removedCount} missing).`
+                : `Recents: showing ${recentEntries.length} recently opened file(s).`,
             type: "info",
           });
 
@@ -624,45 +613,34 @@ const App: React.FC = () => {
   // ── File Launch & OS Interactions ────────────────────────────────────────
 
   /**
-   * Persists an opened file path and metadata into localStorage for the Recents page.
+   * Persists an opened file path and metadata into localStorage for the Recents page
+   * and updates the Recents view live when active.
    *
    * @param filePath - The absolute file path to record.
    */
   const recordRecentFile = useCallback(
     (filePath: string) => {
-      try {
-        const existing = files.find((f) => f.path.toLowerCase() === filePath.toLowerCase());
-        const name = existing ? existing.name : filePath.split(/[\\/]/).pop() || "File";
-        const ext = existing
-          ? existing.extension
-          : name.includes(".")
-          ? name.split(".").pop() || ""
-          : "";
-        const size = existing ? existing.size : 0;
-        const opened_at = new Date().toISOString();
-
-        const raw =
-          localStorage.getItem("foldy_recent_opened") ||
-          localStorage.getItem("folderly_recent_opened");
-        let list: Array<{
-          path: string;
-          name: string;
-          extension: string;
-          size: number;
-          opened_at: string;
-        }> = raw ? JSON.parse(raw) : [];
-
-        list = list.filter((item) => item.path.toLowerCase() !== filePath.toLowerCase());
-        list.unshift({ path: filePath, name, extension: ext, size, opened_at });
-        if (list.length > 80) list = list.slice(0, 80);
-
-        localStorage.setItem("foldy_recent_opened", JSON.stringify(list));
-      } catch {
-        // non-critical
+      const existing = files.find((f) => f.path.toLowerCase() === filePath.toLowerCase());
+      const updated = recordRecentFileEntry(filePath, existing);
+      if (currentPath === "recents") {
+        setFiles(recentRecordsToFileEntries(updated));
       }
     },
-    [files]
+    [files, currentPath]
   );
+
+  /**
+   * Clears all persisted recent files and empties the Recents view when active.
+   */
+  const handleClearRecents = useCallback(() => {
+    clearRecentFiles();
+    setSelectedPaths(new Set());
+    setPreviews([]);
+    if (currentPath === "recents") {
+      setFiles([]);
+    }
+    setStatus({ msg: "Cleared recent files.", type: "info" });
+  }, [currentPath]);
 
   /**
    * Opens a file using the operating system's default handler and registers it in recents.
@@ -688,12 +666,28 @@ const App: React.FC = () => {
         if (errStr.includes("folder") || errStr.includes("directory")) {
           // If the item turns out to be a folder, browse it directly in Foldy
           navigateTo(path);
-        } else {
-          setStatus({ msg: `Error opening item: ${err}`, type: "error" });
+          return;
         }
+        try {
+          const [stillExists] = await invoke<boolean[]>("check_files_exist", { paths: [path] });
+          if (!stillExists) {
+            const updated = removeRecentFilePath(path);
+            if (currentPath === "recents") {
+              setFiles(recentRecordsToFileEntries(updated));
+            }
+            setStatus({
+              msg: "File no longer exists at that location and was removed from Recents.",
+              type: "error",
+            });
+            return;
+          }
+        } catch {
+          // Fall through to generic error message
+        }
+        setStatus({ msg: `Error opening item: ${err}`, type: "error" });
       }
     },
-    [folders, navigateTo, recordRecentFile]
+    [folders, navigateTo, recordRecentFile, currentPath]
   );
 
   /**
@@ -1119,6 +1113,10 @@ const App: React.FC = () => {
         (f) => f.name.toLowerCase().includes(q) || f.extension.toLowerCase().includes(q)
       );
     }
+    // Keep Recents ordered most-recent-first
+    if (currentPath === "recents") {
+      return result;
+    }
     return [...result].sort((a, b) => {
       if (sortField === "date") {
         return (b.modified_at || "").localeCompare(a.modified_at || "");
@@ -1134,7 +1132,7 @@ const App: React.FC = () => {
       }
       return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
     });
-  }, [files, searchQuery, sortField]);
+  }, [files, searchQuery, sortField, currentPath]);
 
   // ── Selection Toggles ────────────────────────────────────────────────────
 
@@ -1532,6 +1530,9 @@ const App: React.FC = () => {
           onDeleteSelected={handleDeleteSelected}
           onMoveSelected={handleMoveSelected}
           onNewFolder={handleNewFolder}
+          onClearRecents={
+            currentPath === "recents" && files.length > 0 ? handleClearRecents : undefined
+          }
           sortField={sortField}
           onSortChange={setSortField}
           tabs={tabs}
@@ -1597,9 +1598,11 @@ const App: React.FC = () => {
                   onContextMenu={handleContextMenu}
                   onNewFolder={currentPath && currentPath !== "recents" ? handleNewFolder : undefined}
                   onMoveItem={handleMoveItem}
+                  emptyTitle={currentPath === "recents" ? "No recent files" : undefined}
+                  emptyIcon={currentPath === "recents" ? <IconClock size={26} /> : undefined}
                   emptyMessage={
                     currentPath === "recents"
-                      ? "No recent files yet. Files you download or open in Foldy will appear here."
+                      ? "Files you open in Foldy will appear here."
                       : undefined
                   }
                 />
@@ -1614,9 +1617,11 @@ const App: React.FC = () => {
                   onContextMenu={handleContextMenu}
                   onNewFolder={currentPath && currentPath !== "recents" ? handleNewFolder : undefined}
                   onMoveItem={handleMoveItem}
+                  emptyTitle={currentPath === "recents" ? "No recent files" : undefined}
+                  emptyIcon={currentPath === "recents" ? <IconClock size={26} /> : undefined}
                   emptyMessage={
                     currentPath === "recents"
-                      ? "No recent files yet. Files you download or open in Foldy will appear here."
+                      ? "Files you open in Foldy will appear here."
                       : undefined
                   }
                 />
