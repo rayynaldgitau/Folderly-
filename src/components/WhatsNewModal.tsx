@@ -7,7 +7,7 @@ import { FoldyLogo } from "./FoldyLogo";
 export const WHATS_NEW_LAST_VERSION_KEY = "foldy_last_seen_version";
 
 /** Current active release version string of Foldy. */
-export const APP_CURRENT_VERSION = "0.1.5";
+export const APP_CURRENT_VERSION = "0.1.6";
 
 /**
  * Feature change entry detailing a specific improvement or addition.
