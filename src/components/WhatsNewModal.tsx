@@ -7,7 +7,7 @@ import { FoldyLogo } from "./FoldyLogo";
 export const WHATS_NEW_LAST_VERSION_KEY = "foldy_last_seen_version";
 
 /** Current active release version string of Foldy. */
-export const APP_CURRENT_VERSION = "0.1.6";
+export const APP_CURRENT_VERSION = "0.1.7";
 
 /**
  * Feature change entry detailing a specific improvement or addition.
@@ -41,6 +41,22 @@ export interface ReleaseVersion {
  * Historical changelog data for Foldy releases.
  */
 export const CHANGELOG_DATA: ReleaseVersion[] = [
+  {
+    version: "0.1.7",
+    title: "macOS Permissions Fix & Stable Signing Support",
+    date: "November 2026",
+    highlights: [
+      {
+        icon: "🔐",
+        title: "macOS Folder Permissions & Full Disk Access Guidance",
+        tag: "FIX & IMPROVEMENT",
+        tagColor: "bg-tertiary-container text-on-tertiary-container border-outline-variant",
+        description:
+          "Added macOS Info.plist folder and volume usage descriptions, stopped startup scanning of protected folders (Desktop, Documents, Downloads, Pictures), added stable APPLE_SIGNING_IDENTITY code-signing support, and introduced a non-blocking Full Disk Access banner with direct System Settings shortcuts when access is denied.",
+        tip: "On macOS, grant Full Disk Access once in System Settings → Privacy & Security → Full Disk Access to avoid repeated folder prompts.",
+      },
+    ],
+  },
   {
     version: "0.1.6",
     title: "Explorer Views, Side Panes, M3 Themes & Experimental Node View",
@@ -86,15 +102,6 @@ export const CHANGELOG_DATA: ReleaseVersion[] = [
         tagColor: "bg-success-container text-on-success-container border-outline-variant",
         description:
           "Single-click to open folders or select files with multi-select support, sort with a persistent Date added index, and track Recent Files live with automatic missing-file pruning and Clear recents.",
-      },
-      {
-        icon: "🔐",
-        title: "macOS Folder Permissions & Full Disk Access Guidance",
-        tag: "FIX & IMPROVEMENT",
-        tagColor: "bg-tertiary-container text-on-tertiary-container border-outline-variant",
-        description:
-          "Added macOS Info.plist folder and volume usage descriptions, stopped startup scanning of protected folders (Desktop, Documents, Downloads, Pictures), added stable APPLE_SIGNING_IDENTITY code-signing support, and introduced a non-blocking Full Disk Access banner with direct System Settings shortcuts when access is denied.",
-        tip: "On macOS, grant Full Disk Access once in System Settings → Privacy & Security → Full Disk Access to avoid repeated folder prompts.",
       },
     ],
   },
