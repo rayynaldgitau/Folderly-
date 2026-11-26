@@ -39,10 +39,17 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
 
-      - name: Ad-hoc code sign app bundle
+      - name: Code sign app bundle
         run: |
-          find src-tauri/target -name "Foldy.app" -type d -exec codesign --force --deep --sign - {} \; 2>/dev/null || true
+          if [ -n "${APPLE_SIGNING_IDENTITY:-}" ]; then
+            find src-tauri/target -name "Foldy.app" -type d -exec codesign --force --deep --options runtime --sign "$APPLE_SIGNING_IDENTITY" {} \; 2>/dev/null || true
+          else
+            find src-tauri/target -name "Foldy.app" -type d -exec codesign --force --deep --sign - {} \; 2>/dev/null || true
+          fi
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
 
       - name: Upload macOS Installer & Updater Artifacts
         uses: actions/upload-artifact@v4

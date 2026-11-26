@@ -40,8 +40,14 @@ else
     npm run tauri build
 fi
 
-echo "🔏 Ad-hoc code signing generated .app bundles..."
-find src-tauri/target -name "Foldy.app" -type d -exec codesign --force --deep --sign - {} \; 2>/dev/null || true
+if [ -n "${APPLE_SIGNING_IDENTITY:-}" ]; then
+    echo "🔏 Code signing generated .app bundles with identity: $APPLE_SIGNING_IDENTITY"
+    find src-tauri/target -name "Foldy.app" -type d -exec codesign --force --deep --options runtime --sign "$APPLE_SIGNING_IDENTITY" {} \; 2>/dev/null || true
+else
+    echo "⚠️ APPLE_SIGNING_IDENTITY not set; falling back to ad-hoc code signing."
+    echo "   (macOS may re-prompt for folder permissions across rebuilds without a stable certificate.)"
+    find src-tauri/target -name "Foldy.app" -type d -exec codesign --force --deep --sign - {} \; 2>/dev/null || true
+fi
 
 echo ""
 echo "✅ Build complete!"
