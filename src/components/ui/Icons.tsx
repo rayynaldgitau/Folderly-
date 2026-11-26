@@ -80,6 +80,12 @@ export const IconArrowUp: React.FC<IconProps> = ({ size = 18, ...props }) => (
   </svg>
 );
 
+export const IconArrowDown: React.FC<IconProps> = ({ size = 18, ...props }) => (
+  <svg {...baseProps(size)} {...props}>
+    <path d="M12 5v14M19 12l-7 7-7-7" />
+  </svg>
+);
+
 export const IconRefresh: React.FC<IconProps> = ({ size = 18, ...props }) => (
   <svg {...baseProps(size)} {...props}>
     <path d="M21 12a9 9 0 1 1-2.64-6.36" />

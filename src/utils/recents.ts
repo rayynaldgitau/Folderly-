@@ -197,5 +197,6 @@ export function recentRecordsToFileEntries(records: RecentFileRecord[]): FileEnt
     size: item.size,
     created_at: item.opened_at,
     modified_at: item.opened_at,
+    added_at: item.opened_at,
   }));
 }

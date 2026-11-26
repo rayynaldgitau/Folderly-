@@ -11,13 +11,16 @@ export interface FileEntry {
   size: number;       // bytes
   created_at: string; // ISO-8601
   modified_at: string;
+  added_at: string;   // ISO-8601 first-seen timestamp in Foldy's index
 }
 
 /** Metadata for a directory entry when browsing in Explorer mode. */
 export interface FolderEntry {
   path: string;
   name: string;
+  created_at: string;
   modified_at: string;
+  added_at: string;
 }
 
 /** Complete contents of a folder for interactive directory navigation. */
@@ -45,8 +48,17 @@ export type ThemeMode = "pink" | "pink_light" | "material" | "apple" | "dark";
 /** Side where the renamer drawer is positioned. */
 export type DrawerPosition = "left" | "right";
 
-/** Sorting field for items. */
-export type SortField = "name" | "date" | "size" | "type";
+/** Sorting field for folder view items. */
+export type SortField =
+  | "name"
+  | "date_modified"
+  | "date_created"
+  | "date_added"
+  | "type"
+  | "size";
+
+/** Sorting direction for folder view items. */
+export type SortDirection = "asc" | "desc";
 
 /** One rename operation preview returned by preview_renames. */
 export interface RenamePreview {

@@ -28,6 +28,7 @@ pub struct FileEntry {
     pub size: u64,
     pub created_at: String,
     pub modified_at: String,
+    pub added_at: String,
 }
 
 /// Metadata for a folder entry when navigating in File Explorer mode.
@@ -35,7 +36,9 @@ pub struct FileEntry {
 pub struct FolderEntry {
     pub path: String,
     pub name: String,
+    pub created_at: String,
     pub modified_at: String,
+    pub added_at: String,
 }
 
 /// Complete contents of a folder (folders + files) for interactive navigation.
@@ -184,6 +187,131 @@ fn undo_log_path(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|e| format!("Cannot resolve app data dir: {e}"))?;
     fs::create_dir_all(&base).map_err(|e| format!("Cannot create app data dir: {e}"))?;
     Ok(base.join("undo_log.json"))
+}
+
+static FIRST_SEEN_INDEX: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
+
+/// Normalizes a filesystem path into a consistent lookup key for the first-seen index.
+///
+/// * `path`: Path string to normalize.
+/// * Returns: Normalized key string.
+fn normalize_index_key(path: &str) -> String {
+    #[cfg(windows)]
+    {
+        path.to_lowercase().replace('/', "\\")
+    }
+    #[cfg(not(windows))]
+    {
+        path.to_string()
+    }
+}
+
+/// Returns the path to the persistent first-seen index JSON file in app data dir.
+///
+/// * `app`: Tauri application handle for path resolution.
+/// * Returns: Resolved PathBuf to first_seen_index.json or an error message.
+fn first_seen_index_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let base = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Cannot resolve app data dir: {e}"))?;
+    fs::create_dir_all(&base).map_err(|e| format!("Cannot create app data dir: {e}"))?;
+    Ok(base.join("first_seen_index.json"))
+}
+
+/// Returns the global in-memory first-seen index, hydrating from disk on first access.
+///
+/// * `app`: Optional Tauri application handle used to load persisted entries.
+/// * Returns: Reference to the mutex-guarded path-to-timestamp map.
+fn get_first_seen_index(app: Option<&AppHandle>) -> &'static Mutex<HashMap<String, String>> {
+    FIRST_SEEN_INDEX.get_or_init(|| {
+        let map = app
+            .and_then(|handle| first_seen_index_path(handle).ok())
+            .and_then(|p| fs::read_to_string(p).ok())
+            .and_then(|raw| serde_json::from_str::<HashMap<String, String>>(&raw).ok())
+            .unwrap_or_default();
+        Mutex::new(map)
+    })
+}
+
+/// Persists the current first-seen index map to disk if an AppHandle is available.
+///
+/// * `app`: Tauri application handle.
+/// * `map`: Current path-to-timestamp map to serialize.
+fn save_first_seen_index(app: &AppHandle, map: &HashMap<String, String>) {
+    if let Ok(index_path) = first_seen_index_path(app) {
+        if let Ok(json) = serde_json::to_string(map) {
+            let _ = fs::write(index_path, json);
+        }
+    }
+}
+
+/// Records any newly seen paths with the current timestamp and returns `added_at` for all paths.
+///
+/// * `app`: Optional Tauri application handle for persistence.
+/// * `paths`: Slice of path strings to look up or record.
+/// * Returns: Map from normalized path key to ISO-8601 `added_at` timestamp.
+fn ensure_first_seen_timestamps(app: Option<&AppHandle>, paths: &[String]) -> HashMap<String, String> {
+    let now = Local::now().format("%Y-%m-%dT%H:%M:%S").to_string();
+    let index = get_first_seen_index(app);
+    let mut resolved = HashMap::with_capacity(paths.len());
+
+    if let Ok(mut map) = index.lock() {
+        let mut changed = false;
+        for p in paths {
+            let key = normalize_index_key(p);
+            let ts = map
+                .entry(key.clone())
+                .or_insert_with(|| {
+                    changed = true;
+                    now.clone()
+                })
+                .clone();
+            resolved.insert(key, ts);
+        }
+        if changed {
+            if let Some(handle) = app {
+                save_first_seen_index(handle, &map);
+            }
+        }
+    }
+
+    resolved
+}
+
+/// Looks up an existing `added_at` timestamp without mutating or persisting the index.
+///
+/// * `path`: Path string to look up.
+/// * Returns: Stored ISO-8601 timestamp or empty string if not yet indexed.
+fn lookup_first_seen(path: &str) -> String {
+    let key = normalize_index_key(path);
+    if let Some(index) = FIRST_SEEN_INDEX.get() {
+        if let Ok(map) = index.lock() {
+            return map.get(&key).cloned().unwrap_or_default();
+        }
+    }
+    String::new()
+}
+
+/// Transfers `added_at` timestamps across renamed paths so renames preserve Date added.
+///
+/// * `app`: Tauri application handle for persistence.
+/// * `pairs`: List of `(old_path, new_path)` pairs that succeeded.
+fn transfer_first_seen_paths(app: &AppHandle, pairs: &[(String, String)]) {
+    if pairs.is_empty() {
+        return;
+    }
+    let now = Local::now().format("%Y-%m-%dT%H:%M:%S").to_string();
+    let index = get_first_seen_index(Some(app));
+    if let Ok(mut map) = index.lock() {
+        for (old_path, new_path) in pairs {
+            let old_key = normalize_index_key(old_path);
+            let new_key = normalize_index_key(new_path);
+            let ts = map.remove(&old_key).unwrap_or_else(|| now.clone());
+            map.insert(new_key, ts);
+        }
+        save_first_seen_index(app, &map);
+    }
 }
 
 /// Applies all active rules to a file stem and returns the transformed stem.
@@ -598,11 +726,24 @@ mod commands {
     /// Reads immediate contents of a directory (folders and files) without recursing,
     /// resolving any OneDrive folder redirection.
     ///
+    /// * `app`: Tauri application handle for persisting the first-seen index.
     /// * `dir_path`: Absolute path of the folder to inspect.
     /// * Returns: `DirContents` containing current path, parent path, folders, and files.
     #[tauri::command]
-    pub fn read_folder_contents(dir_path: String) -> Result<DirContents, String> {
-        let path = resolve_system_path(&dir_path);
+    pub fn read_folder_contents(app: AppHandle, dir_path: String) -> Result<DirContents, String> {
+        read_folder_contents_internal(Some(&app), &dir_path)
+    }
+
+    /// Internal directory reader shared by the Tauri command and background cache pre-warmer.
+    ///
+    /// * `app`: Optional Tauri application handle for persisting the first-seen index.
+    /// * `dir_path`: Target directory path or special keyword.
+    /// * Returns: `DirContents` containing current path, parent path, folders, and files.
+    pub(crate) fn read_folder_contents_internal(
+        app: Option<&AppHandle>,
+        dir_path: &str,
+    ) -> Result<DirContents, String> {
+        let path = resolve_system_path(dir_path);
         if !path.exists() {
             return Err(format!("Path does not exist: {dir_path}"));
         }
@@ -624,6 +765,7 @@ mod commands {
         let parent_path = path.parent().map(|p| p.to_string_lossy().to_string());
         let mut folders: Vec<FolderEntry> = Vec::new();
         let mut files: Vec<FileEntry> = Vec::new();
+        let mut all_paths: Vec<String> = Vec::new();
 
         let entries = fs::read_dir(&path)
             .map_err(|e| format!("Cannot read directory '{}': {e}", path.display()))?;
@@ -641,12 +783,16 @@ mod commands {
             };
 
             let name = entry.file_name().to_string_lossy().to_string();
+            let path_str = entry_path.to_string_lossy().to_string();
 
             if meta.is_dir() {
+                all_paths.push(path_str.clone());
                 folders.push(FolderEntry {
-                    path: entry_path.to_string_lossy().to_string(),
+                    path: path_str,
                     name,
+                    created_at: format_time(meta.created().ok()),
                     modified_at: format_time(meta.modified().ok()),
+                    added_at: String::new(),
                 });
             } else if meta.is_file() {
                 let extension = entry_path
@@ -655,14 +801,28 @@ mod commands {
                     .unwrap_or("")
                     .to_lowercase();
 
+                all_paths.push(path_str.clone());
                 files.push(FileEntry {
-                    path: entry_path.to_string_lossy().to_string(),
+                    path: path_str,
                     name,
                     extension,
                     size: meta.len(),
                     created_at: format_time(meta.created().ok()),
                     modified_at: format_time(meta.modified().ok()),
+                    added_at: String::new(),
                 });
+            }
+        }
+
+        let added_map = ensure_first_seen_timestamps(app, &all_paths);
+        for folder in &mut folders {
+            if let Some(ts) = added_map.get(&normalize_index_key(&folder.path)) {
+                folder.added_at = ts.clone();
+            }
+        }
+        for file in &mut files {
+            if let Some(ts) = added_map.get(&normalize_index_key(&file.path)) {
+                file.added_at = ts.clone();
             }
         }
 
@@ -1033,6 +1193,7 @@ mod commands {
                                     if seen_paths.insert(path_str.to_lowercase()) {
                                         let name = p.file_name().unwrap_or_default().to_string_lossy().to_string();
                                         let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+                                        let added_at = lookup_first_seen(&path_str);
                                         results.push(FileEntry {
                                             path: path_str,
                                             name,
@@ -1040,6 +1201,7 @@ mod commands {
                                             size: meta.len(),
                                             created_at: format_time(meta.created().ok()),
                                             modified_at: format_time(meta.modified().ok()),
+                                            added_at,
                                         });
                                     }
                                 }
@@ -1107,13 +1269,16 @@ mod commands {
                 .and_then(|e| e.to_str())
                 .unwrap_or("")
                 .to_lowercase();
+            let path_str = path.to_string_lossy().to_string();
+            let added_at = lookup_first_seen(&path_str);
             entries.push(FileEntry {
-                path: path.to_string_lossy().to_string(),
+                path: path_str,
                 name,
                 extension,
                 size: meta.len(),
                 created_at: format_time(meta.created().ok()),
                 modified_at: format_time(meta.modified().ok()),
+                added_at,
             });
         }
 
@@ -1215,6 +1380,7 @@ mod commands {
 
         let mut success = 0usize;
         let mut errors: Vec<String> = Vec::new();
+        let mut renamed_pairs: Vec<(String, String)> = Vec::new();
 
         for op in &ops {
             let src = Path::new(&op.original_path);
@@ -1228,7 +1394,10 @@ mod commands {
             }
 
             match fs::rename(src, dst) {
-                Ok(_) => success += 1,
+                Ok(_) => {
+                    success += 1;
+                    renamed_pairs.push((op.original_path.clone(), op.new_path.clone()));
+                }
                 Err(e) => match fs::copy(src, dst) {
                     Ok(_) => {
                         if let Err(del) = fs::remove_file(src) {
@@ -1238,6 +1407,7 @@ mod commands {
                             ));
                         } else {
                             success += 1;
+                            renamed_pairs.push((op.original_path.clone(), op.new_path.clone()));
                         }
                     }
                     Err(ce) => errors.push(format!(
@@ -1247,6 +1417,8 @@ mod commands {
                 },
             }
         }
+
+        transfer_first_seen_paths(&app, &renamed_pairs);
 
         let mut summary = format!("{success} file(s) renamed.");
         if !errors.is_empty() {
@@ -1420,13 +1592,16 @@ mod commands {
                             .to_lowercase()
                     };
 
+                    let path_str = path.to_string_lossy().to_string();
+                    let added_at = lookup_first_seen(&path_str);
                     results.push(FileEntry {
-                        path: path.to_string_lossy().to_string(),
+                        path: path_str,
                         name: name.to_string(),
                         extension,
                         size: meta.len(),
                         created_at: format_time(meta.created().ok()),
                         modified_at: format_time(meta.modified().ok()),
+                        added_at,
                     });
 
                     if results.len() >= limit {
@@ -1784,7 +1959,7 @@ fn get_disk_usage_impl(path: Option<String>) -> Result<DiskUsage, String> {
 }
 
 /// Pre-warms the in-memory directory cache in a background worker with zero UI thread contention.
-fn prewarm_quick_access_cache() {
+fn prewarm_quick_access_cache(app: AppHandle) {
     let home_opt = std::env::var("USERPROFILE")
         .or_else(|_| std::env::var("HOME"))
         .ok();
@@ -1795,7 +1970,10 @@ fn prewarm_quick_access_cache() {
         for sub in targets {
             let direct = user_dir.join(sub);
             if direct.is_dir() {
-                let _ = commands::read_folder_contents(direct.to_string_lossy().to_string());
+                let _ = commands::read_folder_contents_internal(
+                    Some(&app),
+                    &direct.to_string_lossy(),
+                );
             }
         }
     }
@@ -1807,10 +1985,11 @@ fn prewarm_quick_access_cache() {
 
 fn main() {
     tauri::Builder::default()
-        .setup(|_app| {
+        .setup(|app| {
+            let handle = app.handle().clone();
             // Background thread to pre-warm directory cache with zero UI delay
-            std::thread::spawn(|| {
-                prewarm_quick_access_cache();
+            std::thread::spawn(move || {
+                prewarm_quick_access_cache(handle);
             });
             Ok(())
         })

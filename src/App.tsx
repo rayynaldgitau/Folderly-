@@ -49,11 +49,20 @@ import type {
   ViewMode,
   ThemeMode,
   DrawerPosition,
+  SortDirection,
   SortField,
   SystemUserInfo,
   TabItem,
   DiskUsage,
 } from "./types";
+import {
+  SORT_DIRECTION_STORAGE_KEY,
+  SORT_FIELD_STORAGE_KEY,
+  parseSortDirection,
+  parseSortField,
+  sortFiles,
+  sortFolders,
+} from "./utils/sort";
 
 /** Default initial rule configuration. */
 const DEFAULT_RULES: RenameRules = {
@@ -122,13 +131,12 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isRenamerOpen, setIsRenamerOpen] = useState<boolean>(false);
   const [renamerPosition, setRenamerPosition] = useState<DrawerPosition>("right");
-  const [sortField, setSortField] = useState<SortField>(() => {
-    const saved = localStorage.getItem("foldy_sort_field");
-    if (saved === "name" || saved === "date" || saved === "size" || saved === "type") {
-      return saved;
-    }
-    return "name";
-  });
+  const [sortField, setSortField] = useState<SortField>(() =>
+    parseSortField(localStorage.getItem(SORT_FIELD_STORAGE_KEY))
+  );
+  const [sortDirection, setSortDirection] = useState<SortDirection>(() =>
+    parseSortDirection(localStorage.getItem(SORT_DIRECTION_STORAGE_KEY))
+  );
   const [isUniversalSearchOpen, setIsUniversalSearchOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [settingsTab, setSettingsTab] = useState<"appearance" | "profile" | "shortcuts" | "updates">("appearance");
@@ -263,11 +271,12 @@ const App: React.FC = () => {
 
   useEffect(() => {
     try {
-      localStorage.setItem("foldy_sort_field", sortField);
+      localStorage.setItem(SORT_FIELD_STORAGE_KEY, sortField);
+      localStorage.setItem(SORT_DIRECTION_STORAGE_KEY, sortDirection);
     } catch {
       // Ignore storage errors
     }
-  }, [sortField]);
+  }, [sortField, sortDirection]);
 
   // ── Selection & Bulk Renaming State ──────────────────────────────────────
   const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());
@@ -1089,22 +1098,17 @@ const App: React.FC = () => {
 
   // ── Filtered & Sorted Items ──────────────────────────────────────────────
 
-  /** Filter and sort folders according to search query and active sort field. */
+  /** Filter and sort folders according to search query and active sort field/direction. */
   const filteredFolders = useMemo(() => {
     let result = folders;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter((f) => f.name.toLowerCase().includes(q));
     }
-    return [...result].sort((a, b) => {
-      if (sortField === "date") {
-        return (b.modified_at || "").localeCompare(a.modified_at || "");
-      }
-      return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
-    });
-  }, [folders, searchQuery, sortField]);
+    return sortFolders(result, sortField, sortDirection);
+  }, [folders, searchQuery, sortField, sortDirection]);
 
-  /** Filter and sort files according to search query and active sort field. */
+  /** Filter and sort files according to search query and active sort field/direction. */
   const filteredFiles = useMemo(() => {
     let result = files;
     if (searchQuery.trim()) {
@@ -1117,22 +1121,8 @@ const App: React.FC = () => {
     if (currentPath === "recents") {
       return result;
     }
-    return [...result].sort((a, b) => {
-      if (sortField === "date") {
-        return (b.modified_at || "").localeCompare(a.modified_at || "");
-      }
-      if (sortField === "size") {
-        return b.size - a.size;
-      }
-      if (sortField === "type") {
-        const extA = (a.extension || "").toLowerCase();
-        const extB = (b.extension || "").toLowerCase();
-        const extComp = extA.localeCompare(extB);
-        if (extComp !== 0) return extComp;
-      }
-      return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
-    });
-  }, [files, searchQuery, sortField, currentPath]);
+    return sortFiles(result, sortField, sortDirection);
+  }, [files, searchQuery, sortField, sortDirection, currentPath]);
 
   // ── Selection Toggles ────────────────────────────────────────────────────
 
@@ -1534,7 +1524,9 @@ const App: React.FC = () => {
             currentPath === "recents" && files.length > 0 ? handleClearRecents : undefined
           }
           sortField={sortField}
+          sortDirection={sortDirection}
           onSortChange={setSortField}
+          onSortDirectionChange={setSortDirection}
           tabs={tabs}
           activeTabId={activeTabId}
           onSelectTab={handleSelectTab}

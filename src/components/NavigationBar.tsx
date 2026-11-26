@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import type { ViewMode, DrawerPosition, SortField, TabItem } from "../types";
+import type { ViewMode, DrawerPosition, SortDirection, SortField, TabItem } from "../types";
+import { SORT_LABELS, SORT_OPTIONS } from "../utils/sort";
 import { MacFolderIcon } from "./MacIcons";
 import { FoldyLogo } from "./FoldyLogo";
 import {
   Button,
+  IconArrowDown,
   IconArrowLeft,
   IconArrowRight,
   IconArrowUp,
@@ -58,7 +60,9 @@ export interface NavigationBarProps {
   onNewFolder?: () => void;
   onClearRecents?: () => void;
   sortField?: SortField;
+  sortDirection?: SortDirection;
   onSortChange?: (field: SortField) => void;
+  onSortDirectionChange?: (direction: SortDirection) => void;
   tabs: TabItem[];
   activeTabId: string;
   onSelectTab: (tabId: string) => void;
@@ -157,7 +161,9 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
   onNewFolder,
   onClearRecents,
   sortField = "name",
+  sortDirection = "asc",
   onSortChange,
+  onSortDirectionChange,
   tabs = [],
   activeTabId,
   onSelectTab,
@@ -263,13 +269,6 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
       setIsEditingPath(false);
       setEditPathValue(currentPath || "");
     }
-  };
-
-  const sortLabels: Record<SortField, string> = {
-    name: "Name",
-    date: "Date Modified",
-    size: "Size",
-    type: "File Type",
   };
 
   return (
@@ -754,7 +753,12 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
             onClick={() => setIsSortMenuOpen((prev) => !prev)}
             className="inline-flex items-center gap-1.5 px-3 min-h-[32px] rounded-m3-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-medium m3-pressable"
           >
-            <span>Sort: {sortLabels[sortField]}</span>
+            {sortDirection === "asc" ? (
+              <IconArrowUp size={13} />
+            ) : (
+              <IconArrowDown size={13} />
+            )}
+            <span>Sort: {SORT_LABELS[sortField]}</span>
             <IconChevronDown size={14} />
           </button>
 
@@ -762,29 +766,72 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
             <div
               role="menu"
               aria-label="Sort files by"
-              className="absolute left-0 mt-1.5 w-44 bg-surface-container-high rounded-m3-md shadow-m3-2 py-1.5 px-1.5 z-50 text-xs animate-m3-popover"
+              className="absolute left-0 mt-1.5 w-52 bg-surface-container-high rounded-m3-md shadow-m3-2 p-1.5 z-50 text-xs animate-m3-popover"
               style={{ "--transform-origin": "top left" } as React.CSSProperties}
             >
-              {(["name", "date", "size", "type"] as SortField[]).map((field) => (
-                <button
-                  key={field}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={sortField === field}
-                  onClick={() => {
-                    onSortChange?.(field);
-                    setIsSortMenuOpen(false);
-                  }}
-                  className={`w-full min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-m3-sm text-left m3-pressable ${
-                    sortField === field
-                      ? "bg-secondary-container text-on-secondary-container font-semibold"
-                      : "text-on-surface hover:bg-surface-container-highest"
-                  }`}
-                >
-                  <span>{sortLabels[field]}</span>
-                  {sortField === field && <IconCheck size={14} />}
-                </button>
-              ))}
+              <div className="flex flex-col gap-0.5">
+                {SORT_OPTIONS.map(({ field, label }) => {
+                  const selected = sortField === field;
+                  return (
+                    <button
+                      key={field}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={selected}
+                      onClick={() => {
+                        onSortChange?.(field);
+                        setIsSortMenuOpen(false);
+                      }}
+                      className={`w-full min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-m3-sm text-left m3-pressable ${
+                        selected
+                          ? "bg-secondary-container text-on-secondary-container font-semibold"
+                          : "text-on-surface hover:bg-surface-container-highest"
+                      }`}
+                    >
+                      <span>{label}</span>
+                      {selected && <IconCheck size={14} />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div
+                role="group"
+                aria-label="Sort direction"
+                className="mt-1.5 p-1 rounded-m3-sm bg-surface-container flex flex-col gap-0.5"
+              >
+                {(
+                  [
+                    { dir: "asc", label: "Ascending", icon: <IconArrowUp size={13} /> },
+                    { dir: "desc", label: "Descending", icon: <IconArrowDown size={13} /> },
+                  ] as const
+                ).map(({ dir, label, icon }) => {
+                  const selected = sortDirection === dir;
+                  return (
+                    <button
+                      key={dir}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={selected}
+                      onClick={() => {
+                        onSortDirectionChange?.(dir);
+                        setIsSortMenuOpen(false);
+                      }}
+                      className={`w-full min-h-[32px] flex items-center justify-between px-2 py-1 rounded-m3-xs text-left m3-pressable ${
+                        selected
+                          ? "bg-secondary-container text-on-secondary-container font-semibold"
+                          : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest"
+                      }`}
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        {icon}
+                        <span>{label}</span>
+                      </span>
+                      {selected && <IconCheck size={14} />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
