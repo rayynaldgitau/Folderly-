@@ -33,7 +33,9 @@ export interface FolderViewProps {
   sortDirection: SortDirection;
   onSortChange: (field: SortField) => void;
   onSortDirectionChange: (direction: SortDirection) => void;
+  onSelectSingle: (path: string) => void;
   onToggleSelect: (path: string) => void;
+  onRangeSelect: (targetPath: string) => void;
   onToggleSelectAll: () => void;
   onNavigateFolder: (path: string) => void;
   onOpenFile: (path: string) => void;
@@ -50,7 +52,9 @@ interface SubViewProps {
   selectedPaths: Set<string>;
   dragOverFolder: string | null;
   setDragOverFolder: (path: string | null) => void;
+  onSelectSingle: (path: string) => void;
   onToggleSelect: (path: string) => void;
+  onRangeSelect: (targetPath: string) => void;
   onNavigateFolder: (path: string) => void;
   onOpenFile: (path: string) => void;
   onContextMenu: (e: React.MouseEvent, path: string, isFolder: boolean) => void;
@@ -111,7 +115,9 @@ const IconGridView: React.FC<SubViewProps & { size: IconGridSize }> = ({
   selectedPaths,
   dragOverFolder,
   setDragOverFolder,
+  onSelectSingle,
   onToggleSelect,
+  onRangeSelect,
   onNavigateFolder,
   onOpenFile,
   onContextMenu,
@@ -136,7 +142,9 @@ const IconGridView: React.FC<SubViewProps & { size: IconGridSize }> = ({
             selectedPaths,
             dragOverFolder,
             setDragOverFolder,
+            onSelectSingle,
             onToggleSelect,
+            onRangeSelect,
             onNavigateFolder,
             onOpenFile,
             onContextMenu,
@@ -193,7 +201,9 @@ const ListView: React.FC<SubViewProps> = ({
   selectedPaths,
   dragOverFolder,
   setDragOverFolder,
+  onSelectSingle,
   onToggleSelect,
+  onRangeSelect,
   onNavigateFolder,
   onOpenFile,
   onContextMenu,
@@ -216,7 +226,9 @@ const ListView: React.FC<SubViewProps> = ({
             selectedPaths,
             dragOverFolder,
             setDragOverFolder,
+            onSelectSingle,
             onToggleSelect,
+            onRangeSelect,
             onNavigateFolder,
             onOpenFile,
             onContextMenu,
@@ -332,7 +344,9 @@ const DetailsView: React.FC<
   sortDirection,
   onSortChange,
   onSortDirectionChange,
+  onSelectSingle,
   onToggleSelect,
+  onRangeSelect,
   onToggleSelectAll,
   onNavigateFolder,
   onOpenFile,
@@ -466,7 +480,9 @@ const DetailsView: React.FC<
               selectedPaths,
               dragOverFolder,
               setDragOverFolder,
+              onSelectSingle,
               onToggleSelect,
+              onRangeSelect,
               onNavigateFolder,
               onOpenFile,
               onContextMenu,
@@ -548,7 +564,9 @@ const TilesView: React.FC<SubViewProps> = ({
   selectedPaths,
   dragOverFolder,
   setDragOverFolder,
+  onSelectSingle,
   onToggleSelect,
+  onRangeSelect,
   onNavigateFolder,
   onOpenFile,
   onContextMenu,
@@ -570,7 +588,9 @@ const TilesView: React.FC<SubViewProps> = ({
             selectedPaths,
             dragOverFolder,
             setDragOverFolder,
+            onSelectSingle,
             onToggleSelect,
+            onRangeSelect,
             onNavigateFolder,
             onOpenFile,
             onContextMenu,
@@ -625,7 +645,9 @@ const ContentView: React.FC<SubViewProps> = ({
   selectedPaths,
   dragOverFolder,
   setDragOverFolder,
+  onSelectSingle,
   onToggleSelect,
+  onRangeSelect,
   onNavigateFolder,
   onOpenFile,
   onContextMenu,
@@ -644,7 +666,9 @@ const ContentView: React.FC<SubViewProps> = ({
             selectedPaths,
             dragOverFolder,
             setDragOverFolder,
+            onSelectSingle,
             onToggleSelect,
+            onRangeSelect,
             onNavigateFolder,
             onOpenFile,
             onContextMenu,
@@ -713,7 +737,9 @@ export const FolderView: React.FC<FolderViewProps> = ({
   sortDirection,
   onSortChange,
   onSortDirectionChange,
+  onSelectSingle,
   onToggleSelect,
+  onRangeSelect,
   onToggleSelectAll,
   onNavigateFolder,
   onOpenFile,
@@ -747,7 +773,9 @@ export const FolderView: React.FC<FolderViewProps> = ({
     selectedPaths,
     dragOverFolder,
     setDragOverFolder,
+    onSelectSingle,
     onToggleSelect,
+    onRangeSelect,
     onNavigateFolder,
     onOpenFile,
     onContextMenu,

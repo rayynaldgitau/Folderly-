@@ -1150,8 +1150,18 @@ const App: React.FC = () => {
 
   // ── Selection Toggles ────────────────────────────────────────────────────
 
-  /** Toggles individual file selection. */
+  const selectionAnchorRef = useRef<string | null>(null);
+
+  /** Selects a single item (replacing prior selection) and sets range anchor. */
+  const selectSingle = useCallback((path: string) => {
+    selectionAnchorRef.current = path;
+    setSelectedPaths(new Set([path]));
+    setPreviews([]);
+  }, []);
+
+  /** Toggles individual item selection and updates range anchor. */
   const toggleSelect = useCallback((path: string) => {
+    selectionAnchorRef.current = path;
     setSelectedPaths((prev) => {
       const next = new Set(prev);
       next.has(path) ? next.delete(path) : next.add(path);
@@ -1159,6 +1169,49 @@ const App: React.FC = () => {
     });
     setPreviews([]);
   }, []);
+
+  /** Selects a contiguous range from the anchor item to targetPath in visible order. */
+  const rangeSelect = useCallback(
+    (targetPath: string) => {
+      const orderedPaths = [
+        ...filteredFolders.map((f) => f.path),
+        ...filteredFiles.map((f) => f.path),
+      ];
+      const targetIdx = orderedPaths.indexOf(targetPath);
+      if (targetIdx === -1) return;
+
+      const anchor =
+        selectionAnchorRef.current && orderedPaths.includes(selectionAnchorRef.current)
+          ? selectionAnchorRef.current
+          : orderedPaths.find((p) => selectedPaths.has(p)) ?? targetPath;
+
+      const anchorIdx = orderedPaths.indexOf(anchor);
+      if (anchorIdx === -1) {
+        selectionAnchorRef.current = targetPath;
+        setSelectedPaths(new Set([targetPath]));
+        return;
+      }
+
+      const start = Math.min(anchorIdx, targetIdx);
+      const end = Math.max(anchorIdx, targetIdx);
+      setSelectedPaths(new Set(orderedPaths.slice(start, end + 1)));
+      setPreviews([]);
+    },
+    [filteredFolders, filteredFiles, selectedPaths]
+  );
+
+  /** Selects all currently displayed/filtered folders and files. */
+  const selectAll = useCallback(() => {
+    const allPaths = [
+      ...filteredFolders.map((f) => f.path),
+      ...filteredFiles.map((f) => f.path),
+    ];
+    if (allPaths.length > 0) {
+      selectionAnchorRef.current = allPaths[0];
+    }
+    setSelectedPaths(new Set(allPaths));
+    setPreviews([]);
+  }, [filteredFolders, filteredFiles]);
 
   /** Toggles selecting all currently displayed/filtered folders and files. */
   const toggleSelectAll = useCallback(() => {
@@ -1175,9 +1228,28 @@ const App: React.FC = () => {
   }, [filteredFolders, filteredFiles]);
 
   const clearSelection = useCallback(() => {
+    selectionAnchorRef.current = null;
     setSelectedPaths(new Set());
     setPreviews([]);
   }, []);
+
+  // Global Ctrl+A / Cmd+A to select all visible items
+  useEffect(() => {
+    const handleSelectAllKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
+        const activeEl = document.activeElement;
+        const isInput =
+          activeEl instanceof HTMLInputElement ||
+          activeEl instanceof HTMLTextAreaElement ||
+          (activeEl && (activeEl as HTMLElement).isContentEditable);
+        if (isInput) return;
+        e.preventDefault();
+        selectAll();
+      }
+    };
+    window.addEventListener("keydown", handleSelectAllKeyDown);
+    return () => window.removeEventListener("keydown", handleSelectAllKeyDown);
+  }, [selectAll]);
 
   const handleRenameSelected = useCallback(() => {
     setIsRenamerOpen(true);
@@ -1616,7 +1688,9 @@ const App: React.FC = () => {
                   sortDirection={sortDirection}
                   onSortChange={setSortField}
                   onSortDirectionChange={setSortDirection}
+                  onSelectSingle={selectSingle}
                   onToggleSelect={toggleSelect}
+                  onRangeSelect={rangeSelect}
                   onToggleSelectAll={toggleSelectAll}
                   onNavigateFolder={(path) => navigateTo(path)}
                   onOpenFile={handleOpenFile}

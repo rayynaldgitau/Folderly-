@@ -77,7 +77,9 @@ export interface ItemInteractionHandlers {
   selectedPaths: Set<string>;
   dragOverFolder: string | null;
   setDragOverFolder: (path: string | null) => void;
+  onSelectSingle: (path: string) => void;
   onToggleSelect: (path: string) => void;
+  onRangeSelect: (targetPath: string) => void;
   onNavigateFolder: (path: string) => void;
   onOpenFile: (path: string) => void;
   onContextMenu: (e: React.MouseEvent, path: string, isFolder: boolean) => void;
@@ -86,6 +88,9 @@ export interface ItemInteractionHandlers {
 
 /**
  * Builds shared keyboard, click, drag-and-drop, and context-menu handlers for any view item.
+ * - Single click on folder opens it (unless Ctrl/Cmd/Shift held for multi-select).
+ * - Single click on file selects it immediately (for Preview/Details panes).
+ * - Double click or Enter on file opens it in the default OS app.
  *
  * @param params - Item and callback handlers.
  * @returns React DOM event props for the item container.
@@ -95,7 +100,9 @@ export function getItemInteractionProps({
   selectedPaths,
   dragOverFolder,
   setDragOverFolder,
+  onSelectSingle,
   onToggleSelect,
+  onRangeSelect,
   onNavigateFolder,
   onOpenFile,
   onContextMenu,
@@ -144,12 +151,26 @@ export function getItemInteractionProps({
           }
         }
       : undefined,
-    onClick: () => onToggleSelect(item.path),
-    onDoubleClick: (e: React.MouseEvent) => {
-      e.stopPropagation();
+    onClick: (e: React.MouseEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        onToggleSelect(item.path);
+        return;
+      }
+      if (e.shiftKey) {
+        e.preventDefault();
+        onRangeSelect(item.path);
+        return;
+      }
       if (item.isFolder) {
         onNavigateFolder(item.path);
       } else {
+        onSelectSingle(item.path);
+      }
+    },
+    onDoubleClick: (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!item.isFolder) {
         onOpenFile(item.path);
       }
     },
