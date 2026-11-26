@@ -10,6 +10,7 @@ import FolderView from "./components/FolderView";
 import FileContextMenu from "./components/FileContextMenu";
 import RuleBuilder from "./components/RuleBuilder";
 import PreviewPanel from "./components/PreviewPanel";
+import FilePreviewPane, { type PreviewPaneItem } from "./components/FilePreviewPane";
 import StatusBar from "./components/StatusBar";
 import UniversalSearchModal from "./components/UniversalSearchModal";
 import SettingsModal from "./components/SettingsModal";
@@ -1336,6 +1337,48 @@ const App: React.FC = () => {
     return list;
   }, [filteredFolders, filteredFiles]);
 
+  /** Selected folder/file entries with full metadata for Preview and Details panes. */
+  const selectedPaneItems = useMemo<PreviewPaneItem[]>(() => {
+    if (selectedPaths.size === 0) return [];
+    const items: PreviewPaneItem[] = [];
+    for (const f of filteredFolders) {
+      if (selectedPaths.has(f.path)) {
+        items.push({
+          path: f.path,
+          name: f.name,
+          isFolder: true,
+          modified_at: f.modified_at,
+          created_at: f.created_at,
+        });
+      }
+    }
+    for (const f of filteredFiles) {
+      if (selectedPaths.has(f.path)) {
+        items.push({
+          path: f.path,
+          name: f.name,
+          isFolder: false,
+          extension: f.extension,
+          size: f.size,
+          modified_at: f.modified_at,
+          created_at: f.created_at,
+        });
+      }
+    }
+    return items;
+  }, [filteredFolders, filteredFiles, selectedPaths]);
+
+  /** Primary item shown in the Preview pane (prefers most recently clicked item). */
+  const primaryPreviewPaneItem = useMemo<PreviewPaneItem | null>(() => {
+    if (selectedPaneItems.length === 0) return null;
+    const anchor = selectionAnchorRef.current;
+    if (anchor) {
+      const match = selectedPaneItems.find((i) => i.path === anchor);
+      if (match) return match;
+    }
+    return selectedPaneItems[0];
+  }, [selectedPaneItems]);
+
   /**
    * Determines index of currently previewed item within the visible items array.
    */
@@ -1708,6 +1751,17 @@ const App: React.FC = () => {
               )}
             </ErrorBoundary>
           </div>
+
+          {/* ── Right Preview Pane ── */}
+          <FilePreviewPane
+            isOpen={showPreviewPane}
+            onClose={() => setShowPreviewPane(false)}
+            item={primaryPreviewPaneItem}
+            selectedCount={selectedPaneItems.length}
+            onOpenFile={handleOpenFile}
+            onNavigateFolder={(path) => navigateTo(path)}
+            onOpenQuickLook={(path, isFolder) => handleOpenPreviewForItem(path, isFolder)}
+          />
 
           {/* ── Right Renamer Drawer (when position is 'right') ── */}
           {isRenamerOpen && renamerPosition === "right" && renderRenamerDrawer()}
