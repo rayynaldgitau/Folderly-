@@ -206,6 +206,8 @@ export interface StateViewProps {
   title: string;
   description?: string;
   onRetry?: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
 /**
@@ -216,6 +218,8 @@ export const StateView: React.FC<StateViewProps> = ({
   title,
   description,
   onRetry,
+  actionLabel,
+  onAction,
 }) => {
   if (kind === "loading") {
     return (
@@ -249,14 +253,23 @@ export const StateView: React.FC<StateViewProps> = ({
           {description}
         </p>
       )}
-      {kind === "error" && onRetry && (
-        <Button
-          variant="tonal"
-          leadingIcon={<IconRefresh size={16} />}
-          onClick={onRetry}
-        >
-          Retry
-        </Button>
+      {kind === "error" && (onRetry || (actionLabel && onAction)) && (
+        <div className="flex items-center gap-2">
+          {actionLabel && onAction && (
+            <Button variant="filled" onClick={onAction}>
+              {actionLabel}
+            </Button>
+          )}
+          {onRetry && (
+            <Button
+              variant="tonal"
+              leadingIcon={<IconRefresh size={16} />}
+              onClick={onRetry}
+            >
+              Retry
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );

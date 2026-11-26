@@ -356,6 +356,8 @@ const App: React.FC = () => {
     type: "info",
   });
   const [loading, setLoading]             = useState<boolean>(false);
+  const [showFdaBanner, setShowFdaBanner] = useState<boolean>(false);
+  const [permissionDeniedPath, setPermissionDeniedPath] = useState<string | null>(null);
 
   // ── Theme & Profile Handlers ──────────────────────────────────────────────
 
@@ -475,6 +477,7 @@ const App: React.FC = () => {
         return;
       }
 
+      setPermissionDeniedPath(null);
       setStatus({ msg: `Loading "${path}"…`, type: "info" });
       try {
         const contents = await invoke<DirContents>("read_folder_contents", { dirPath: path });
@@ -529,7 +532,16 @@ const App: React.FC = () => {
         tabsRef.current = nextTabs;
         setTabs(nextTabs);
       } catch (err) {
-        setStatus({ msg: `Navigation error: ${err}`, type: "error" });
+        const raw = String(err);
+        if (raw.includes("PERMISSION_DENIED:")) {
+          setPermissionDeniedPath(path);
+          setStatus({
+            msg: raw.replace("PERMISSION_DENIED:", "").trim(),
+            type: "error",
+          });
+        } else {
+          setStatus({ msg: `Navigation error: ${err}`, type: "error" });
+        }
       } finally {
         setLoading(false);
       }
@@ -628,6 +640,17 @@ const App: React.FC = () => {
           console.error("Initial disk usage query error:", e);
         });
 
+      const isMac = /Mac/i.test(navigator.platform || navigator.userAgent);
+      if (isMac && localStorage.getItem("foldy_fda_banner_dismissed") !== "true") {
+        invoke<boolean>("check_macos_full_disk_access")
+          .then((granted) => {
+            if (!granted) {
+              setShowFdaBanner(true);
+            }
+          })
+          .catch(() => {});
+      }
+
       try {
         const qa = await invoke<QuickAccessItem[]>("get_quick_access");
         setQuickAccess(qa);
@@ -650,10 +673,13 @@ const App: React.FC = () => {
           return prev;
         });
 
-        const defaultTarget =
-          qa.find((q) => q.name === "Downloads")?.path ||
-          qa.find((q) => q.name === "Desktop")?.path ||
-          qa[0]?.path;
+        const defaultTarget = isMac
+          ? qa.find((q) => q.name === "Home")?.path ||
+            qa.find((q) => q.name === "Downloads")?.path ||
+            qa[0]?.path
+          : qa.find((q) => q.name === "Downloads")?.path ||
+            qa.find((q) => q.name === "Desktop")?.path ||
+            qa[0]?.path;
         if (defaultTarget) {
           const title =
             defaultTarget.split(/[\\/]/).filter(Boolean).pop() || "Downloads";
@@ -1713,6 +1739,43 @@ const App: React.FC = () => {
           onMoveItem={handleMoveItem}
         />
 
+        {/* Non-blocking macOS Full Disk Access Banner */}
+        {showFdaBanner && (
+          <div
+            role="status"
+            className="px-4 py-2 bg-surface-container-high border-b border-outline-variant/40 flex items-center justify-between gap-3 text-xs"
+          >
+            <span className="text-on-surface-variant">
+              macOS Full Disk Access is not enabled. Grant it once in{" "}
+              <strong className="text-on-surface">
+                System Settings &gt; Privacy &amp; Security &gt; Full Disk Access
+              </strong>{" "}
+              to avoid repeated folder prompts.
+            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="tonal"
+                size="sm"
+                onClick={() => {
+                  invoke("open_macos_privacy_settings", { pane: "all_files" }).catch(() => {});
+                }}
+              >
+                Open Settings
+              </Button>
+              <Button
+                variant="text"
+                size="sm"
+                onClick={() => {
+                  localStorage.setItem("foldy_fda_banner_dismissed", "true");
+                  setShowFdaBanner(false);
+                }}
+              >
+                Dismiss
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Workspace Central Area (accepts drops onto empty canvas to move items into current folder) */}
         <div
           onDragOver={(e) => {
@@ -1751,8 +1814,24 @@ const App: React.FC = () => {
                 filteredFiles.length === 0 ? (
                 <StateView
                   kind="error"
-                  title="Unable to load folder"
+                  title={
+                    permissionDeniedPath
+                      ? "Folder access denied by macOS"
+                      : "Unable to load folder"
+                  }
                   description={status.msg}
+                  actionLabel={
+                    permissionDeniedPath ? "Open Privacy Settings" : undefined
+                  }
+                  onAction={
+                    permissionDeniedPath
+                      ? () => {
+                          invoke("open_macos_privacy_settings", {
+                            pane: "files",
+                          }).catch(() => {});
+                        }
+                      : undefined
+                  }
                   onRetry={handleRefresh}
                 />
               ) : (
