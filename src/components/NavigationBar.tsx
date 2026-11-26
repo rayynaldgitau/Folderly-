@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import type { ViewMode, DrawerPosition, SortDirection, SortField, TabItem } from "../types";
 import { SORT_LABELS, SORT_OPTIONS } from "../utils/sort";
-import { VIEW_LABELS, VIEW_OPTIONS } from "../utils/view";
+import { getViewOptions, VIEW_LABELS } from "../utils/view";
 import { MacFolderIcon } from "./MacIcons";
 import { FoldyLogo } from "./FoldyLogo";
 import {
@@ -44,6 +44,7 @@ export interface NavigationBarProps {
   onSearchChange: (q: string) => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  nodeViewEnabled?: boolean;
   showDetailsPane?: boolean;
   onToggleDetailsPane?: () => void;
   showPreviewPane?: boolean;
@@ -149,6 +150,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
   onSearchChange,
   viewMode,
   onViewModeChange,
+  nodeViewEnabled = false,
   showDetailsPane = false,
   onToggleDetailsPane,
   showPreviewPane = false,
@@ -872,7 +874,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
               style={{ "--transform-origin": "top right" } as React.CSSProperties}
             >
               <div className="flex flex-col gap-0.5">
-                {VIEW_OPTIONS.map(({ mode, label }) => {
+                {getViewOptions(nodeViewEnabled).map(({ mode, label, group }) => {
                   const selected = viewMode === mode;
                   return (
                     <button
@@ -898,7 +900,12 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                           />
                         )}
                       </span>
-                      <span>{label}</span>
+                      <span className="flex-1">{label}</span>
+                      {group === "experimental" && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-m3-full bg-tertiary-container text-on-tertiary-container">
+                          Exp
+                        </span>
+                      )}
                     </button>
                   );
                 })}

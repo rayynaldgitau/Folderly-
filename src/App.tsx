@@ -66,6 +66,7 @@ import {
 } from "./utils/sort";
 import {
   DETAILS_PANE_STORAGE_KEY,
+  EXPERIMENTAL_NODE_VIEW_STORAGE_KEY,
   PREVIEW_PANE_STORAGE_KEY,
   VIEW_MODE_STORAGE_KEY,
   parseViewMode,
@@ -263,8 +264,14 @@ const App: React.FC = () => {
   const [quickAccess, setQuickAccess]     = useState<QuickAccessItem[]>([]);
   const [diskUsage, setDiskUsage]         = useState<DiskUsage | null>(null);
   const [searchQuery, setSearchQuery]     = useState<string>("");
+  const [nodeViewEnabled, setNodeViewEnabled] = useState<boolean>(
+    () => localStorage.getItem(EXPERIMENTAL_NODE_VIEW_STORAGE_KEY) === "true"
+  );
   const [viewMode, setViewMode] = useState<ViewMode>(() =>
-    parseViewMode(localStorage.getItem(VIEW_MODE_STORAGE_KEY))
+    parseViewMode(
+      localStorage.getItem(VIEW_MODE_STORAGE_KEY),
+      localStorage.getItem(EXPERIMENTAL_NODE_VIEW_STORAGE_KEY) === "true"
+    )
   );
   const [showDetailsPane, setShowDetailsPane] = useState<boolean>(
     () => localStorage.getItem(DETAILS_PANE_STORAGE_KEY) === "true"
@@ -280,6 +287,20 @@ const App: React.FC = () => {
       // Ignore storage errors
     }
   }, [viewMode]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        EXPERIMENTAL_NODE_VIEW_STORAGE_KEY,
+        String(nodeViewEnabled)
+      );
+    } catch {
+      // Ignore storage errors
+    }
+    if (!nodeViewEnabled && viewMode === "node") {
+      setViewMode("details");
+    }
+  }, [nodeViewEnabled, viewMode]);
 
   useEffect(() => {
     try {
@@ -1655,6 +1676,7 @@ const App: React.FC = () => {
           onSearchChange={setSearchQuery}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
+          nodeViewEnabled={nodeViewEnabled}
           showDetailsPane={showDetailsPane}
           onToggleDetailsPane={() => setShowDetailsPane((prev) => !prev)}
           showPreviewPane={showPreviewPane}
@@ -1736,6 +1758,7 @@ const App: React.FC = () => {
               ) : (
                 <FolderView
                   viewMode={viewMode}
+                  currentPath={currentPath}
                   folders={filteredFolders}
                   files={filteredFiles}
                   selectedPaths={selectedPaths}
@@ -1749,6 +1772,31 @@ const App: React.FC = () => {
                   onToggleSelectAll={toggleSelectAll}
                   onNavigateFolder={(path) => navigateTo(path)}
                   onOpenFile={handleOpenFile}
+                  onPreviewFile={(path) => {
+                    if (showPreviewPane) return;
+                    const found = files.find((item) => item.path === path);
+                    if (found) {
+                      setPreviewItem({
+                        path: found.path,
+                        name: found.name,
+                        extension: found.extension,
+                        size: found.size,
+                        modified_at: found.modified_at,
+                        isFolder: false,
+                      });
+                    } else {
+                      const name = path.split(/[\\/]/).pop() || path;
+                      const dotIdx = name.lastIndexOf(".");
+                      setPreviewItem({
+                        path,
+                        name,
+                        extension: dotIdx > 0 ? name.slice(dotIdx + 1) : "",
+                        size: 0,
+                        modified_at: "",
+                        isFolder: false,
+                      });
+                    }
+                  }}
                   onContextMenu={handleContextMenu}
                   onNewFolder={currentPath && currentPath !== "recents" ? handleNewFolder : undefined}
                   onMoveItem={handleMoveItem}
@@ -1848,6 +1896,8 @@ const App: React.FC = () => {
         initialTab={settingsTab}
         onOpenTutorials={() => setIsTutorialOpen(true)}
         onOpenWhatsNew={() => setIsWhatsNewOpen(true)}
+        nodeViewEnabled={nodeViewEnabled}
+        onToggleNodeView={setNodeViewEnabled}
       />
 
       {/* Interactive Tutorials & Quality Assurance Onboarding Guide */}

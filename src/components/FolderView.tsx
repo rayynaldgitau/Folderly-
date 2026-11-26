@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type {
   FileEntry,
   FolderEntry,
@@ -24,8 +24,11 @@ import {
   type FolderViewItem,
 } from "./FileItemShared";
 
+const LazyNodeView = React.lazy(() => import("./NodeView"));
+
 export interface FolderViewProps {
   viewMode: ViewMode;
+  currentPath?: string | null;
   folders: FolderEntry[];
   files: FileEntry[];
   selectedPaths: Set<string>;
@@ -39,6 +42,7 @@ export interface FolderViewProps {
   onToggleSelectAll: () => void;
   onNavigateFolder: (path: string) => void;
   onOpenFile: (path: string) => void;
+  onPreviewFile?: (path: string) => void;
   onContextMenu: (e: React.MouseEvent, path: string, isFolder: boolean) => void;
   emptyTitle?: string;
   emptyMessage?: string;
@@ -730,6 +734,7 @@ const ContentView: React.FC<SubViewProps> = ({
  */
 export const FolderView: React.FC<FolderViewProps> = ({
   viewMode,
+  currentPath = null,
   folders,
   files,
   selectedPaths,
@@ -743,6 +748,7 @@ export const FolderView: React.FC<FolderViewProps> = ({
   onToggleSelectAll,
   onNavigateFolder,
   onOpenFile,
+  onPreviewFile,
   onContextMenu,
   emptyTitle,
   emptyMessage,
@@ -801,6 +807,26 @@ export const FolderView: React.FC<FolderViewProps> = ({
         />
       ) : viewMode === "tiles" ? (
         <TilesView {...sharedProps} />
+      ) : viewMode === "node" ? (
+        <Suspense
+          fallback={
+            <div className="h-[420px] flex items-center justify-center text-xs text-on-surface-variant">
+              Loading Node view...
+            </div>
+          }
+        >
+          <LazyNodeView
+            currentPath={currentPath}
+            folders={folders}
+            files={files}
+            selectedPaths={selectedPaths}
+            onSelectSingle={onSelectSingle}
+            onNavigateFolder={onNavigateFolder}
+            onOpenFile={onOpenFile}
+            onPreviewFile={onPreviewFile}
+            onContextMenu={onContextMenu}
+          />
+        </Suspense>
       ) : (
         <ContentView {...sharedProps} />
       )}
