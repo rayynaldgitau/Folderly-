@@ -238,12 +238,12 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
   };
 
   return (
-    <header className="flex flex-col select-none shrink-0 bg-surface border-b border-outline-variant">
+    <header className="flex flex-col select-none shrink-0 bg-surface">
       {/* Top Tab Strip */}
       <div
         role="tablist"
         aria-label="Open folder tabs"
-        className="flex items-center justify-between px-3 py-1.5 text-xs border-b border-outline-variant bg-surface-container-low gap-2"
+        className="flex items-center justify-between px-3 py-1.5 text-xs bg-surface-container-low gap-2"
       >
         <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto no-scrollbar py-0.5">
           <div
@@ -331,14 +331,14 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                     onMoveItem(src, tab.path);
                   }
                 }}
-                className={`group flex items-center gap-2 px-3 min-h-[36px] rounded-m3-md text-xs max-w-[200px] min-w-[110px] shrink-0 cursor-grab active:cursor-grabbing border m3-pressable ${
+                className={`group flex items-center gap-2 px-3 min-h-[36px] rounded-m3-md text-xs max-w-[200px] min-w-[110px] shrink-0 cursor-grab active:cursor-grabbing m3-pressable ${
                   isDragging ? "opacity-40" : ""
                 } ${
                   isOver
-                    ? "ring-2 ring-primary border-primary bg-primary-container text-on-primary-container font-semibold"
+                    ? "bg-primary-container text-on-primary-container font-semibold"
                     : isActive
-                    ? "bg-surface-container-high border-outline-variant text-on-surface font-semibold shadow-m3-0"
-                    : "bg-transparent border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
+                    ? "bg-surface-container-high text-on-surface font-semibold"
+                    : "bg-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
                 }`}
                 title={tab.path || tab.title}
               >
@@ -388,7 +388,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
                 e.dataTransfer.getData("text/plain");
               if (src) onNewTab(src);
             }}
-            className="inline-flex items-center justify-center min-w-[36px] min-h-[36px] rounded-m3-full bg-surface-container hover:bg-surface-container-high border border-outline-variant text-on-surface-variant hover:text-primary shrink-0 m3-pressable"
+            className="inline-flex items-center justify-center min-w-[36px] min-h-[36px] rounded-m3-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-primary shrink-0 m3-pressable"
             title="New tab (Ctrl+T)"
           >
             <IconPlus size={16} />
@@ -396,7 +396,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
         </div>
 
         <div className="hidden md:flex items-center gap-2 text-on-surface-variant text-[11px] shrink-0 pr-1">
-          <kbd className="bg-surface-container border border-outline-variant px-1.5 py-0.5 rounded-m3-xs text-[10px] font-mono">
+          <kbd className="bg-surface-container px-1.5 py-0.5 rounded-m3-xs text-[10px] font-mono">
             Ctrl+T
           </kbd>
           <span>New Tab</span>
@@ -423,7 +423,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
               aria-label="Go back"
               onClick={onGoBack}
               disabled={!canGoBack}
-              className="inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-m3-full bg-surface-container border border-outline-variant/60 text-on-surface disabled:opacity-35 disabled:cursor-not-allowed hover:bg-surface-container-high m3-pressable"
+              className="inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-m3-full bg-surface-container text-on-surface disabled:opacity-35 disabled:cursor-not-allowed hover:bg-surface-container-high m3-pressable"
             >
               <IconArrowLeft size={16} />
             </button>
@@ -432,7 +432,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
               aria-label="Go forward"
               onClick={onGoForward}
               disabled={!canGoForward}
-              className="inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-m3-full bg-surface-container border border-outline-variant/60 text-on-surface disabled:opacity-35 disabled:cursor-not-allowed hover:bg-surface-container-high m3-pressable"
+              className="inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-m3-full bg-surface-container text-on-surface disabled:opacity-35 disabled:cursor-not-allowed hover:bg-surface-container-high m3-pressable"
             >
               <IconArrowRight size={16} />
             </button>
@@ -441,7 +441,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
               aria-label="Go to parent folder"
               onClick={onGoUp}
               disabled={!canGoUp}
-              className="inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-m3-full bg-surface-container border border-outline-variant/60 text-on-surface disabled:opacity-35 disabled:cursor-not-allowed hover:bg-surface-container-high m3-pressable"
+              className="inline-flex items-center justify-center min-w-[40px] min-h-[40px] rounded-m3-full bg-surface-container text-on-surface disabled:opacity-35 disabled:cursor-not-allowed hover:bg-surface-container-high m3-pressable"
             >
               <IconArrowUp size={16} />
             </button>
@@ -465,7 +465,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
               <nav
                 aria-label="Breadcrumb"
                 onClick={handleStartEditing}
-                className="flex items-center justify-between bg-surface-container border border-outline-variant/60 rounded-m3-full px-3.5 min-h-[40px] cursor-text hover:border-outline transition-colors"
+                className="flex items-center justify-between bg-surface-container rounded-m3-full px-3.5 min-h-[40px] cursor-text hover:bg-surface-container-high transition-colors"
               >
                 <div className="flex items-center gap-1 text-xs text-on-surface truncate">
                   {segments.map((seg, idx) => (
@@ -513,13 +513,13 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
           type="button"
           onClick={onOpenUniversalSearch}
           aria-label="Search across laptop (Ctrl+K)"
-          className="flex items-center gap-3 px-4 min-h-[40px] rounded-m3-full bg-surface-container-high border border-outline-variant/60 hover:border-outline text-on-surface-variant hover:text-on-surface text-xs font-medium m3-pressable"
+          className="flex items-center gap-3 px-4 min-h-[40px] rounded-m3-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-on-surface text-xs font-medium m3-pressable"
         >
           <span className="flex items-center gap-2">
             <IconSearch size={15} className="text-primary" />
             <span className="hidden sm:inline">Search Laptop</span>
           </span>
-          <kbd className="hidden md:inline text-[10px] bg-surface-container-lowest border border-outline-variant px-1.5 py-0.5 rounded-m3-xs font-mono">
+          <kbd className="hidden md:inline text-[10px] bg-surface-container px-1.5 py-0.5 rounded-m3-xs font-mono">
             Ctrl+K
           </kbd>
         </button>
@@ -536,7 +536,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
           <div
             role="group"
             aria-label="View mode"
-            className="inline-flex items-center bg-surface-container rounded-m3-full p-1 border border-outline-variant/60"
+            className="inline-flex items-center bg-surface-container rounded-m3-full p-1"
           >
             {(
               [
@@ -646,7 +646,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
               <div
                 role="menu"
                 aria-label="Sort files by"
-                className="absolute right-0 mt-1.5 w-48 bg-surface-container-high border border-outline-variant rounded-m3-md shadow-m3-2 py-1.5 px-1.5 z-50 text-xs animate-m3-popover"
+                className="absolute right-0 mt-1.5 w-48 bg-surface-container-high rounded-m3-md shadow-m3-2 py-1.5 px-1.5 z-50 text-xs animate-m3-popover"
                 style={{ "--transform-origin": "top right" } as React.CSSProperties}
               >
                 <div className="px-2.5 py-1 text-[11px] font-semibold text-on-surface-variant">

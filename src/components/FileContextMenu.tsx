@@ -128,7 +128,7 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
       role="menu"
       aria-label="File actions"
       aria-orientation="vertical"
-      className="fixed z-50 min-w-[232px] bg-surface-container-high border border-outline-variant shadow-m3-3 rounded-m3-md py-1.5 px-1.5 text-on-surface select-none animate-m3-popover"
+      className="fixed z-50 min-w-[232px] bg-surface-container-high shadow-m3-2 rounded-m3-md py-2 px-1.5 text-on-surface select-none animate-m3-popover"
       style={
         {
           left: `${position.x}px`,
@@ -172,7 +172,7 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
             <IconEye size={16} className="text-on-surface-variant shrink-0" />
             <span className="font-medium truncate">Quick Look Preview</span>
           </span>
-          <kbd className="px-1.5 py-0.5 text-[10px] rounded-m3-xs bg-surface-container text-on-surface-variant font-mono border border-outline-variant">
+          <kbd className="px-1.5 py-0.5 text-[10px] rounded-m3-xs bg-surface-container text-on-surface-variant font-mono">
             P
           </kbd>
         </button>
@@ -231,7 +231,7 @@ export const FileContextMenu: React.FC<FileContextMenuProps> = ({
         <span className="font-medium truncate">Copy Path</span>
       </button>
 
-      <div className="my-1.5 border-t border-outline-variant" role="separator" />
+      <div className="mt-2 pt-1" role="separator" />
 
       <button
         type="button"

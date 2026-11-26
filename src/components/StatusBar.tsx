@@ -10,7 +10,7 @@ interface Props {
 }
 
 /**
- * Footer Status Bar displaying current directory / status message and item counts.
+ * Footer Status Bar separated by tonal surface layer (`surface-container-low`).
  */
 const StatusBar: React.FC<Props> = ({
   message,
@@ -25,9 +25,8 @@ const StatusBar: React.FC<Props> = ({
     <footer
       role="status"
       aria-live="polite"
-      className="shrink-0 flex items-center justify-between px-4 sm:px-6 py-2 border-t border-outline-variant bg-surface-container-low text-xs text-on-surface-variant z-10"
+      className="shrink-0 flex items-center justify-between px-4 sm:px-6 py-2.5 bg-surface-container-low text-xs text-on-surface-variant z-10"
     >
-      {/* Left: Current Directory or Status Message */}
       <div className="flex items-center gap-2 truncate max-w-xl">
         {message && type === "error" ? (
           <IconAlert size={15} className="text-error shrink-0" />
@@ -55,8 +54,7 @@ const StatusBar: React.FC<Props> = ({
         )}
       </div>
 
-      {/* Right: Item counts summary */}
-      <div className="text-[11px] text-on-surface-variant shrink-0 ml-4 hidden sm:flex items-center gap-1.5">
+      <div className="text-[11px] text-on-surface-variant shrink-0 ml-4 hidden sm:flex items-center gap-2">
         <span>{totalItems} items</span>
         <span aria-hidden="true">•</span>
         <span>{folderCount} folders</span>

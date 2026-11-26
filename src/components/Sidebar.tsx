@@ -108,7 +108,7 @@ const Sidebar: React.FC<Props> = ({
   return (
     <aside
       aria-label="Primary sidebar navigation"
-      className="w-72 sm:w-64 shrink-0 flex flex-col bg-surface-container-low border-r border-outline-variant select-none overflow-hidden text-on-surface z-10"
+      className="w-72 sm:w-64 shrink-0 flex flex-col bg-surface-container-low select-none overflow-hidden text-on-surface z-10"
     >
       {/* 1. User Workspace Header */}
       <div className="p-3 pb-2">
@@ -116,7 +116,7 @@ const Sidebar: React.FC<Props> = ({
           type="button"
           onClick={onOpenSettings}
           aria-label="Open profile and workspace settings"
-          className="w-full min-h-[48px] flex items-center justify-between p-2 rounded-m3-md bg-surface-container border border-outline-variant/60 hover:border-outline m3-state-surface text-left group"
+          className="w-full min-h-[48px] flex items-center justify-between p-2.5 rounded-m3-md bg-surface-container m3-state-surface text-left group"
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 rounded-m3-full bg-primary text-on-primary font-bold flex items-center justify-center text-sm shrink-0">
@@ -148,11 +148,11 @@ const Sidebar: React.FC<Props> = ({
           type="button"
           onClick={onOpenUniversalSearch}
           aria-label="Search files and folders across your laptop (Ctrl+K)"
-          className="w-full min-h-[44px] flex items-center gap-2.5 px-3 rounded-m3-full bg-surface-container-high border border-outline-variant/60 hover:border-outline text-on-surface-variant hover:text-on-surface text-xs font-medium m3-pressable"
+          className="w-full min-h-[44px] flex items-center gap-2.5 px-3.5 rounded-m3-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-on-surface text-xs font-medium m3-pressable"
         >
           <IconSearch size={16} className="text-primary shrink-0" />
           <span className="flex-1 text-left truncate">Search Laptop...</span>
-          <kbd className="px-1.5 py-0.5 bg-surface-container-lowest border border-outline-variant rounded-m3-xs text-[10px] text-on-surface-variant font-mono shrink-0">
+          <kbd className="px-1.5 py-0.5 bg-surface-container rounded-m3-xs text-[10px] text-on-surface-variant font-mono shrink-0">
             Ctrl K
           </kbd>
         </button>
@@ -205,7 +205,7 @@ const Sidebar: React.FC<Props> = ({
                   }}
                   className={`w-full min-h-[40px] flex items-center justify-between px-3 py-2 rounded-m3-full text-xs font-medium m3-pressable ${
                     isOver
-                      ? "ring-2 ring-primary bg-primary-container text-on-primary-container font-semibold"
+                      ? "bg-primary-container text-on-primary-container font-semibold"
                       : isActive
                       ? "bg-secondary-container text-on-secondary-container font-semibold"
                       : "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
@@ -255,7 +255,7 @@ const Sidebar: React.FC<Props> = ({
             }
           }}
           className={`rounded-m3-md transition-colors ${
-            isOverPinnedSection ? "ring-2 ring-primary bg-primary-container/20 p-1" : ""
+            isOverPinnedSection ? "bg-primary-container/30 p-1" : ""
           }`}
         >
           <div className="flex items-center justify-between px-3 mb-1">
@@ -343,7 +343,7 @@ const Sidebar: React.FC<Props> = ({
                   className={`w-full min-h-[40px] flex items-center justify-between px-3 py-1.5 rounded-m3-full text-xs text-on-surface hover:bg-surface-container-high cursor-grab active:cursor-grabbing group ${
                     isDragging ? "opacity-40" : ""
                   } ${
-                    isOver ? "ring-2 ring-primary bg-primary-container text-on-primary-container font-semibold" : ""
+                    isOver ? "bg-primary-container text-on-primary-container font-semibold" : ""
                   }`}
                   title={`${p.path}\nClick to browse, drag to reorder, or drop items to move`}
                 >
@@ -395,11 +395,11 @@ const Sidebar: React.FC<Props> = ({
       </nav>
 
       {/* 4. Bottom Storage Widget & Utility Actions */}
-      <div className="p-3 border-t border-outline-variant space-y-2">
+      <div className="p-3 pt-4 space-y-2">
         <button
           type="button"
           onClick={() => diskUsage?.mount_path && onNavigate(diskUsage.mount_path)}
-          className="w-full p-3 rounded-m3-md bg-surface-container border border-outline-variant/60 hover:border-outline text-left m3-state-surface select-none"
+          className="w-full p-3 rounded-m3-md bg-surface-container text-left m3-state-surface select-none"
           title={
             diskUsage
               ? `${diskUsage.drive_name} (${diskUsage.mount_path})\n${diskUsage.free_formatted} free of ${diskUsage.total_formatted} (${usedPct}% used)`
