@@ -42,6 +42,54 @@ export interface ReleaseVersion {
  */
 export const CHANGELOG_DATA: ReleaseVersion[] = [
   {
+    version: "0.1.6",
+    title: "Explorer Views, Side Panes, M3 Themes & Experimental Node View",
+    date: "November 2026",
+    highlights: [
+      {
+        icon: "🕸️",
+        title: "Experimental Node View",
+        tag: "EXPERIMENTAL",
+        tagColor: "bg-tertiary-container text-on-tertiary-container border-outline-variant",
+        description:
+          "Visualize any folder as an interactive Obsidian-style graph. Click folders to expand child nodes, click files to preview, pan, zoom, drag nodes, and cluster large folders smoothly using your active theme tokens.",
+        tip: "Enable Node view under Settings → Experimental, then select it from the View menu.",
+      },
+      {
+        icon: "🗂️",
+        title: "8 Explorer Views & M3 View Menu",
+        tag: "NEW FEATURE",
+        tagColor: "bg-primary-container text-on-primary-container border-outline-variant",
+        description:
+          "Switch cleanly across Extra large, Large, Medium, and Small icons, List, Details, Tiles, and Content layouts from the new Material 3 View dropdown.",
+      },
+      {
+        icon: "🪟",
+        title: "Responsive Preview & Details Panes",
+        tag: "NEW FEATURE",
+        tagColor: "bg-primary-container text-on-primary-container border-outline-variant",
+        description:
+          "Inspect selected files in a right-side File Preview Pane (images, video, audio, PDF, Word, code) and view full metadata in the Details Pane without leaving your folder.",
+      },
+      {
+        icon: "🎨",
+        title: "M3 Pink & Black & Orange Themes",
+        tag: "DESIGN",
+        tagColor: "bg-secondary-container text-on-secondary-container border-outline-variant",
+        description:
+          "Added Pink Light, Pink Dark, and Black & Orange themes alongside Material 3 Light & Dark, with full semantic token consistency across every view and modal.",
+      },
+      {
+        icon: "🖱️",
+        title: "Single-Click Navigation, Sorting & Live Recents",
+        tag: "IMPROVEMENT",
+        tagColor: "bg-success-container text-on-success-container border-outline-variant",
+        description:
+          "Single-click to open folders or select files with multi-select support, sort with a persistent Date added index, and track Recent Files live with automatic missing-file pruning and Clear recents.",
+      },
+    ],
+  },
+  {
     version: "0.1.4",
     title: "Media & Document Preview Fix + Live Update Delivery",
     date: "October 2026",
