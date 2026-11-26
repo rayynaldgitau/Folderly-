@@ -5,6 +5,7 @@
 [![Download for macOS](https://img.shields.io/badge/Download_for_macOS-.dmg-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/rayynaldgitau/Folderly-/releases/latest)
 [![Download for Windows](https://img.shields.io/badge/Download_for_Windows-.exe%20%2F%20.msi-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/rayynaldgitau/Folderly-/releases/latest)
 [![Latest Release](https://img.shields.io/github/v/release/rayynaldgitau/Folderly-?style=for-the-badge&color=ff2d87)](https://github.com/rayynaldgitau/Folderly-/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
 ---
 
@@ -52,6 +53,11 @@
 
 ## How to Install & Run
 
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18+)
+- [Rust](https://www.rust-lang.org/tools/install) (stable)
+- [Tauri v2 system prerequisites](https://v2.tauri.app/start/prerequisites/) for Windows, macOS, or Linux
+
 ```bash
 # 1. Install dependencies
 npm install
@@ -91,3 +97,11 @@ npm run build
 - **Windows**: `%APPDATA%\com.foldy.desktop\undo_log.json`
 - **macOS**: `~/Library/Application Support/com.foldy.desktop/undo_log.json`
 - **Linux**: `~/.local/share/com.foldy.desktop/undo_log.json`
+
+---
+
+## Contributing & License
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines, and [SECURITY.md](SECURITY.md) for reporting security issues.
+
+Licensed under the [MIT License](LICENSE).
