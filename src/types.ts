@@ -39,8 +39,16 @@ export interface QuickAccessItem {
   is_drive: boolean;
 }
 
-/** Supported visual display modes in the main workspace. */
-export type ViewMode = "list" | "grid";
+/** Supported visual display modes in the main workspace (Windows Explorer style). */
+export type ViewMode =
+  | "extra_large_icons"
+  | "large_icons"
+  | "medium_icons"
+  | "small_icons"
+  | "list"
+  | "details"
+  | "tiles"
+  | "content";
 
 /** Supported visual themes including dark OLED pink and light pink. */
 export type ThemeMode = "pink" | "pink_light" | "material" | "apple" | "dark";

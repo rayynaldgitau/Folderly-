@@ -1,5 +1,164 @@
 import React from "react";
+import type { FileEntry, FolderEntry } from "../types";
+import { formatFileType } from "../utils/view";
 import { Button, IconCheck, IconFolder, IconFolderPlus } from "./ui";
+
+export interface FolderViewItem {
+  path: string;
+  name: string;
+  isFolder: boolean;
+  extension: string;
+  typeLabel: string;
+  modified_at: string;
+  created_at: string;
+  size: number;
+}
+
+/**
+ * Normalizes folders and files into a single ordered item array (folders first).
+ *
+ * @param folders - Sorted folder entries.
+ * @param files - Sorted file entries.
+ * @returns Normalized FolderViewItem array.
+ */
+export function toFolderViewItems(
+  folders: readonly FolderEntry[],
+  files: readonly FileEntry[]
+): FolderViewItem[] {
+  const folderItems: FolderViewItem[] = folders.map((f) => ({
+    path: f.path,
+    name: f.name,
+    isFolder: true,
+    extension: "",
+    typeLabel: formatFileType(true),
+    modified_at: f.modified_at,
+    created_at: f.created_at,
+    size: -1,
+  }));
+  const fileItems: FolderViewItem[] = files.map((f) => ({
+    path: f.path,
+    name: f.name,
+    isFolder: false,
+    extension: f.extension,
+    typeLabel: formatFileType(false, f.extension),
+    modified_at: f.modified_at,
+    created_at: f.created_at,
+    size: f.size,
+  }));
+  return [...folderItems, ...fileItems];
+}
+
+/**
+ * Computes shared M3 tonal surface classes for selectable/droppable items.
+ *
+ * @param isSelected - Whether the item is currently selected.
+ * @param isDropTarget - Whether the item is an active folder drop target.
+ * @param elevatedCard - Whether resting state uses a low-tonal card surface.
+ * @returns Tailwind class string.
+ */
+export function getItemSurfaceClass(
+  isSelected: boolean,
+  isDropTarget: boolean,
+  elevatedCard = false
+): string {
+  if (isDropTarget) {
+    return "bg-primary-container text-on-primary-container";
+  }
+  if (isSelected) {
+    return "bg-secondary-container text-on-secondary-container";
+  }
+  return elevatedCard
+    ? "bg-surface-container-low hover:bg-surface-container-high text-on-surface"
+    : "hover:bg-surface-container-high text-on-surface";
+}
+
+export interface ItemInteractionHandlers {
+  item: FolderViewItem;
+  selectedPaths: Set<string>;
+  dragOverFolder: string | null;
+  setDragOverFolder: (path: string | null) => void;
+  onToggleSelect: (path: string) => void;
+  onNavigateFolder: (path: string) => void;
+  onOpenFile: (path: string) => void;
+  onContextMenu: (e: React.MouseEvent, path: string, isFolder: boolean) => void;
+  onMoveItem?: (sourcePath: string, destDir: string) => void;
+}
+
+/**
+ * Builds shared keyboard, click, drag-and-drop, and context-menu handlers for any view item.
+ *
+ * @param params - Item and callback handlers.
+ * @returns React DOM event props for the item container.
+ */
+export function getItemInteractionProps({
+  item,
+  selectedPaths,
+  dragOverFolder,
+  setDragOverFolder,
+  onToggleSelect,
+  onNavigateFolder,
+  onOpenFile,
+  onContextMenu,
+  onMoveItem,
+}: ItemInteractionHandlers) {
+  return {
+    tabIndex: 0,
+    draggable: true,
+    onKeyDown: (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (item.isFolder) {
+          onNavigateFolder(item.path);
+        } else {
+          onOpenFile(item.path);
+        }
+      }
+    },
+    onDragStart: (e: React.DragEvent) => setItemDragData(e, item.path, selectedPaths),
+    onDragOver: item.isFolder
+      ? (e: React.DragEvent) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          if (dragOverFolder !== item.path) {
+            setDragOverFolder(item.path);
+          }
+        }
+      : undefined,
+    onDragLeave: item.isFolder
+      ? (e: React.DragEvent) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            if (dragOverFolder === item.path) setDragOverFolder(null);
+          }
+        }
+      : undefined,
+    onDrop: item.isFolder
+      ? (e: React.DragEvent) => {
+          e.preventDefault();
+          setDragOverFolder(null);
+          if (onMoveItem) {
+            for (const src of getDroppedPaths(e)) {
+              if (src.toLowerCase() !== item.path.toLowerCase()) {
+                onMoveItem(src, item.path);
+              }
+            }
+          }
+        }
+      : undefined,
+    onClick: () => onToggleSelect(item.path),
+    onDoubleClick: (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (item.isFolder) {
+        onNavigateFolder(item.path);
+      } else {
+        onOpenFile(item.path);
+      }
+    },
+    onContextMenu: (e: React.MouseEvent) => {
+      e.preventDefault();
+      onContextMenu(e, item.path, item.isFolder);
+    },
+  };
+}
 
 /**
  * Formats byte count into human-readable size string.

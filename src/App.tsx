@@ -6,8 +6,7 @@ import { check } from "@tauri-apps/plugin-updater";
 
 import NavigationBar from "./components/NavigationBar";
 import Sidebar from "./components/Sidebar";
-import FileGrid from "./components/FileGrid";
-import FileTableView from "./components/FileTableView";
+import FolderView from "./components/FolderView";
 import FileContextMenu from "./components/FileContextMenu";
 import RuleBuilder from "./components/RuleBuilder";
 import PreviewPanel from "./components/PreviewPanel";
@@ -63,6 +62,12 @@ import {
   sortFiles,
   sortFolders,
 } from "./utils/sort";
+import {
+  DETAILS_PANE_STORAGE_KEY,
+  PREVIEW_PANE_STORAGE_KEY,
+  VIEW_MODE_STORAGE_KEY,
+  parseViewMode,
+} from "./utils/view";
 
 /** Default initial rule configuration. */
 const DEFAULT_RULES: RenameRules = {
@@ -254,20 +259,39 @@ const App: React.FC = () => {
   const [quickAccess, setQuickAccess]     = useState<QuickAccessItem[]>([]);
   const [diskUsage, setDiskUsage]         = useState<DiskUsage | null>(null);
   const [searchQuery, setSearchQuery]     = useState<string>("");
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    const saved = localStorage.getItem("foldy_view_mode");
-    if (saved === "list" || saved === "details") return "list";
-    if (saved === "grid" || saved === "cards") return "grid";
-    return "list";
-  });
+  const [viewMode, setViewMode] = useState<ViewMode>(() =>
+    parseViewMode(localStorage.getItem(VIEW_MODE_STORAGE_KEY))
+  );
+  const [showDetailsPane, setShowDetailsPane] = useState<boolean>(
+    () => localStorage.getItem(DETAILS_PANE_STORAGE_KEY) === "true"
+  );
+  const [showPreviewPane, setShowPreviewPane] = useState<boolean>(
+    () => localStorage.getItem(PREVIEW_PANE_STORAGE_KEY) === "true"
+  );
 
   useEffect(() => {
     try {
-      localStorage.setItem("foldy_view_mode", viewMode);
+      localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
     } catch {
       // Ignore storage errors
     }
   }, [viewMode]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DETAILS_PANE_STORAGE_KEY, String(showDetailsPane));
+    } catch {
+      // Ignore storage errors
+    }
+  }, [showDetailsPane]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PREVIEW_PANE_STORAGE_KEY, String(showPreviewPane));
+    } catch {
+      // Ignore storage errors
+    }
+  }, [showPreviewPane]);
 
   useEffect(() => {
     try {
@@ -1504,6 +1528,10 @@ const App: React.FC = () => {
           onSearchChange={setSearchQuery}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
+          showDetailsPane={showDetailsPane}
+          onToggleDetailsPane={() => setShowDetailsPane((prev) => !prev)}
+          showPreviewPane={showPreviewPane}
+          onTogglePreviewPane={() => setShowPreviewPane((prev) => !prev)}
           isSidebarOpen={isSidebarOpen}
           onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
           isRenamerOpen={isRenamerOpen}
@@ -1578,32 +1606,18 @@ const App: React.FC = () => {
                   description={status.msg}
                   onRetry={handleRefresh}
                 />
-              ) : viewMode === "list" ? (
-                <FileTableView
+              ) : (
+                <FolderView
+                  viewMode={viewMode}
                   folders={filteredFolders}
                   files={filteredFiles}
                   selectedPaths={selectedPaths}
+                  sortField={sortField}
+                  sortDirection={sortDirection}
+                  onSortChange={setSortField}
+                  onSortDirectionChange={setSortDirection}
                   onToggleSelect={toggleSelect}
                   onToggleSelectAll={toggleSelectAll}
-                  onNavigateFolder={(path) => navigateTo(path)}
-                  onOpenFile={handleOpenFile}
-                  onContextMenu={handleContextMenu}
-                  onNewFolder={currentPath && currentPath !== "recents" ? handleNewFolder : undefined}
-                  onMoveItem={handleMoveItem}
-                  emptyTitle={currentPath === "recents" ? "No recent files" : undefined}
-                  emptyIcon={currentPath === "recents" ? <IconClock size={26} /> : undefined}
-                  emptyMessage={
-                    currentPath === "recents"
-                      ? "Files you open in Foldy will appear here."
-                      : undefined
-                  }
-                />
-              ) : (
-                <FileGrid
-                  folders={filteredFolders}
-                  files={filteredFiles}
-                  selectedPaths={selectedPaths}
-                  onToggle={toggleSelect}
                   onNavigateFolder={(path) => navigateTo(path)}
                   onOpenFile={handleOpenFile}
                   onContextMenu={handleContextMenu}

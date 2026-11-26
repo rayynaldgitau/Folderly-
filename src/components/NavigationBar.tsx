@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import type { ViewMode, DrawerPosition, SortDirection, SortField, TabItem } from "../types";
 import { SORT_LABELS, SORT_OPTIONS } from "../utils/sort";
+import { VIEW_LABELS, VIEW_OPTIONS } from "../utils/view";
 import { MacFolderIcon } from "./MacIcons";
 import { FoldyLogo } from "./FoldyLogo";
 import {
@@ -19,7 +20,6 @@ import {
   IconFolderPlus,
   IconGrid,
   IconHardDrive,
-  IconList,
   IconMoreVert,
   IconPencil,
   IconPlus,
@@ -44,6 +44,10 @@ export interface NavigationBarProps {
   onSearchChange: (q: string) => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  showDetailsPane?: boolean;
+  onToggleDetailsPane?: () => void;
+  showPreviewPane?: boolean;
+  onTogglePreviewPane?: () => void;
   isSidebarOpen: boolean;
   onToggleSidebar: () => void;
   isRenamerOpen: boolean;
@@ -145,6 +149,10 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
   onSearchChange,
   viewMode,
   onViewModeChange,
+  showDetailsPane = false,
+  onToggleDetailsPane,
+  showPreviewPane = false,
+  onTogglePreviewPane,
   isSidebarOpen,
   onToggleSidebar,
   isRenamerOpen,
@@ -178,8 +186,10 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
   const [isEditingPath, setIsEditingPath] = useState(false);
   const [editPathValue, setEditPathValue] = useState("");
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
   const [isOverflowOpen, setIsOverflowOpen] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement>(null);
+  const viewMenuRef = useRef<HTMLDivElement>(null);
   const overflowMenuRef = useRef<HTMLDivElement>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -225,6 +235,9 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
       if (sortMenuRef.current && !sortMenuRef.current.contains(e.target as Node)) {
         setIsSortMenuOpen(false);
       }
+      if (viewMenuRef.current && !viewMenuRef.current.contains(e.target as Node)) {
+        setIsViewMenuOpen(false);
+      }
       if (overflowMenuRef.current && !overflowMenuRef.current.contains(e.target as Node)) {
         setIsOverflowOpen(false);
       }
@@ -232,10 +245,11 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsSortMenuOpen(false);
+        setIsViewMenuOpen(false);
         setIsOverflowOpen(false);
       }
     };
-    if (isSortMenuOpen || isOverflowOpen) {
+    if (isSortMenuOpen || isViewMenuOpen || isOverflowOpen) {
       document.addEventListener("mousedown", handleClickOutside);
       document.addEventListener("keydown", handleKeyDown);
     }
@@ -243,7 +257,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isSortMenuOpen, isOverflowOpen]);
+  }, [isSortMenuOpen, isViewMenuOpen, isOverflowOpen]);
 
   const handleStartEditing = () => {
     isCancelledRef.current = false;
@@ -836,37 +850,101 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
           )}
         </div>
 
-        {/* Compact M3 Segmented View Switcher (List | Grid) */}
-        <div
-          role="group"
-          aria-label="View mode"
-          className="inline-flex items-center bg-surface-container rounded-m3-full p-0.5"
-        >
-          {(
-            [
-              { mode: "list", label: "List view", icon: <IconList size={15} /> },
-              { mode: "grid", label: "Grid view", icon: <IconGrid size={15} /> },
-            ] as const
-          ).map(({ mode, label, icon }) => {
-            const active = viewMode === mode;
-            return (
-              <button
-                key={mode}
-                type="button"
-                aria-pressed={active}
-                aria-label={label}
-                title={label}
-                onClick={() => onViewModeChange(mode)}
-                className={`inline-flex items-center justify-center w-8 h-7 rounded-m3-full m3-pressable ${
-                  active
-                    ? "bg-secondary-container text-on-secondary-container"
-                    : "text-on-surface-variant hover:text-on-surface"
-                }`}
-              >
-                {icon}
-              </button>
-            );
-          })}
+        {/* M3 View Dropdown Menu (Windows Explorer layout options + pane toggles) */}
+        <div className="relative" ref={viewMenuRef}>
+          <button
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={isViewMenuOpen}
+            onClick={() => setIsViewMenuOpen((prev) => !prev)}
+            className="inline-flex items-center gap-1.5 px-3 min-h-[32px] rounded-m3-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-medium m3-pressable"
+          >
+            <IconGrid size={14} />
+            <span>View: {VIEW_LABELS[viewMode]}</span>
+            <IconChevronDown size={14} />
+          </button>
+
+          {isViewMenuOpen && (
+            <div
+              role="menu"
+              aria-label="View options"
+              className="absolute right-0 mt-1.5 w-56 bg-surface-container-high rounded-m3-md shadow-m3-2 p-1.5 z-50 text-xs animate-m3-popover"
+              style={{ "--transform-origin": "top right" } as React.CSSProperties}
+            >
+              <div className="flex flex-col gap-0.5">
+                {VIEW_OPTIONS.map(({ mode, label }) => {
+                  const selected = viewMode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={selected}
+                      onClick={() => {
+                        onViewModeChange(mode);
+                        setIsViewMenuOpen(false);
+                      }}
+                      className={`w-full min-h-[32px] flex items-center gap-2 px-2.5 py-1.5 rounded-m3-sm text-left m3-pressable ${
+                        selected
+                          ? "bg-secondary-container text-on-secondary-container font-semibold"
+                          : "text-on-surface hover:bg-surface-container-highest"
+                      }`}
+                    >
+                      <span className="w-3 flex items-center justify-center shrink-0">
+                        {selected && (
+                          <span
+                            className="w-1.5 h-1.5 rounded-full bg-on-secondary-container"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </span>
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div role="separator" className="my-1.5 h-px bg-outline-variant/50" />
+
+              <div className="flex flex-col gap-0.5">
+                {(
+                  [
+                    {
+                      id: "details-pane",
+                      label: "Details pane",
+                      checked: showDetailsPane,
+                      onToggle: onToggleDetailsPane,
+                    },
+                    {
+                      id: "preview-pane",
+                      label: "Preview pane",
+                      checked: showPreviewPane,
+                      onToggle: onTogglePreviewPane,
+                    },
+                  ] as const
+                ).map(({ id, label, checked, onToggle }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="menuitemcheckbox"
+                    aria-checked={checked}
+                    onClick={() => {
+                      onToggle?.();
+                      setIsViewMenuOpen(false);
+                    }}
+                    className={`w-full min-h-[32px] flex items-center justify-between px-2.5 py-1.5 rounded-m3-sm text-left m3-pressable ${
+                      checked
+                        ? "bg-secondary-container/70 text-on-secondary-container font-medium"
+                        : "text-on-surface hover:bg-surface-container-highest"
+                    }`}
+                  >
+                    <span className="pl-5">{label}</span>
+                    {checked && <IconCheck size={14} />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>
