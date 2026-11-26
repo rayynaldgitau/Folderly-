@@ -1,477 +1,249 @@
+@import "./styles/tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── Custom component classes ── */
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    background-color: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    font-family: var(--md-sys-typescale-font-family);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Accessible focus ring across all interactive elements */
+  :focus-visible {
+    outline: 2px solid var(--md-sys-color-primary);
+    outline-offset: 2px;
+  }
+}
+
 @layer components {
-  /* Primary button */
+  /* M3 pressable micro-interaction (140ms, scale 0.97) */
+  .m3-pressable {
+    transition:
+      transform var(--motion-duration-press) var(--ease-out),
+      background-color var(--motion-duration-fast) ease,
+      border-color var(--motion-duration-fast) ease,
+      color var(--motion-duration-fast) ease,
+      box-shadow var(--motion-duration-fast) ease;
+  }
+
+  .m3-pressable:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  /* M3 state layer surface hover (gated for pointer devices) */
+  .m3-state-surface {
+    position: relative;
+    transition:
+      background-color var(--motion-duration-fast) ease,
+      border-color var(--motion-duration-fast) ease,
+      transform var(--motion-duration-press) var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .m3-state-surface:hover:not(:disabled) {
+      background-color: var(--md-sys-color-surface-container-high);
+    }
+  }
+
+  /* Token-backed button primitives */
   .btn {
-    @apply inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5
-           text-xs font-semibold transition-all duration-150
-           focus:outline-none focus:ring-2 focus:ring-offset-1
+    @apply inline-flex items-center justify-center gap-2 rounded-m3-full px-4 min-h-[40px]
+           text-xs font-semibold m3-pressable
            disabled:opacity-40 disabled:cursor-not-allowed select-none;
   }
 
   .btn-primary {
-    @apply bg-[#ff2d87] text-white hover:bg-[#e61b74]
-           focus:ring-[#ff2d87] focus:ring-offset-neutral-900;
+    background-color: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover:not(:disabled) {
+      filter: brightness(1.06);
+      box-shadow: var(--md-sys-elevation-1);
+    }
   }
 
   .btn-secondary {
-    @apply bg-neutral-800 text-neutral-200 border border-neutral-700
-           hover:bg-neutral-700 focus:ring-neutral-500 focus:ring-offset-neutral-900;
+    background-color: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    border: 1px solid var(--md-sys-color-outline-variant);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .btn-secondary:hover:not(:disabled) {
+      background-color: var(--md-sys-color-surface-container-highest);
+    }
   }
 
   .btn-danger {
-    @apply bg-neutral-800 text-red-400 border border-neutral-700
-           hover:bg-red-950 hover:border-red-800
-           focus:ring-red-600 focus:ring-offset-neutral-900;
+    background-color: var(--md-sys-color-error-container);
+    color: var(--md-sys-color-on-error-container);
+    border: 1px solid transparent;
   }
 
-  /* Status badges */
+  @media (hover: hover) and (pointer: fine) {
+    .btn-danger:hover:not(:disabled) {
+      filter: brightness(1.05);
+    }
+  }
+
+  /* Token-backed badges */
   .badge {
-    @apply text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full border;
+    @apply text-[11px] font-semibold tracking-wide px-2.5 py-0.5 rounded-m3-full border;
   }
-  .badge-green  { @apply bg-emerald-950/70 text-emerald-300 border-emerald-800/60; }
-  .badge-yellow { @apply bg-yellow-950/70  text-yellow-300  border-yellow-800/60;  }
-  .badge-red    { @apply bg-red-950/70     text-red-300     border-red-800/60;     }
-}
-
-/* ── THEME 1: OLED PINK (DARK) — Matches Dark Reference Mockup ── */
-.theme-pink {
-  --scrollbar-thumb: #ff2d87;
-  background-color: #120e12 !important;
-  color: #ffffff !important;
-}
-
-.theme-pink .bg-main {
-  background-color: #120e12 !important;
-}
-
-.theme-pink .bg-sidebar {
-  background-color: #151015 !important;
-  border-color: #241b23 !important;
-}
-
-.theme-pink .bg-card {
-  background-color: #1e181d !important;
-  border-color: #2b222a !important;
-}
-
-.theme-pink .bg-card:hover {
-  background-color: #282027 !important;
-}
-
-.theme-pink .bg-input {
-  background-color: #191318 !important;
-  border-color: #2b222a !important;
-  color: #ffffff !important;
-}
-
-.theme-pink .text-primary-color {
-  color: #ffffff !important;
-}
-
-.theme-pink .text-muted-color {
-  color: #8e828d !important;
-}
-
-.theme-pink .accent-pink {
-  color: #ff2d87 !important;
-}
-
-.theme-pink .bg-accent-pink {
-  background-color: #ff2d87 !important;
-  color: #ffffff !important;
-}
-
-.theme-pink .badge-count {
-  background-color: #251b23 !important;
-  color: #ff85b8 !important;
-  border-color: #3b2837 !important;
-}
-
-/* ── THEME 2: LIGHT PINK — Matches Light Reference Mockup ── */
-.theme-pink-light {
-  --scrollbar-thumb: #ff2d87;
-  background-color: #fceef2 !important;
-  color: #241820 !important;
-}
-
-.theme-pink-light .bg-main {
-  background-color: #fceef2 !important;
-}
-
-.theme-pink-light .bg-sidebar {
-  background-color: #fbe6ed !important;
-  border-color: #f2cbd7 !important;
-}
-
-.theme-pink-light .bg-card {
-  background-color: #fce4ec !important;
-  border-color: #f5cfdb !important;
-}
-
-.theme-pink-light .bg-card:hover {
-  background-color: #f8d7e2 !important;
-}
-
-.theme-pink-light .bg-input {
-  background-color: #fdeef3 !important;
-  border-color: #f2cbd7 !important;
-  color: #241820 !important;
-}
-
-.theme-pink-light .text-primary-color {
-  color: #241820 !important;
-}
-
-.theme-pink-light .text-muted-color {
-  color: #806371 !important;
-}
-
-.theme-pink-light .accent-pink {
-  color: #ff2d87 !important;
-}
-
-.theme-pink-light .bg-accent-pink {
-  background-color: #ff2d87 !important;
-  color: #ffffff !important;
-}
-
-.theme-pink-light .badge-count {
-  background-color: #fadee7 !important;
-  color: #c91866 !important;
-  border-color: #f5c2d3 !important;
-}
-
-/* ── THEME 3: Google & Android Material Design (Material You) ── */
-.theme-material {
-  --scrollbar-thumb: #3c4043;
-  background-color: #131314 !important;
-  color: #f1f3f4 !important;
-}
-.theme-material .bg-main { background-color: #131314 !important; }
-.theme-material .bg-sidebar { background-color: #1b1d22 !important; border-color: rgba(68, 71, 79, 0.4) !important; }
-.theme-material .bg-card { background-color: #23252b !important; border-color: rgba(68, 71, 79, 0.45) !important; }
-.theme-material .bg-card:hover { background-color: #2c2f37 !important; border-color: rgba(138, 180, 248, 0.4) !important; }
-.theme-material .bg-input { background-color: #1e2025 !important; border-color: rgba(68, 71, 79, 0.6) !important; color: #f1f3f4 !important; }
-.theme-material .text-primary-color { color: #f1f3f4 !important; }
-.theme-material .text-muted-color { color: #9aa0a6 !important; }
-.theme-material .accent-pink { color: #8ab4f8 !important; }
-.theme-material .bg-accent-pink { background-color: #1a73e8 !important; color: #ffffff !important; }
-.theme-material .badge-count { background-color: rgba(61, 220, 132, 0.15) !important; color: #3ddc84 !important; border-color: rgba(61, 220, 132, 0.35) !important; }
-
-/* ── Material You Buttons & Interactive Accent Overrides ── */
-.theme-material .btn-primary,
-.theme-material button.btn-primary,
-.theme-material .bg-\[\#ff2d87\],
-.theme-material button.bg-\[\#ff2d87\],
-.theme-material [class*="bg-[#ff2d87]"]:not([class*="bg-[#ff2d87]/"]):not([class*="hover:bg-[#ff2d87]"]) {
-  background-color: #1a73e8 !important;
-  color: #ffffff !important;
-  border-color: #1a73e8 !important;
-  box-shadow: 0 2px 8px rgba(26, 115, 232, 0.28) !important;
-}
-
-.theme-material [class*="bg-[#ff2d87]/"] {
-  background-color: rgba(26, 115, 232, 0.22) !important;
-}
-
-.theme-material .btn-primary:hover,
-.theme-material button.btn-primary:hover,
-.theme-material .hover\:bg-\[\#e61b74\]:hover,
-.theme-material .hover\:bg-\[\#ff2d87\]:hover,
-.theme-material [class*="hover:bg-[#e61b74]"]:hover,
-.theme-material [class*="hover:bg-[#ff2d87]"]:hover {
-  background-color: #1557b0 !important;
-  border-color: #1557b0 !important;
-}
-
-.theme-material .text-\[\#ff2d87\],
-.theme-material [class*="text-[#ff2d87]"] {
-  color: #8ab4f8 !important;
-}
-
-.theme-material .hover\:text-\[\#ff2d87\]:hover,
-.theme-material [class*="hover:text-[#ff2d87]"]:hover {
-  color: #8ab4f8 !important;
-}
-
-.theme-material .border-\[\#ff2d87\],
-.theme-material [class*="border-[#ff2d87]"]:not([class*="border-[#ff2d87]/"]) {
-  border-color: #1a73e8 !important;
-}
-
-.theme-material [class*="border-[#ff2d87]/"] {
-  border-color: rgba(138, 180, 248, 0.4) !important;
-}
-
-.theme-material [class*="hover:border-[#ff2d87]/40"]:hover {
-  border-color: rgba(138, 180, 248, 0.5) !important;
-}
-
-.theme-material .ring-\[\#ff2d87\],
-.theme-material [class*="ring-[#ff2d87]"]:not([class*="ring-[#ff2d87]/"]) {
-  --tw-ring-color: #1a73e8 !important;
-  border-color: #1a73e8 !important;
-}
-
-.theme-material [class*="ring-[#ff2d87]/"] {
-  --tw-ring-color: rgba(138, 180, 248, 0.45) !important;
-}
-
-.theme-material [class*="shadow-[#ff2d87]"] {
-  --tw-shadow-color: rgba(26, 115, 232, 0.25) !important;
-}
-
-.theme-material input[type="checkbox"],
-.theme-material [class*="accent-[#ff2d87]"] {
-  accent-color: #1a73e8 !important;
-}
-
-.theme-material .focus\:border-\[\#ff2d87\]:focus,
-.theme-material [class*="focus:border-[#ff2d87]"]:focus {
-  border-color: #8ab4f8 !important;
-}
-
-.theme-material .border-red-500 {
-  border-color: #8ab4f8 !important;
-}
-
-.theme-material .bg-red-600 {
-  background-color: #1a73e8 !important;
-}
-
-.theme-material .bg-red-600:hover,
-.theme-material .hover\:bg-red-500:hover {
-  background-color: #1557b0 !important;
-}
-
-.theme-material .storage-progress-bar:not(.bg-amber-500) {
-  background: #1a73e8 !important;
-}
-
-/* ── THEME 4: Apple Design (macOS Neutral Silver & Multicolor) ── */
-.theme-apple {
-  --scrollbar-thumb: #535760;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", system-ui, sans-serif;
-  letter-spacing: -0.012em;
-  background-color: #24262b !important;
-  color: #f5f5f7 !important;
-}
-.theme-apple .bg-main { background-color: #24262b !important; }
-.theme-apple .bg-sidebar { background-color: rgba(30, 32, 36, 0.96) !important; border-color: rgba(255, 255, 255, 0.12) !important; backdrop-filter: blur(25px) !important; }
-.theme-apple .bg-card { background-color: rgba(48, 51, 57, 0.72) !important; border-color: rgba(255, 255, 255, 0.14) !important; backdrop-filter: blur(16px) !important; }
-.theme-apple .bg-card:hover { background-color: rgba(64, 68, 76, 0.9) !important; border-color: rgba(255, 255, 255, 0.25) !important; }
-.theme-apple .bg-input { background-color: rgba(26, 28, 31, 0.88) !important; border-color: rgba(255, 255, 255, 0.15) !important; color: #ffffff !important; }
-.theme-apple .text-primary-color { color: #f5f5f7 !important; }
-.theme-apple .text-muted-color { color: #9a9ca3 !important; }
-.theme-apple .accent-pink { color: #e5e7eb !important; }
-.theme-apple .bg-accent-pink { background: linear-gradient(135deg, #ff453a 0%, #ff9f0a 25%, #ffd60a 50%, #30d158 75%, #bf5af2 100%) !important; color: #ffffff !important; }
-.theme-apple .badge-count { background-color: rgba(48, 209, 88, 0.18) !important; color: #30d158 !important; border-color: rgba(48, 209, 88, 0.35) !important; }
-
-/* ── macOS Brushed Silver Buttons & Multicolor Interactive Controls ── */
-.theme-apple .btn-primary,
-.theme-apple button.btn-primary,
-.theme-apple .bg-\[\#ff2d87\],
-.theme-apple button.bg-\[\#ff2d87\],
-.theme-apple [class*="bg-[#ff2d87]"]:not([class*="bg-[#ff2d87]/"]):not([class*="hover:bg-[#ff2d87]"]) {
-  background: linear-gradient(180deg, #535760 0%, #3e4148 100%) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.28) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), inset 0 1px 0.5px rgba(255, 255, 255, 0.4) !important;
-}
-
-.theme-apple [class*="bg-[#ff2d87]/"] {
-  background-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-.theme-apple .btn-primary:hover,
-.theme-apple button.btn-primary:hover,
-.theme-apple .hover\:bg-\[\#e61b74\]:hover,
-.theme-apple .hover\:bg-\[\#ff2d87\]:hover,
-.theme-apple [class*="hover:bg-[#e61b74]"]:hover,
-.theme-apple [class*="hover:bg-[#ff2d87]"]:hover {
-  background: linear-gradient(180deg, #666a74 0%, #4b4f57 100%) !important;
-  border-color: rgba(255, 255, 255, 0.4) !important;
-}
-
-.theme-apple .text-\[\#ff2d87\],
-.theme-apple [class*="text-[#ff2d87]"] {
-  color: #f3f4f6 !important;
-}
-
-.theme-apple .hover\:text-\[\#ff2d87\]:hover,
-.theme-apple [class*="hover:text-[#ff2d87]"]:hover {
-  color: #30d158 !important;
-}
-
-.theme-apple .border-\[\#ff2d87\],
-.theme-apple [class*="border-[#ff2d87]"]:not([class*="border-[#ff2d87]/"]) {
-  border-color: rgba(255, 255, 255, 0.35) !important;
-}
-
-.theme-apple [class*="border-[#ff2d87]/"] {
-  border-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-.theme-apple [class*="hover:border-[#ff2d87]/40"]:hover {
-  border-color: rgba(255, 255, 255, 0.45) !important;
-}
-
-.theme-apple .ring-\[\#ff2d87\],
-.theme-apple [class*="ring-[#ff2d87]"]:not([class*="ring-[#ff2d87]/"]) {
-  --tw-ring-color: rgba(255, 255, 255, 0.4) !important;
-  border-color: rgba(255, 255, 255, 0.45) !important;
-}
-
-.theme-apple [class*="ring-[#ff2d87]/"] {
-  --tw-ring-color: rgba(255, 255, 255, 0.25) !important;
-}
 
-.theme-apple [class*="shadow-[#ff2d87]"] {
-  --tw-shadow-color: rgba(0, 0, 0, 0.35) !important;
-}
-
-.theme-apple input[type="checkbox"],
-.theme-apple [class*="accent-[#ff2d87]"] {
-  accent-color: #30d158 !important;
-}
-
-.theme-apple .focus\:border-\[\#ff2d87\]:focus,
-.theme-apple [class*="focus:border-[#ff2d87]"]:focus {
-  border-color: rgba(255, 255, 255, 0.5) !important;
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2) !important;
-}
-
-.theme-apple .border-red-500 {
-  border-color: rgba(255, 255, 255, 0.4) !important;
-}
-
-.theme-apple .bg-red-600 {
-  background: linear-gradient(180deg, #535760 0%, #3e4148 100%) !important;
-}
-
-.theme-apple .bg-red-600:hover,
-.theme-apple .hover\:bg-red-500:hover {
-  background: linear-gradient(180deg, #666a74 0%, #4b4f57 100%) !important;
-}
-
-.theme-apple .storage-progress-bar:not(.bg-amber-500) {
-  background: linear-gradient(90deg, #30d158 0%, #ffd60a 35%, #0a84ff 70%, #bf5af2 100%) !important;
-  box-shadow: 0 0 6px rgba(48, 209, 88, 0.35) !important;
-}
-
-/* ── THEME 5: Midnight Matte Orange (No Pink) ── */
-.theme-dark {
-  --scrollbar-thumb: #442b1a;
-  background-color: #0c0c0e !important;
-  color: #f4f4f5 !important;
-}
-.theme-dark .bg-main { background-color: #0c0c0e !important; }
-.theme-dark .bg-sidebar { background-color: #121215 !important; border-color: #212126 !important; }
-.theme-dark .bg-card { background-color: #18181d !important; border-color: #272730 !important; }
-.theme-dark .bg-card:hover { background-color: #202026 !important; border-color: rgba(234, 88, 12, 0.35) !important; }
-.theme-dark .bg-input { background-color: #121215 !important; border-color: #272730 !important; color: #f4f4f5 !important; }
-.theme-dark .text-primary-color { color: #f4f4f5 !important; }
-.theme-dark .text-muted-color { color: #8d8d9b !important; }
-.theme-dark .accent-pink { color: #fb923c !important; }
-.theme-dark .bg-accent-pink { background-color: #ea580c !important; color: #ffffff !important; }
-.theme-dark .badge-count { background-color: rgba(234, 88, 12, 0.16) !important; color: #fb923c !important; border-color: rgba(234, 88, 12, 0.35) !important; }
-
-/* ── Midnight Matte Orange Buttons & Interactive Accent Overrides ── */
-.theme-dark .btn-primary,
-.theme-dark button.btn-primary,
-.theme-dark .bg-\[\#ff2d87\],
-.theme-dark button.bg-\[\#ff2d87\],
-.theme-dark [class*="bg-[#ff2d87]"]:not([class*="bg-[#ff2d87]/"]):not([class*="hover:bg-[#ff2d87]"]) {
-  background-color: #d96520 !important;
-  color: #ffffff !important;
-  border-color: #ea580c !important;
-  box-shadow: 0 2px 8px rgba(217, 101, 32, 0.28) !important;
-}
-
-.theme-dark [class*="bg-[#ff2d87]/"] {
-  background-color: rgba(234, 88, 12, 0.18) !important;
-}
-
-.theme-dark .btn-primary:hover,
-.theme-dark button.btn-primary:hover,
-.theme-dark .hover\:bg-\[\#e61b74\]:hover,
-.theme-dark .hover\:bg-\[\#ff2d87\]:hover,
-.theme-dark [class*="hover:bg-[#e61b74]"]:hover,
-.theme-dark [class*="hover:bg-[#ff2d87]"]:hover {
-  background-color: #bf5215 !important;
-  border-color: #bf5215 !important;
-}
-
-.theme-dark .text-\[\#ff2d87\],
-.theme-dark [class*="text-[#ff2d87]"] {
-  color: #fb923c !important;
-}
-
-.theme-dark .hover\:text-\[\#ff2d87\]:hover,
-.theme-dark [class*="hover:text-[#ff2d87]"]:hover {
-  color: #fdba74 !important;
-}
-
-.theme-dark .border-\[\#ff2d87\],
-.theme-dark [class*="border-[#ff2d87]"]:not([class*="border-[#ff2d87]/"]) {
-  border-color: #ea580c !important;
-}
-
-.theme-dark [class*="border-[#ff2d87]/"] {
-  border-color: rgba(234, 88, 12, 0.4) !important;
-}
-
-.theme-dark [class*="hover:border-[#ff2d87]/40"]:hover {
-  border-color: rgba(234, 88, 12, 0.5) !important;
-}
-
-.theme-dark .ring-\[\#ff2d87\],
-.theme-dark [class*="ring-[#ff2d87]"]:not([class*="ring-[#ff2d87]/"]) {
-  --tw-ring-color: #ea580c !important;
-  border-color: #ea580c !important;
-}
+  .badge-green {
+    background-color: var(--md-sys-color-success-container);
+    color: var(--md-sys-color-on-success-container);
+    border-color: transparent;
+  }
+
+  .badge-yellow {
+    background-color: var(--md-sys-color-warning-container);
+    color: var(--md-sys-color-on-warning-container);
+    border-color: transparent;
+  }
+
+  .badge-red {
+    background-color: var(--md-sys-color-error-container);
+    color: var(--md-sys-color-on-error-container);
+    border-color: transparent;
+  }
+
+  /* Legacy semantic surface aliases (token-backed during gradual refactor) */
+  .bg-main {
+    background-color: var(--md-sys-color-surface);
+  }
+  .bg-sidebar {
+    background-color: var(--md-sys-color-surface-container-low);
+    border-color: var(--md-sys-color-outline-variant);
+  }
+  .bg-card {
+    background-color: var(--md-sys-color-surface-container);
+    border-color: var(--md-sys-color-outline-variant);
+  }
+  .bg-input {
+    background-color: var(--md-sys-color-surface-container-lowest);
+    border-color: var(--md-sys-color-outline-variant);
+    color: var(--md-sys-color-on-surface);
+  }
+  .text-primary-color {
+    color: var(--md-sys-color-on-surface);
+  }
+  .text-muted-color {
+    color: var(--md-sys-color-on-surface-variant);
+  }
+  .badge-count {
+    background-color: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    border: 1px solid var(--md-sys-color-outline-variant);
+  }
+}
+
+/* ── Entrance & Progress Animations ── */
+@keyframes m3-enter-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes m3-enter-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes m3-indeterminate-bar {
+  0% {
+    transform: translateX(-100%) scaleX(0.35);
+  }
+  50% {
+    transform: translateX(25%) scaleX(0.6);
+  }
+  100% {
+    transform: translateX(120%) scaleX(0.35);
+  }
+}
+
+@keyframes m3-fade-only {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-m3-dialog {
+  animation: m3-enter-scale var(--motion-duration-modal) var(--ease-out) both;
+}
+
+.animate-m3-popover {
+  animation: m3-enter-scale var(--motion-duration-fast) var(--ease-out) both;
+  transform-origin: var(--transform-origin, top left);
+}
 
-.theme-dark [class*="ring-[#ff2d87]/"] {
-  --tw-ring-color: rgba(234, 88, 12, 0.45) !important;
+.animate-m3-toast {
+  animation: m3-enter-slide-up var(--motion-duration-toast) var(--ease-out) both;
 }
 
-.theme-dark [class*="shadow-[#ff2d87]"] {
-  --tw-shadow-color: rgba(234, 88, 12, 0.25) !important;
+.animate-m3-progress {
+  animation: m3-indeterminate-bar 1.4s var(--ease-in-out) infinite;
 }
 
-.theme-dark input[type="checkbox"],
-.theme-dark [class*="accent-[#ff2d87]"] {
-  accent-color: #ea580c !important;
+/* ── Scrollbars ── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.theme-dark .focus\:border-\[\#ff2d87\]:focus,
-.theme-dark [class*="focus:border-[#ff2d87]"]:focus {
-  border-color: #fb923c !important;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.theme-dark .border-red-500 {
-  border-color: #ea580c !important;
+::-webkit-scrollbar-thumb {
+  background: var(--md-sys-color-outline-variant);
+  border-radius: 9999px;
 }
 
-.theme-dark .bg-red-600 {
-  background-color: #d96520 !important;
+::-webkit-scrollbar-thumb:hover {
+  background: var(--md-sys-color-outline);
 }
 
-.theme-dark .bg-red-600:hover,
-.theme-dark .hover\:bg-red-500:hover {
-  background-color: #bf5215 !important;
-}
+/* ── Reduced Motion Support (opacity-only, no transform movement) ── */
+@media (prefers-reduced-motion: reduce) {
+  .animate-m3-dialog,
+  .animate-m3-popover,
+  .animate-m3-toast {
+    animation: m3-fade-only var(--motion-duration-fast) ease both;
+  }
 
-.theme-dark .storage-progress-bar:not(.bg-amber-500) {
-  background: #ea580c !important;
-}
+  .m3-pressable:active:not(:disabled) {
+    transform: none;
+  }
 
-/* Smooth transitions */
-aside, header, footer, div, section, button {
-  transition-property: background-color, border-color, color;
-  transition-duration: 150ms;
+  .animate-m3-progress {
+    animation: none;
+    transform: translateX(0) scaleX(1);
+    opacity: 0.7;
+  }
 }
