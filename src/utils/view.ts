@@ -3,13 +3,14 @@ import type { ViewMode } from "../types";
 export const VIEW_MODE_STORAGE_KEY = "foldy_view_mode";
 export const DETAILS_PANE_STORAGE_KEY = "foldy_details_pane";
 export const PREVIEW_PANE_STORAGE_KEY = "foldy_preview_pane";
+export const EXPERIMENTAL_NODE_VIEW_STORAGE_KEY = "foldy_exp_node_view";
 
 export type IconGridSize = "extra_large" | "large" | "medium" | "small";
 
 export interface ViewOption {
   mode: ViewMode;
   label: string;
-  group: "icons" | "layouts";
+  group: "icons" | "layouts" | "experimental";
 }
 
 export const VIEW_OPTIONS: ReadonlyArray<ViewOption> = [
@@ -23,6 +24,22 @@ export const VIEW_OPTIONS: ReadonlyArray<ViewOption> = [
   { mode: "content", label: "Content", group: "layouts" },
 ];
 
+export const NODE_VIEW_OPTION: ViewOption = {
+  mode: "node",
+  label: "Node view",
+  group: "experimental",
+};
+
+/**
+ * Returns the list of View menu options, including experimental Node view only when enabled.
+ *
+ * @param nodeViewEnabled - Whether the experimental Node view toggle is on.
+ * @returns Ordered list of ViewOption entries.
+ */
+export function getViewOptions(nodeViewEnabled: boolean): ReadonlyArray<ViewOption> {
+  return nodeViewEnabled ? [...VIEW_OPTIONS, NODE_VIEW_OPTION] : VIEW_OPTIONS;
+}
+
 export const VIEW_LABELS: Record<ViewMode, string> = {
   extra_large_icons: "Extra large icons",
   large_icons: "Large icons",
@@ -32,6 +49,7 @@ export const VIEW_LABELS: Record<ViewMode, string> = {
   details: "Details",
   tiles: "Tiles",
   content: "Content",
+  node: "Node view",
 };
 
 const VALID_VIEW_MODES = new Set<string>(VIEW_OPTIONS.map((o) => o.mode));
@@ -41,9 +59,13 @@ const VALID_VIEW_MODES = new Set<string>(VIEW_OPTIONS.map((o) => o.mode));
  * `"grid"` / `"cards"` values to `"medium_icons"` and defaulting to `"details"`.
  *
  * @param raw - Raw string from localStorage.
+ * @param nodeViewEnabled - Whether the experimental Node view is enabled.
  * @returns Valid ViewMode.
  */
-export function parseViewMode(raw: string | null): ViewMode {
+export function parseViewMode(raw: string | null, nodeViewEnabled = false): ViewMode {
+  if (raw === "node") {
+    return nodeViewEnabled ? "node" : "details";
+  }
   if (raw && VALID_VIEW_MODES.has(raw)) {
     return raw as ViewMode;
   }

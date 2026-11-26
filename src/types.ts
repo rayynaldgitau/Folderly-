@@ -48,7 +48,8 @@ export type ViewMode =
   | "list"
   | "details"
   | "tiles"
-  | "content";
+  | "content"
+  | "node";
 
 /** Supported visual themes including Material 3, Pink (Light & Dark), and Black & Orange. */
 export type ThemeMode =

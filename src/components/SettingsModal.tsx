@@ -25,9 +25,11 @@ export interface SettingsModalProps {
   onUpdateDisplayName: (name: string) => void;
   workspaceName: string;
   onUpdateWorkspaceName: (ws: string) => void;
-  initialTab?: "appearance" | "profile" | "shortcuts" | "updates";
+  initialTab?: "appearance" | "profile" | "shortcuts" | "experimental" | "updates";
   onOpenTutorials?: () => void;
   onOpenWhatsNew?: () => void;
+  nodeViewEnabled?: boolean;
+  onToggleNodeView?: (enabled: boolean) => void;
 }
 
 interface ThemeOption {
@@ -104,11 +106,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   initialTab = "appearance",
   onOpenTutorials,
   onOpenWhatsNew,
+  nodeViewEnabled = false,
+  onToggleNodeView,
 }) => {
   const [localName, setLocalName] = useState(displayName);
   const [localWorkspace, setLocalWorkspace] = useState(workspaceName);
   const [activeTab, setActiveTab] = useState<
-    "appearance" | "profile" | "shortcuts" | "updates"
+    "appearance" | "profile" | "shortcuts" | "experimental" | "updates"
   >(initialTab);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -290,6 +294,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               { id: "appearance", label: "Appearance" },
               { id: "profile", label: "User Profile" },
               { id: "shortcuts", label: "Shortcuts" },
+              { id: "experimental", label: "Experimental" },
               { id: "updates", label: "Updates" },
             ] as const
           ).map((tab) => {
@@ -501,6 +506,59 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   Open Interactive Tutorials & Guide
                 </Button>
               )}
+            </div>
+          )}
+
+          {activeTab === "experimental" && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+                  Experimental Features
+                </h3>
+                <p className="text-xs text-on-surface-variant">
+                  Preview upcoming workspace features. Off by default with zero
+                  overhead when disabled.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between gap-4 p-4 rounded-m3-md bg-surface-container border border-outline-variant/40">
+                <div className="min-w-0 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-on-surface">
+                      Node view
+                    </span>
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-m3-full bg-tertiary-container text-on-tertiary-container">
+                      Experimental
+                    </span>
+                  </div>
+                  <p className="text-xs text-on-surface-variant leading-relaxed">
+                    Explore the current folder as an interactive graph of
+                    connected files and expandable subfolders. Adds Node view to
+                    the View menu when enabled.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={nodeViewEnabled}
+                  aria-label="Toggle experimental Node view"
+                  onClick={() => onToggleNodeView?.(!nodeViewEnabled)}
+                  className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-m3-full border transition-colors duration-150 m3-pressable ${
+                    nodeViewEnabled
+                      ? "bg-primary border-primary"
+                      : "bg-surface-container-highest border-outline"
+                  }`}
+                >
+                  <span
+                    className={`inline-block rounded-m3-full transition-transform duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+                      nodeViewEnabled
+                        ? "h-5 w-5 translate-x-6 bg-on-primary"
+                        : "h-4 w-4 translate-x-1.5 bg-outline"
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           )}
 
