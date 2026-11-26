@@ -767,8 +767,16 @@ mod commands {
         let mut files: Vec<FileEntry> = Vec::new();
         let mut all_paths: Vec<String> = Vec::new();
 
-        let entries = fs::read_dir(&path)
-            .map_err(|e| format!("Cannot read directory '{}': {e}", path.display()))?;
+        let entries = fs::read_dir(&path).map_err(|e| {
+            if e.kind() == std::io::ErrorKind::PermissionDenied {
+                format!(
+                    "PERMISSION_DENIED: macOS denied access to '{}'. Grant access in System Settings > Privacy & Security.",
+                    path.display()
+                )
+            } else {
+                format!("Cannot read directory '{}': {e}", path.display())
+            }
+        })?;
 
         for entry_res in entries {
             let entry = match entry_res {
@@ -1708,6 +1716,60 @@ mod commands {
         get_disk_usage_impl(path)
     }
 
+    /// Checks whether macOS Full Disk Access is granted without triggering a TCC prompt.
+    ///
+    /// On non-macOS platforms, always returns `true`.
+    /// * Returns: `true` if Full Disk Access is granted (or not applicable), `false` otherwise.
+    #[tauri::command]
+    pub fn check_macos_full_disk_access() -> bool {
+        #[cfg(target_os = "macos")]
+        {
+            // Opening TCC.db is a silent FDA probe that never triggers a user-facing prompt.
+            let sys_tcc = Path::new("/Library/Application Support/com.apple.TCC/TCC.db");
+            if fs::File::open(sys_tcc).is_ok() {
+                return true;
+            }
+            if let Ok(home) = std::env::var("HOME") {
+                let user_tcc = PathBuf::from(home)
+                    .join("Library/Application Support/com.apple.TCC/TCC.db");
+                if fs::File::open(user_tcc).is_ok() {
+                    return true;
+                }
+            }
+            return false;
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            true
+        }
+    }
+
+    /// Opens the macOS System Settings Privacy & Security pane directly.
+    ///
+    /// * `pane`: Optional pane target (`"files"` for Files and Folders, otherwise Full Disk Access).
+    /// * Returns: `Ok(())` on launch or an error string.
+    #[tauri::command]
+    pub fn open_macos_privacy_settings(pane: Option<String>) -> Result<(), String> {
+        #[cfg(target_os = "macos")]
+        {
+            let target = match pane.as_deref() {
+                Some("files") => {
+                    "x-apple.systempreferences:com.apple.preference.security?Privacy_FilesAndFolders"
+                }
+                _ => "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles",
+            };
+            Command::new("open")
+                .arg(target)
+                .spawn()
+                .map_err(|e| format!("Failed to open System Settings: {e}"))?;
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            let _ = pane;
+        }
+        Ok(())
+    }
+
     /// Opens a new Foldy application window.
     ///
     /// * `app`: The Tauri application handle.
@@ -1958,41 +2020,12 @@ fn get_disk_usage_impl(path: Option<String>) -> Result<DiskUsage, String> {
     Err("Could not retrieve disk space".to_string())
 }
 
-/// Pre-warms the in-memory directory cache in a background worker with zero UI thread contention.
-fn prewarm_quick_access_cache(app: AppHandle) {
-    let home_opt = std::env::var("USERPROFILE")
-        .or_else(|_| std::env::var("HOME"))
-        .ok();
-
-    if let Some(profile) = home_opt {
-        let user_dir = PathBuf::from(&profile);
-        let targets = ["Downloads", "Desktop", "Documents", "Pictures"];
-        for sub in targets {
-            let direct = user_dir.join(sub);
-            if direct.is_dir() {
-                let _ = commands::read_folder_contents_internal(
-                    Some(&app),
-                    &direct.to_string_lossy(),
-                );
-            }
-        }
-    }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Entry point
 // ─────────────────────────────────────────────────────────────────────────────
 
 fn main() {
     tauri::Builder::default()
-        .setup(|app| {
-            let handle = app.handle().clone();
-            // Background thread to pre-warm directory cache with zero UI delay
-            std::thread::spawn(move || {
-                prewarm_quick_access_cache(handle);
-            });
-            Ok(())
-        })
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -2018,6 +2051,8 @@ fn main() {
             commands::check_files_exist,
             commands::read_file_text_preview,
             commands::read_file_bytes,
+            commands::check_macos_full_disk_access,
+            commands::open_macos_privacy_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
